@@ -1,0 +1,40 @@
+{
+  "name": "@jitre/monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Jitre — AI-first project management platform",
+  "workspaces": [
+    "packages/shared",
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @jitre/shared",
+    "build:backend": "npm run build -w @jitre/backend",
+    "build:frontend": "npm run build -w @jitre/frontend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "dev:backend": "npm run start:dev -w @jitre/backend",
+    "dev:frontend": "npm run start -w @jitre/frontend",
+    "dev:shared": "npm run dev -w @jitre/shared",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e:backend": "npm run test:e2e -w @jitre/backend",
+    "db:migration:generate": "npm run migration:generate -w @jitre/backend --",
+    "db:migration:create": "npm run migration:create -w @jitre/backend --",
+    "db:migration:run": "npm run migration:run -w @jitre/backend",
+    "db:migration:revert": "npm run migration:revert -w @jitre/backend",
+    "db:migration:show": "npm run migration:show -w @jitre/backend",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "~5.9.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

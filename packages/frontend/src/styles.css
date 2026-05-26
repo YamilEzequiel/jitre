@@ -1,0 +1,207 @@
+@import 'tailwindcss';
+@import 'primeicons/primeicons.css';
+@import 'quill/dist/quill.snow.css';
+
+@theme {
+  --color-blurple: #5865F2;
+  --color-blurple-hover: #4752C4;
+  --color-blurple-active: #3C45A5;
+
+  --color-bg-primary: #313338;
+  --color-bg-secondary: #2B2D31;
+  --color-bg-tertiary: #1E1F22;
+  --color-bg-floating: #2B2D31;
+
+  --color-text-normal: #DBDEE1;
+  --color-text-muted: #949BA4;
+  --color-text-link: #00A8FC;
+  --color-text-bright: #FFFFFF;
+
+  --color-interactive-normal: #B5BAC1;
+  --color-interactive-hover: #DBDEE1;
+  --color-interactive-active: #FFFFFF;
+
+  --color-status-online: #23A55A;
+  --color-status-idle: #F0B232;
+  --color-status-dnd: #F23F43;
+  --color-status-offline: #80848E;
+
+  --color-border-subtle: #3F4147;
+  --color-border-strong: #4E5058;
+  --color-channel-default: #80848E;
+  --color-channel-hover: #35373C;
+
+  --shadow-low: 0 1px 0 rgba(4, 4, 5, 0.2);
+  --shadow-high: 0 8px 16px rgba(0, 0, 0, 0.24);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.4);
+
+  --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Brand gradient stops (Rapilist-inspired) */
+  --color-brand-from: #4F46E5; /* indigo-600 */
+  --color-brand-to: #7C3AED;   /* violet-600 */
+  --color-brand-accent: #D946EF; /* fuchsia-500 */
+}
+
+html {
+  font-size: 15px;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-normal);
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-blurple);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom scrollbar — Discord style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
+}
+
+/* ============================================================
+ * Quill / PrimeNG p-editor dark theme overrides
+ * Quill ships with a light theme by default; we override the
+ * .ql-snow tokens so the editor matches the glass aesthetic.
+ * ============================================================ */
+.p-editor-container,
+.p-editor-content,
+.ql-toolbar.ql-snow,
+.ql-container.ql-snow {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.ql-container.ql-snow {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.ql-toolbar.ql-snow .ql-stroke {
+  stroke: #cbd5e1;
+}
+.ql-toolbar.ql-snow .ql-fill {
+  fill: #cbd5e1;
+}
+.ql-toolbar.ql-snow .ql-picker,
+.ql-toolbar.ql-snow .ql-picker-label {
+  color: #cbd5e1;
+}
+.ql-toolbar.ql-snow button:hover .ql-stroke,
+.ql-toolbar.ql-snow .ql-active .ql-stroke {
+  stroke: #818cf8;
+}
+.ql-toolbar.ql-snow button:hover .ql-fill,
+.ql-toolbar.ql-snow .ql-active .ql-fill {
+  fill: #818cf8;
+}
+.ql-toolbar.ql-snow .ql-picker-options {
+  background: #1f2233 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+.ql-editor.ql-blank::before {
+  color: rgba(255, 255, 255, 0.35) !important;
+  font-style: normal;
+}
+.ql-editor a {
+  color: #818cf8;
+}
+.ql-snow .ql-tooltip {
+  background: #1f2233 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.ql-snow .ql-tooltip input[type='text'] {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+/* Light app shell compatibility
+ * Most feature components were authored for the previous dark canvas.
+ * Keep primary buttons/icons white, but force ordinary text and controls
+ * inside white surfaces to readable slate colors. */
+#main-content .bg-white :where(h1, h2, h3, h4, p, span, label, td, th, input, textarea, select).text-white {
+  color: #0f172a !important;
+}
+
+#main-content :where(input, textarea, select).text-white,
+#main-content :where(input, textarea, select).text-gray-200,
+#main-content :where(input, textarea, select).text-gray-300 {
+  color: #0f172a !important;
+}
+
+#main-content :where(input, textarea, select).bg-white,
+#main-content :where(input, textarea, select).bg-slate-50 {
+  background: #ffffff !important;
+}
+
+#main-content .bg-white :where(.text-gray-200, .text-gray-300) {
+  color: #475569 !important;
+}
+
+#main-content .bg-white :where(.text-gray-400, .text-gray-500) {
+  color: #64748b !important;
+}
+
+/* Full-canvas project/issue editor inspired by product administration panels. */
+.jitre-editor .p-tabs {
+  background: transparent;
+}
+
+.jitre-editor .p-tablist {
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.jitre-editor .p-tab {
+  padding: 1rem 1.15rem;
+  color: #94a3b8;
+  font-size: .875rem;
+  font-weight: 700;
+}
+
+.jitre-editor .p-tab-active {
+  color: #6d28d9;
+  border-color: #7c3aed;
+}
+
+.jitre-editor .p-tab:not(.p-tab-active):hover {
+  background: #ede9fe;
+  color: #4c1d95;
+}
+
+.jitre-editor .p-tabpanels {
+  background: transparent;
+  padding: 0;
+}

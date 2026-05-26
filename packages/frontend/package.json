@@ -1,0 +1,49 @@
+{
+  "name": "@jitre/frontend",
+  "version": "0.1.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "lint": "echo 'frontend lint stub'",
+    "clean": "rimraf dist .angular",
+    "analyze": "ng build --configuration=production --stats-json && webpack-bundle-analyzer dist/frontend/stats.json"
+  },
+  "private": true,
+  "packageManager": "npm@11.12.0",
+  "dependencies": {
+    "@angular/cdk": "^21.2.0",
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@angular/router": "^21.2.0",
+    "@jitre/shared": "*",
+    "@primeuix/themes": "^2.0.3",
+    "chart.js": "^4.4.0",
+    "dompurify": "^3.1.0",
+    "marked": "^14.0.0",
+    "primeicons": "^7.0.0",
+    "primeng": "^21.1.8",
+    "quill": "^2.0.3",
+    "rxjs": "~7.8.0",
+    "socket.io-client": "^4.7.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.3",
+    "@angular/cli": "^21.2.3",
+    "@angular/compiler-cli": "^21.2.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "jsdom": "^28.0.0",
+    "postcss": "^8.5.3",
+    "prettier": "^3.8.1",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^4.1.12",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}
