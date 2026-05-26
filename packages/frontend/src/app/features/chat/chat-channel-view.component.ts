@@ -563,7 +563,13 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
   }
 
   renderBody(body: string): string {
-    return this.markdown.transform(body);
+    const withMentions = body.replace(/@\[([^\]]+)\]\(([0-9a-f-]+)\)/gi, (_m, name) => {
+      const escaped = String(name).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      } as Record<string, string>)[ch]!);
+      return `<span class="inline-flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[12px] font-semibold text-indigo-700">@${escaped}</span>`;
+    });
+    return this.markdown.transform(withMentions);
   }
 
   threadReplyCount(message: ChatMessage): number {

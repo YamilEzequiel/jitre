@@ -30,7 +30,7 @@ export interface Comment {
           </div>
           <div
             class="prose prose-sm max-w-none text-sm text-slate-700"
-            [innerHTML]="comment.body | markdown"
+            [innerHTML]="renderMentions(comment.body) | markdown"
           ></div>
           <div class="flex gap-4 mt-3">
             <button
@@ -66,5 +66,14 @@ export class CommentThreadComponent {
 
   onDelete(commentId: string): void {
     this.deleted.emit(commentId);
+  }
+
+  renderMentions(body: string): string {
+    return body.replace(/@\[([^\]]+)\]\(([0-9a-f-]+)\)/gi, (_m, name) => {
+      const escaped = String(name).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      } as Record<string, string>)[ch]!);
+      return `<span class="inline-flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[12px] font-semibold text-indigo-700">@${escaped}</span>`;
+    });
   }
 }

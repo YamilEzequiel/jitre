@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { DocumentStore } from '../../stores/document.store';
 import { Document } from '../../stores/document-api.service';
+import { ProjectStore } from '../../stores/project.store';
 import { ToastService } from '../../core/toast/toast.service';
 import {
   DocsDropEvent,
@@ -57,16 +58,29 @@ const SEARCH_DEBOUNCE_MS = 300;
         aria-label="Documents navigation"
       >
         <div class="flex items-center justify-between px-4 pt-5 pb-3">
-          <div>
+          <div class="min-w-0">
             <span
-              class="text-[10px] font-bold uppercase tracking-[0.18em]
-                     text-violet-700"
+              class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-700"
             >
-              Workspace
+              {{ projectId() ? 'Project' : 'Workspace' }}
             </span>
-            <h2 class="text-lg font-black text-slate-950">Docs</h2>
+            <h2 class="text-lg font-black text-slate-950 truncate" [title]="scopeLabel()">
+              {{ scopeLabel() }}
+            </h2>
+            @if (projectId()) {
+              <button
+                type="button"
+                (click)="clearProjectScope()"
+                class="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500
+                       hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2
+                       focus-visible:ring-blue-400/60 rounded"
+              >
+                <i class="pi pi-arrow-left text-[10px]" aria-hidden="true"></i>
+                All workspace docs
+              </button>
+            }
           </div>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 shrink-0">
             <button
               type="button"
               class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold
@@ -214,6 +228,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 })
 export class DocsComponent implements OnInit, OnDestroy {
   protected readonly store = inject(DocumentStore);
+  private readonly projectStore = inject(ProjectStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
@@ -221,18 +236,33 @@ export class DocsComponent implements OnInit, OnDestroy {
   protected readonly searchQuery = signal('');
   protected readonly searchResults = signal<Document[]>([]);
   protected readonly mobileNavOpen = signal(false);
+  protected readonly projectId = signal<string | null>(null);
   private readonly _selectedId = signal<string | null>(null);
   protected readonly selectedId = this._selectedId.asReadonly();
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
   private childSub: { unsubscribe(): void } | null = null;
+  private querySub: { unsubscribe(): void } | null = null;
 
   protected readonly hasDocs = computed(() => this.store.tree().length > 0);
 
+  /** Friendly label for the active scope — workspace or specific project. */
+  protected readonly scopeLabel = computed(() => {
+    const pid = this.projectId();
+    if (!pid) return 'Workspace docs';
+    const project = this.projectStore.byId()[pid];
+    return project ? `${project.name} docs` : 'Project docs';
+  });
+
   ngOnInit(): void {
-    // Initial load. Errors surface as a toast — the empty state takes over.
-    this.store.loadTree().catch(() => {
-      this.toast.error('Failed to load documents');
+    // React to ?projectId= changes (scope switching from sidebar / project page).
+    this.querySub = this.route.queryParamMap.subscribe(params => {
+      const raw = params.get('projectId');
+      const next = raw && raw.length > 0 ? raw : null;
+      if (this.projectId() !== next) {
+        this.projectId.set(next);
+        this.reloadTree();
+      }
     });
 
     // Track which doc is open via the active child route's :id param.
@@ -256,7 +286,19 @@ export class DocsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.childSub?.unsubscribe();
+    this.querySub?.unsubscribe();
     if (this.searchTimer) clearTimeout(this.searchTimer);
+  }
+
+  private reloadTree(): void {
+    const pid = this.projectId();
+    this.store.loadTree(pid ?? undefined).catch(() => {
+      this.toast.error('Failed to load documents');
+    });
+  }
+
+  protected clearProjectScope(): void {
+    void this.router.navigate(['/docs']);
   }
 
   protected onSearchInput(event: Event): void {
@@ -269,7 +311,9 @@ export class DocsComponent implements OnInit, OnDestroy {
     }
     this.searchTimer = setTimeout(async () => {
       try {
-        const hits = await this.store.search(v.trim());
+        const hits = await this.store.search(v.trim(), {
+          projectId: this.projectId() ?? undefined,
+        });
         this.searchResults.set(hits);
       } catch {
         this.searchResults.set([]);
@@ -279,7 +323,11 @@ export class DocsComponent implements OnInit, OnDestroy {
 
   protected selectDoc(id: string): void {
     this.closeMobileNav();
-    this.router.navigate(['/docs', id]);
+    const pid = this.projectId();
+    void this.router.navigate(
+      ['/docs', id],
+      pid ? { queryParams: { projectId: pid } } : undefined,
+    );
   }
 
   protected async createDoc(parentId: string | null): Promise<void> {
@@ -287,10 +335,18 @@ export class DocsComponent implements OnInit, OnDestroy {
       const created = await this.store.create({
         title: 'Untitled',
         parentId,
+        // Inherit the active scope so docs created from a project view stay
+        // attached to that project.
+        projectId: this.projectId() ?? null,
       });
       this.closeMobileNav();
       this.toast.success('Page created');
-      this.router.navigate(['/docs', created.id]);
+      // Preserve the scope so the sidebar keeps the filter after navigating.
+      const pid = this.projectId();
+      void this.router.navigate(
+        ['/docs', created.id],
+        pid ? { queryParams: { projectId: pid } } : undefined,
+      );
     } catch {
       this.toast.error('Failed to create page');
     }

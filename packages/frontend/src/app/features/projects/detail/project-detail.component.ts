@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProjectStore } from '../../../stores/project.store';
 import { TaskStore } from '../../../stores/task.store';
@@ -23,6 +23,7 @@ import {
 import { AnalyticsService } from '../../../core/analytics/analytics.service';
 import { ToastService } from '../../../core/toast/toast.service';
 import { ChatApiService } from '../../../stores/chat-api.service';
+import { DocumentApiService, Document } from '../../../stores/document-api.service';
 import { SkeletonComponent } from '../../../shared/skeleton/skeleton.component';
 import { CreateTaskComponent } from '../../tasks/create/create-task.component';
 import { TaskCardComponent } from '../../tasks/list/task-card.component';
@@ -43,7 +44,7 @@ import {
   WorkflowStatus,
 } from '../../../stores/workflow-status-api.service';
 
-type ProjectTab = 'tasks' | 'backlog' | 'roadmap' | 'members' | 'files' | 'analytics' | 'settings';
+type ProjectTab = 'tasks' | 'backlog' | 'roadmap' | 'members' | 'files' | 'docs' | 'analytics' | 'settings';
 type TaskView = 'board' | 'list';
 
 @Component({
@@ -58,6 +59,7 @@ type TaskView = 'board' | 'list';
     ProjectMembersComponent,
     AttachmentListComponent,
     ChartComponent,
+    RouterLink,
     FormsModule,
   ],
   template: `
@@ -121,7 +123,7 @@ type TaskView = 'board' | 'list';
                   ? 'border-indigo-500 bg-white text-indigo-700'
                   : 'border-transparent text-slate-600 hover:bg-violet-100 hover:text-violet-900')
               "
-              (click)="activeTab.set(tab.value)"
+              (click)="setActiveTab(tab.value)"
             >
               {{ tab.label }}
             </button>
@@ -198,6 +200,78 @@ type TaskView = 'board' | 'list';
                 <jt-attachment-list context="project" [contextId]="projectId" />
               </section>
             }
+            @case ('docs') {
+              <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-700">Docs</p>
+                    <h3 class="text-base font-black text-slate-950">Project documentation</h3>
+                    <p class="text-xs text-slate-500">Pages attached to this project — specs, retros, runbooks.</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <a
+                      [routerLink]="['/docs']"
+                      [queryParams]="{ projectId }"
+                      class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold
+                             text-slate-700 bg-white border border-slate-200
+                             hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                    >
+                      <i class="pi pi-external-link text-[11px]" aria-hidden="true"></i>
+                      Open in editor
+                    </a>
+                    <button
+                      type="button"
+                      (click)="createProjectDoc()"
+                      class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold
+                             text-white bg-gradient-to-r from-indigo-600 to-violet-600
+                             shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/40
+                             transition-shadow"
+                    >
+                      <i class="pi pi-plus text-[10px]" aria-hidden="true"></i>
+                      New page
+                    </button>
+                  </div>
+                </header>
+
+                @if (projectDocsLoading()) {
+                  <p class="text-sm text-slate-400">Loading…</p>
+                } @else if (projectDocs().length === 0) {
+                  <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-8 text-center">
+                    <i class="pi pi-file-edit text-2xl text-slate-400 mb-2 block" aria-hidden="true"></i>
+                    <p class="text-sm font-semibold text-slate-700">No docs in this project yet</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Create the first page to start the project's knowledge base.</p>
+                  </div>
+                } @else {
+                  <ul class="space-y-2">
+                    @for (doc of projectDocs(); track doc.id) {
+                      <li>
+                        <a
+                          [routerLink]="['/docs', doc.id]"
+                          [queryParams]="{ projectId }"
+                          class="group flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2.5
+                                 hover:border-indigo-200 hover:bg-indigo-50/40 transition-colors"
+                        >
+                          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-700">
+                            @if (doc.icon) {
+                              <span class="text-base" aria-hidden="true">{{ doc.icon }}</span>
+                            } @else {
+                              <i class="pi pi-file text-sm" aria-hidden="true"></i>
+                            }
+                          </span>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-slate-900 truncate">{{ doc.title || 'Untitled' }}</p>
+                            <p class="text-[11px] text-slate-400">
+                              Edited {{ formatRelative(doc.lastEditedAt ?? doc.updatedAt) }}
+                            </p>
+                          </div>
+                          <i class="pi pi-chevron-right text-[10px] text-slate-300 group-hover:text-indigo-500" aria-hidden="true"></i>
+                        </a>
+                      </li>
+                    }
+                  </ul>
+                }
+              </section>
+            }
             @case ('backlog') {
               <div class="space-y-4">
                 @if (planningError()) {
@@ -241,21 +315,35 @@ type TaskView = 'board' | 'list';
                   </section>
                 </div>
                 @for (task of backlogTasks(); track task.id) {
-                  <div class="space-y-2 rounded-2xl border border-slate-200 bg-white p-2">
+                  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                     <jt-task-card [task]="task" variant="row" (selected)="openTask($event)" />
-                    <div class="flex flex-wrap justify-end gap-2 px-2 pb-2">
-                      <select [ngModel]="task.epicId ?? ''" (ngModelChange)="assignPlanning(task, 'epicId', $event)" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-700">
-                        <option value="">Sin épica</option>
-                        @for (epic of epics(); track epic.id) {
-                          <option [value]="epic.id">{{ epic.name }}</option>
-                        }
-                      </select>
-                      <select [ngModel]="task.sprintId ?? ''" (ngModelChange)="assignPlanning(task, 'sprintId', $event)" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-700">
-                        <option value="">Backlog</option>
-                        @for (sprint of sprints(); track sprint.id) {
-                          <option [value]="sprint.id">{{ sprint.name }}</option>
-                        }
-                      </select>
+                    <div class="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-end">
+                      <label class="flex min-w-0 items-center gap-2">
+                        <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-purple-700">Épica</span>
+                        <select
+                          [ngModel]="task.epicId ?? ''"
+                          (ngModelChange)="assignPlanning(task, 'epicId', $event)"
+                          class="min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 hover:border-purple-300 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 sm:w-44 sm:flex-none"
+                        >
+                          <option value="">Sin épica</option>
+                          @for (epic of epics(); track epic.id) {
+                            <option [value]="epic.id">{{ epic.name }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="flex min-w-0 items-center gap-2">
+                        <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-blue-700">Sprint</span>
+                        <select
+                          [ngModel]="task.sprintId ?? ''"
+                          (ngModelChange)="assignPlanning(task, 'sprintId', $event)"
+                          class="min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:w-44 sm:flex-none"
+                        >
+                          <option value="">Backlog</option>
+                          @for (sprint of sprints(); track sprint.id) {
+                            <option [value]="sprint.id">{{ sprint.name }}</option>
+                          }
+                        </select>
+                      </label>
                     </div>
                   </div>
                 } @empty {
@@ -515,8 +603,11 @@ export class ProjectDetailComponent implements OnInit {
   private readonly taskApi = inject(TaskApiService);
   private readonly toast = inject(ToastService);
   private readonly chatApi = inject(ChatApiService);
+  private readonly documentApi = inject(DocumentApiService);
 
   readonly activeTab = signal<ProjectTab>('tasks');
+  readonly projectDocs = signal<Document[]>([]);
+  readonly projectDocsLoading = signal(false);
   readonly taskView = signal<TaskView>('board');
   readonly showCreateTask = signal(false);
   readonly filters = signal<TaskFilters | null>(null);
@@ -545,6 +636,7 @@ export class ProjectDetailComponent implements OnInit {
     { value: 'backlog', label: 'Backlog' },
     { value: 'roadmap', label: 'Roadmap' },
     { value: 'members', label: 'Members' },
+    { value: 'docs', label: 'Docs' },
     { value: 'files', label: 'Files' },
     { value: 'analytics', label: 'Analytics' },
     { value: 'settings', label: 'Settings' },
@@ -768,6 +860,13 @@ export class ProjectDetailComponent implements OnInit {
     void this.loadProjectContext();
   }
 
+  setActiveTab(tab: ProjectTab): void {
+    this.activeTab.set(tab);
+    // Lazy-load the docs list the first time the user opens the Docs tab so
+    // we don't fetch it for projects that never need it.
+    if (tab === 'docs') void this.loadProjectDocs();
+  }
+
   openCreateTask(): void {
     this.showCreateTask.set(true);
   }
@@ -786,6 +885,50 @@ export class ProjectDetailComponent implements OnInit {
     } catch {
       this.toast.error('No se pudo abrir el chat del proyecto.');
     }
+  }
+
+  // ---- Project docs ----
+
+  async loadProjectDocs(): Promise<void> {
+    if (!this.projectId) return;
+    this.projectDocsLoading.set(true);
+    try {
+      const docs = await this.documentApi.list({ projectId: this.projectId });
+      this.projectDocs.set(docs);
+    } catch {
+      this.projectDocs.set([]);
+    } finally {
+      this.projectDocsLoading.set(false);
+    }
+  }
+
+  async createProjectDoc(): Promise<void> {
+    if (!this.projectId) return;
+    try {
+      const created = await this.documentApi.create({
+        title: 'Untitled',
+        projectId: this.projectId,
+      });
+      await this.router.navigate(['/docs', created.id], {
+        queryParams: { projectId: this.projectId },
+      });
+    } catch {
+      this.toast.error('Failed to create page');
+    }
+  }
+
+  formatRelative(iso: string | null): string {
+    if (!iso) return 'just now';
+    const ms = Date.now() - new Date(iso).getTime();
+    if (Number.isNaN(ms)) return 'just now';
+    const sec = Math.floor(ms / 1000);
+    if (sec < 60) return `${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    const day = Math.floor(hr / 24);
+    return `${day}d ago`;
   }
 
   closeCreateTask(): void {
