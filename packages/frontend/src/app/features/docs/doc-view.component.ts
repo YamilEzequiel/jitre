@@ -36,49 +36,34 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
   imports: [RichEditorComponent, DocEmojiPickerComponent],
   template: `
     @if (doc(); as d) {
-      <article class="flex flex-col h-full max-w-5xl mx-auto px-6 sm:px-10 py-8">
-        <!-- Breadcrumb -->
-        <nav class="mb-3 text-xs text-slate-400" aria-label="Breadcrumb">
-          <ol class="flex flex-wrap items-center gap-1">
-            <li>Workspace</li>
-            @for (crumb of breadcrumbs(); track crumb.id) {
-              <li class="flex items-center gap-1">
-                <span aria-hidden="true">›</span>
-                <span class="truncate max-w-[160px]">{{ crumb.title || 'Untitled' }}</span>
-              </li>
-            }
-          </ol>
-        </nav>
+      <div class="flex flex-col h-full">
+        <!-- Top action bar (sticky, compact) -->
+        <div
+          class="sticky top-0 z-10 flex items-center justify-between gap-3
+                 border-b border-slate-200/70 bg-white/85 backdrop-blur
+                 px-6 sm:px-10 py-2.5"
+        >
+          <!-- Breadcrumb -->
+          <nav class="min-w-0 flex-1 text-[11px] text-slate-500" aria-label="Breadcrumb">
+            <ol class="flex flex-wrap items-center gap-1 min-w-0">
+              <li class="text-slate-400">Docs</li>
+              @for (crumb of breadcrumbs(); track crumb.id) {
+                <li class="flex items-center gap-1 min-w-0">
+                  <span class="text-slate-300" aria-hidden="true">/</span>
+                  <span
+                    class="truncate max-w-[180px]"
+                    [class.font-semibold]="crumb.id === d.id"
+                    [class.text-slate-800]="crumb.id === d.id"
+                  >{{ crumb.title || 'Untitled' }}</span>
+                </li>
+              }
+            </ol>
+          </nav>
 
-        <!-- Header: icon + title -->
-        <header class="flex items-start gap-4 mb-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60">
-          <jt-doc-emoji-picker
-            [value]="d.icon"
-            (changed)="onIconChange($event)"
-          />
-          <input
-            type="text"
-            class="flex-1 min-w-0 bg-transparent border-0 outline-none
-                   text-3xl sm:text-4xl font-black tracking-tight text-slate-950
-                   placeholder:text-slate-300"
-            [attr.aria-label]="'Document title'"
-            [value]="titleDraft()"
-            placeholder="Untitled"
-            (input)="onTitleInput($event)"
-            (blur)="flushTitle()"
-          />
-        </header>
-
-        <!-- Meta -->
-        <div class="flex items-center justify-between gap-3 mb-6 text-[11px] text-slate-400">
-          <span>
-            Edited by {{ d.lastEditedByUserId.slice(0, 8) }} ·
-            {{ relativeTime(d.lastEditedAt ?? d.updatedAt) }}
-          </span>
-          <div class="flex items-center gap-3">
+          <!-- Save state + actions -->
+          <div class="flex items-center gap-2 shrink-0">
             <span
-              class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full
-                     border border-slate-200 bg-white text-[10px] uppercase tracking-wider"
+              class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500"
               [attr.aria-live]="'polite'"
             >
               <span
@@ -94,34 +79,123 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
               ></span>
               {{ saveLabel() }}
             </span>
-            <button
-              type="button"
-              class="text-rose-600 hover:text-rose-700 text-[11px] underline"
-              (click)="onDelete()"
-              [attr.aria-label]="'Delete ' + d.title"
-            >
-              Delete
-            </button>
+            <div class="relative">
+              <button
+                type="button"
+                (click)="toggleMenu($event)"
+                [attr.aria-expanded]="menuOpen()"
+                aria-haspopup="menu"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500
+                       hover:bg-slate-100 hover:text-slate-900
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                aria-label="Document actions"
+              >
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="12" cy="5" r="1.6" />
+                  <circle cx="12" cy="12" r="1.6" />
+                  <circle cx="12" cy="19" r="1.6" />
+                </svg>
+              </button>
+              @if (menuOpen()) {
+                <button
+                  type="button"
+                  class="fixed inset-0 z-30 cursor-default bg-transparent"
+                  aria-label="Close menu"
+                  (click)="closeMenu()"
+                ></button>
+                <div
+                  role="menu"
+                  class="absolute right-0 top-9 z-40 w-48 rounded-xl border border-slate-200
+                         bg-white shadow-xl shadow-slate-200/80 py-1.5"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    (click)="copyLink(d)"
+                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <i class="pi pi-link text-[11px]" aria-hidden="true"></i>
+                    Copy link
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    (click)="onDelete()"
+                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-medium text-rose-600 hover:bg-rose-50"
+                  >
+                    <i class="pi pi-trash text-[11px]" aria-hidden="true"></i>
+                    Delete
+                  </button>
+                </div>
+              }
+            </div>
           </div>
         </div>
 
-        <!-- Editor -->
-        <div class="flex-1 min-h-0">
-          <jt-rich-editor
-            [value]="editorValue()"
-            minHeight="600px"
-            placeholder="Start writing..."
-            (changed)="onEditorChanged($event)"
-          />
-        </div>
-      </article>
+        <!-- Cover band (subtle gradient — no image upload yet, keeps the canvas warm) -->
+        <div
+          class="h-28 sm:h-32 bg-gradient-to-br from-indigo-50 via-violet-50 to-fuchsia-50
+                 border-b border-slate-200/60"
+          aria-hidden="true"
+        ></div>
+
+        <!-- Scrollable content canvas -->
+        <article class="flex-1 min-h-0 overflow-auto">
+          <div class="mx-auto w-full max-w-3xl px-6 sm:px-10 -mt-10 sm:-mt-12 pb-16">
+            <!-- Title block: floats over the cover band -->
+            <header class="mb-2">
+              <div class="flex items-start gap-3">
+                <div class="rounded-2xl bg-white shadow-md shadow-slate-200/70 ring-1 ring-slate-200 p-1.5">
+                  <jt-doc-emoji-picker
+                    [value]="d.icon"
+                    (changed)="onIconChange($event)"
+                  />
+                </div>
+              </div>
+              <input
+                type="text"
+                class="mt-3 w-full bg-transparent border-0 outline-none
+                       text-4xl sm:text-5xl font-black tracking-tight text-slate-950
+                       placeholder:text-slate-300
+                       focus:placeholder:text-slate-400"
+                [attr.aria-label]="'Document title'"
+                [value]="titleDraft()"
+                placeholder="Untitled"
+                (input)="onTitleInput($event)"
+                (blur)="flushTitle()"
+              />
+            </header>
+
+            <!-- Meta sub-line -->
+            <p class="mb-8 text-[12px] text-slate-400">
+              {{ authorLabel(d.lastEditedByUserId) }} edited {{ relativeTime(d.lastEditedAt ?? d.updatedAt) }}
+            </p>
+
+            <!-- Editor — flat, no card wrapper -->
+            <div class="prose-editor">
+              <jt-rich-editor
+                [value]="editorValue()"
+                minHeight="60vh"
+                placeholder="Type '/' for commands, or just start writing…"
+                uploadContext="workspace"
+                (changed)="onEditorChanged($event)"
+              />
+            </div>
+          </div>
+        </article>
+      </div>
     } @else if (loading()) {
       <div class="flex h-full items-center justify-center text-sm text-slate-400">
+        <span class="pi pi-spin pi-spinner mr-2" aria-hidden="true"></span>
         Loading document...
       </div>
     } @else {
-      <div class="flex h-full items-center justify-center text-sm text-slate-400">
-        Document not found.
+      <div class="flex h-full flex-col items-center justify-center gap-3 text-center px-6">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+          <i class="pi pi-file text-xl" aria-hidden="true"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">Document not found</p>
+        <p class="text-xs text-slate-400 max-w-xs">It may have been deleted or you don't have access.</p>
       </div>
     }
   `,
@@ -135,6 +209,7 @@ export class DocViewComponent implements OnInit, OnDestroy {
   private readonly docId = signal<string | null>(null);
   protected readonly loading = signal(false);
   protected readonly saveState = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  protected readonly menuOpen = signal(false);
 
   protected readonly titleDraft = signal('');
   /** HTML snapshot of the current editor content (for the [value] input). */
@@ -270,6 +345,7 @@ export class DocViewComponent implements OnInit, OnDestroy {
   }
 
   protected async onDelete(): Promise<void> {
+    this.menuOpen.set(false);
     const d = this.doc();
     if (!d) return;
     if (!confirm(`Delete "${d.title || 'Untitled'}"? This cannot be undone.`)) return;
@@ -280,6 +356,34 @@ export class DocViewComponent implements OnInit, OnDestroy {
     } catch {
       this.toast.error('Failed to delete document');
     }
+  }
+
+  protected toggleMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.menuOpen.update(v => !v);
+  }
+
+  protected closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
+  protected async copyLink(d: Document): Promise<void> {
+    this.menuOpen.set(false);
+    try {
+      const url = `${window.location.origin}/docs/${d.id}`;
+      await navigator.clipboard.writeText(url);
+      this.toast.success('Link copied');
+    } catch {
+      this.toast.error('Could not copy link');
+    }
+  }
+
+  protected authorLabel(userId: string): string {
+    if (!userId) return 'Someone';
+    // We don't have a workspace-wide user directory in this view, so we render
+    // a short, friendlier label instead of the raw UUID prefix.
+    const short = userId.replace(/-/g, '').slice(0, 6).toUpperCase();
+    return `User ${short}`;
   }
 
   private async persist(patch: { title?: string; icon?: string | null; content?: Record<string, unknown> }): Promise<void> {

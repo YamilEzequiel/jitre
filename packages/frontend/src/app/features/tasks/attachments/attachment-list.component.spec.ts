@@ -1,33 +1,52 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AttachmentListComponent } from './attachment-list.component';
-import { HttpClient } from '@angular/common/http';
+import { AttachmentApiService } from '../../../stores/attachment-api.service';
 import { ToastService } from '../../../core/toast/toast.service';
 
 describe('AttachmentListComponent', () => {
   let fixture: ComponentFixture<AttachmentListComponent>;
-  let httpMock: { post: ReturnType<typeof vi.fn> };
+  let apiMock: {
+    upload: ReturnType<typeof vi.fn>;
+    download: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
   let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
-  const mockAttachments = [
-    { id: 'a1', filename: 'design.png', url: '/files/design.png', contentType: 'image/png', size: 12000 },
-    { id: 'a2', filename: 'notes.pdf', url: '/files/notes.pdf', contentType: 'application/pdf', size: 5000 },
-  ];
-
   beforeEach(() => {
-    httpMock = { post: vi.fn() };
+    apiMock = {
+      upload: vi.fn().mockResolvedValue({
+        id: 'a1',
+        workspaceId: 'ws1',
+        context: 'task',
+        contextId: 't1',
+        uploadedByUserId: 'u1',
+        storageKey: 'ws1/task/t1/a1',
+        originalFilename: 'design.png',
+        mimeType: 'image/png',
+        sizeBytes: 12000,
+        checksum: null,
+        createdAt: new Date().toISOString(),
+      }),
+      download: vi.fn().mockResolvedValue({
+        driver: 'local',
+        attachment: {},
+        signedUrl: '/api/v1/files/ws1/task/t1/a1?token=t&exp=1',
+      }),
+      delete: vi.fn().mockResolvedValue(undefined),
+    };
     toastMock = { success: vi.fn(), error: vi.fn() };
 
     TestBed.configureTestingModule({
       providers: [
-        { provide: HttpClient, useValue: httpMock },
+        { provide: AttachmentApiService, useValue: apiMock },
         { provide: ToastService, useValue: toastMock },
       ],
     });
 
     fixture = TestBed.createComponent(AttachmentListComponent);
-    fixture.componentRef.setInput('taskId', 't1');
-    fixture.componentRef.setInput('attachments', mockAttachments);
+    fixture.componentRef.setInput('context', 'task');
+    fixture.componentRef.setInput('contextId', 't1');
     fixture.detectChanges();
   });
 
@@ -37,15 +56,21 @@ describe('AttachmentListComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders attachment filenames', () => {
+  it('shows empty state when no attachments uploaded yet', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('design.png');
-    expect(el.textContent).toContain('notes.pdf');
+    expect(el.textContent).toContain('No attachments yet.');
   });
 
   it('isImage returns true for image/* content types', () => {
     const comp = fixture.componentInstance;
     expect(comp.isImage('image/png')).toBe(true);
     expect(comp.isImage('application/pdf')).toBe(false);
+  });
+
+  it('formatSize formats bytes', () => {
+    const comp = fixture.componentInstance;
+    expect(comp.formatSize(500)).toBe('500 B');
+    expect(comp.formatSize(2048)).toBe('2.0 KB');
+    expect(comp.formatSize(2 * 1024 * 1024)).toBe('2.0 MB');
   });
 });

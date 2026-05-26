@@ -8,19 +8,24 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import { TaskStore } from '../../../stores/task.store';
 import { TaskApiService, Task, TaskPriority, TaskType } from '../../../stores/task-api.service';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
+import { ProjectMemberStore } from '../../../stores/project-member.store';
+import { CommentApiService, CommentDto } from '../../../stores/comment-api.service';
 import { OptimisticUpdateService } from '../../../core/optimistic/optimistic-update.service';
 import { AiService } from '../../../core/ai/ai.service';
 import { ToastService } from '../../../core/toast/toast.service';
 import { SkeletonComponent } from '../../../shared/skeleton/skeleton.component';
 import { MarkdownPipe } from '../../../shared/markdown/markdown.pipe';
 import { TimeLoggerComponent } from '../../time-tracking/time-logger.component';
+import { AttachmentListComponent } from '../attachments/attachment-list.component';
+import {
+  MentionCandidate,
+  MentionInputComponent,
+} from '../../../shared/mention-input/mention-input.component';
 
-interface Comment {
+interface DisplayComment {
   id: string;
   body: string;
   authorId: string;
@@ -31,9 +36,17 @@ interface Comment {
 @Component({
   selector: 'jt-task-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SkeletonComponent, MarkdownPipe, RouterLink, TimeLoggerComponent],
+  imports: [
+    ReactiveFormsModule,
+    SkeletonComponent,
+    MarkdownPipe,
+    RouterLink,
+    TimeLoggerComponent,
+    AttachmentListComponent,
+    MentionInputComponent,
+  ],
   template: `
-    <div class="flex flex-col h-full overflow-auto max-w-6xl">
+    <div class="flex flex-col h-full w-full overflow-auto">
       @if (!task()) {
         <jt-skeleton variant="card" />
       } @else {
@@ -204,6 +217,14 @@ interface Comment {
           <jt-time-logger [taskId]="task()!.id" />
         </div>
 
+        <!-- Attachments -->
+        <section
+          class="rounded-2xl border border-slate-200 bg-white p-6 mb-6
+                 shadow-lg shadow-slate-200/80"
+        >
+          <jt-attachment-list context="task" [contextId]="task()!.id" />
+        </section>
+
         <!-- Subtasks -->
         <section
           class="rounded-2xl border border-slate-200 bg-white p-6 mb-6
@@ -289,46 +310,59 @@ interface Comment {
           } @else {
             <div class="space-y-3 mb-4">
               @for (comment of comments(); track comment.id) {
-                <div
-                  class="rounded-xl border border-slate-200 bg-white backdrop-blur-sm p-4"
-                >
-                  <p class="text-xs font-semibold text-slate-600 mb-2">{{ comment.authorName }}</p>
+                <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                        [style.background]="avatarColor(comment.authorId)"
+                      >{{ initialsOf(comment.authorName) }}</span>
+                      <span class="text-xs font-semibold text-slate-700">{{ comment.authorName }}</span>
+                    </div>
+                    <span class="text-[11px] text-slate-400">{{ formatDate(comment.createdAt) }}</span>
+                  </div>
                   <div
                     class="text-sm text-slate-700 prose prose-sm prose-slate max-w-none"
-                    [innerHTML]="comment.body | markdown"
+                    [innerHTML]="renderMentions(comment.body) | markdown"
                   ></div>
                 </div>
               } @empty {
-                <p class="text-sm text-slate-500">No comments yet.</p>
+                <p class="text-sm text-slate-500">No comments yet. Be the first to say something.</p>
               }
             </div>
 
-            <!-- Comment editor -->
+            <!-- Comment composer with @mention autocomplete -->
             <div class="space-y-3">
-              <textarea
-                [formControl]="commentControl"
-                rows="3"
-                placeholder="Add a comment…"
-                aria-label="New comment"
-                class="w-full rounded-lg bg-white border border-slate-200
-                       px-4 py-3 text-sm text-slate-950 placeholder:text-slate-400
-                       outline-none transition resize-y
-                       focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
-              ></textarea>
-              <button
-                type="button"
-                (click)="submitComment()"
-                [disabled]="!commentControl.value?.trim()"
-                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white
-                       bg-gradient-to-r from-indigo-600 to-violet-600
-                       shadow-md shadow-indigo-500/25
-                       hover:shadow-lg hover:shadow-indigo-500/40
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60
-                       focus-visible:ring-offset-2 focus-visible:ring-offset-white
-                       transition-shadow disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Comment
-              </button>
+              <jt-mention-input
+                [value]="commentDraft()"
+                [candidates]="mentionCandidates()"
+                [rows]="3"
+                placeholder="Write a comment… type @ to mention"
+                ariaLabel="New comment"
+                (valueChange)="commentDraft.set($event)"
+                (submit)="submitComment()"
+              />
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-[11px] text-slate-400">
+                  Tip: <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">@</kbd>
+                  to mention &middot;
+                  <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">Ctrl</kbd>+<kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">Enter</kbd>
+                  to submit
+                </p>
+                <button
+                  type="button"
+                  (click)="submitComment()"
+                  [disabled]="!commentDraft().trim() || submittingComment()"
+                  class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white
+                         bg-gradient-to-r from-indigo-600 to-violet-600
+                         shadow-md shadow-indigo-500/25
+                         hover:shadow-lg hover:shadow-indigo-500/40
+                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60
+                         transition-shadow disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {{ submittingComment() ? 'Posting…' : 'Comment' }}
+                </button>
+              </div>
             </div>
           }
         </section>
@@ -341,22 +375,35 @@ export class TaskDetailComponent implements OnInit {
   private readonly taskStore = inject(TaskStore);
   private readonly taskApi = inject(TaskApiService);
   private readonly statusStore = inject(WorkflowStatusStore, { optional: true });
+  private readonly memberStore = inject(ProjectMemberStore);
+  private readonly commentApi = inject(CommentApiService);
   private readonly optimistic = inject(OptimisticUpdateService);
   private readonly ai = inject(AiService);
   private readonly toast = inject(ToastService);
-  private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
 
   private taskId = '';
 
   readonly editing = signal(false);
   readonly commentsLoading = signal(false);
-  readonly comments = signal<Comment[]>([]);
+  readonly comments = signal<DisplayComment[]>([]);
   readonly addingSubtask = signal(false);
   readonly savingMetadata = signal(false);
 
+  readonly commentDraft = signal('');
+  readonly submittingComment = signal(false);
+
+  readonly mentionCandidates = computed<MentionCandidate[]>(() => {
+    const t = this.task();
+    if (!t) return [];
+    return this.memberStore.byProject(t.projectId)().map(m => ({
+      userId: m.userId,
+      displayName: m.displayName ?? m.email ?? m.userId,
+      email: m.email,
+    }));
+  });
+
   readonly titleControl = this.fb.control('');
-  readonly commentControl = this.fb.control('');
   readonly subtaskTitleControl = this.fb.control('');
   readonly metadataForm = this.fb.group({
     statusId: [''],
@@ -532,17 +579,57 @@ export class TaskDetailComponent implements OnInit {
     }
     this.commentsLoading.set(true);
     try {
-      const comments = await firstValueFrom(
-        this.http.get<Comment[]>('/api/v1/comments', {
-          params: { contextType: 'task', contextId: t.id },
-        }),
-      );
-      this.comments.set(comments);
+      // Ensure project members are loaded so we can resolve author names.
+      await this.memberStore.loadForProject(t.projectId).catch(() => undefined);
+      const raw = await this.commentApi.list({ contextType: 'task', contextId: t.id });
+      this.comments.set(raw.map(c => this.toDisplayComment(c)));
     } catch {
       this.comments.set([]);
     } finally {
       this.commentsLoading.set(false);
     }
+  }
+
+  private toDisplayComment(c: CommentDto): DisplayComment {
+    const t = this.task();
+    const members = t ? this.memberStore.byProject(t.projectId)() : [];
+    const author = members.find(m => m.userId === c.authorUserId);
+    return {
+      id: c.id,
+      body: c.body,
+      authorId: c.authorUserId,
+      authorName: author?.displayName ?? author?.email ?? 'User',
+      createdAt: c.createdAt,
+    };
+  }
+
+  /** Convert `@[name](uuid)` tokens to inline styled mention spans. */
+  renderMentions(body: string): string {
+    return body.replace(/@\[([^\]]+)\]\(([0-9a-f-]+)\)/gi, (_m, name) => {
+      const escaped = String(name).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      } as Record<string, string>)[ch]!);
+      return `<span class="inline-flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[12px] font-semibold text-indigo-700">@${escaped}</span>`;
+    });
+  }
+
+  formatDate(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  initialsOf(name: string): string {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  avatarColor(userId: string): string {
+    let h = 0;
+    for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
+    return `hsl(${h % 360}, 65%, 45%)`;
   }
 
   isSubtaskDone(sub: Task): boolean {
@@ -597,22 +684,23 @@ export class TaskDetailComponent implements OnInit {
   }
 
   async submitComment(): Promise<void> {
-    const body = this.commentControl.value?.trim();
+    const body = this.commentDraft().trim();
     const t = this.task();
-    if (!body || !t) return;
+    if (!body || !t || this.submittingComment()) return;
+    this.submittingComment.set(true);
     try {
-      const comment = await firstValueFrom(
-        this.http.post<Comment>('/api/v1/comments', {
-          contextType: 'task',
-          contextId: t.id,
-          body,
-        }),
-      );
-      this.comments.update(cs => [...cs, comment]);
-      this.commentControl.reset();
-      this.toast.success('Comment added');
+      const created = await this.commentApi.create({
+        contextType: 'task',
+        contextId: t.id,
+        body,
+      });
+      this.comments.update(cs => [...cs, this.toDisplayComment(created)]);
+      this.commentDraft.set('');
+      this.toast.success('Comment posted');
     } catch {
       this.toast.error('Failed to add comment');
+    } finally {
+      this.submittingComment.set(false);
     }
   }
 }

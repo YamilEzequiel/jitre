@@ -35,13 +35,15 @@ import {
 } from '../../tasks/list/task-filter-bar.component';
 import { KanbanBoardComponent } from '../board/kanban-board.component';
 import { ProjectMembersComponent } from '../members/project-members.component';
+import { AttachmentListComponent } from '../../tasks/attachments/attachment-list.component';
+import { ChartComponent } from '../../analytics/chart.component';
 import {
   WorkflowStatusApiService,
   StatusCategory,
   WorkflowStatus,
 } from '../../../stores/workflow-status-api.service';
 
-type ProjectTab = 'tasks' | 'backlog' | 'roadmap' | 'members' | 'analytics' | 'settings';
+type ProjectTab = 'tasks' | 'backlog' | 'roadmap' | 'members' | 'files' | 'analytics' | 'settings';
 type TaskView = 'board' | 'list';
 
 @Component({
@@ -54,6 +56,8 @@ type TaskView = 'board' | 'list';
     TaskFilterBarComponent,
     KanbanBoardComponent,
     ProjectMembersComponent,
+    AttachmentListComponent,
+    ChartComponent,
     FormsModule,
   ],
   template: `
@@ -189,6 +193,11 @@ type TaskView = 'board' | 'list';
             @case ('members') {
               <jt-project-members [projectId]="projectId" />
             }
+            @case ('files') {
+              <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <jt-attachment-list context="project" [contextId]="projectId" />
+              </section>
+            }
             @case ('backlog') {
               <div class="space-y-4">
                 @if (planningError()) {
@@ -306,9 +315,11 @@ type TaskView = 'board' | 'list';
               <div class="space-y-4">
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-700">Analytics</p>
-                  <h2 class="mt-1 text-xl font-black text-slate-950">Últimos 30 días</h2>
-                  <p class="text-sm text-slate-500">Métricas reales del proyecto para acompañar entregas y flujo.</p>
+                  <h2 class="mt-1 text-xl font-black text-slate-950">Project health</h2>
+                  <p class="text-sm text-slate-500">Numbers + charts derived from the current task data.</p>
                 </div>
+
+                <!-- KPI tiles -->
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Velocity</p>
@@ -317,23 +328,68 @@ type TaskView = 'board' | 'list';
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Burndown</p>
                     <p class="mt-2 text-2xl font-black text-slate-950">{{ projectAnalytics().burndownPoints }}</p>
-                    <p class="text-xs text-slate-500">puntos</p>
+                    <p class="text-xs text-slate-500">points</p>
                   </div>
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Lead time</p>
                     <p class="mt-2 text-2xl font-black text-slate-950">{{ projectAnalytics().leadTimeBuckets }}</p>
-                    <p class="text-xs text-slate-500">períodos</p>
+                    <p class="text-xs text-slate-500">buckets</p>
                   </div>
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cycle time</p>
                     <p class="mt-2 text-2xl font-black text-slate-950">{{ projectAnalytics().cycleTimeBuckets }}</p>
-                    <p class="text-xs text-slate-500">períodos</p>
+                    <p class="text-xs text-slate-500">buckets</p>
                   </div>
                   <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Status flow</p>
                     <p class="mt-2 text-2xl font-black text-slate-950">{{ projectAnalytics().statusFlowEdges }}</p>
-                    <p class="text-xs text-slate-500">transiciones</p>
+                    <p class="text-xs text-slate-500">transitions</p>
                   </div>
+                </div>
+
+                <!-- Charts: 2-col responsive grid -->
+                <div class="grid gap-4 lg:grid-cols-2">
+                  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <header class="mb-3">
+                      <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Status mix</p>
+                      <h3 class="text-sm font-bold text-slate-900">Tasks by workflow status</h3>
+                    </header>
+                    <div class="h-64">
+                      <jt-chart chartType="doughnut" [chartData]="$any(statusChartData())" ariaLabel="Tasks by status" />
+                    </div>
+                  </section>
+
+                  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <header class="mb-3">
+                      <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Priority mix</p>
+                      <h3 class="text-sm font-bold text-slate-900">Tasks by priority</h3>
+                    </header>
+                    <div class="h-64">
+                      <jt-chart chartType="doughnut" [chartData]="$any(priorityChartData())" ariaLabel="Tasks by priority" />
+                    </div>
+                  </section>
+
+                  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+                    <header class="mb-3 flex items-center justify-between">
+                      <div>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Flow</p>
+                        <h3 class="text-sm font-bold text-slate-900">Created vs completed — last 8 weeks</h3>
+                      </div>
+                    </header>
+                    <div class="h-72">
+                      <jt-chart chartType="line" [chartData]="$any(flowChartData())" ariaLabel="Weekly created vs completed" />
+                    </div>
+                  </section>
+
+                  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+                    <header class="mb-3">
+                      <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Workload</p>
+                      <h3 class="text-sm font-bold text-slate-900">Tasks per assignee (top 6)</h3>
+                    </header>
+                    <div class="h-64">
+                      <jt-chart chartType="bar" [chartData]="$any(workloadChartData())" ariaLabel="Tasks per assignee" />
+                    </div>
+                  </section>
                 </div>
               </div>
             }
@@ -489,6 +545,7 @@ export class ProjectDetailComponent implements OnInit {
     { value: 'backlog', label: 'Backlog' },
     { value: 'roadmap', label: 'Roadmap' },
     { value: 'members', label: 'Members' },
+    { value: 'files', label: 'Files' },
     { value: 'analytics', label: 'Analytics' },
     { value: 'settings', label: 'Settings' },
   ];
@@ -555,6 +612,155 @@ export class ProjectDetailComponent implements OnInit {
   readonly epics = computed(() => this.planningItems().filter(item => item.type === 'epic'));
   readonly sprints = computed(() => this.planningItems().filter(item => item.type === 'sprint'));
   readonly releases = computed(() => this.planningItems().filter(item => item.type === 'release'));
+
+  // ---- Analytics chart data ----
+
+  /** Tasks grouped by their workflow-status name (one slice per column). */
+  readonly statusBreakdown = computed(() => {
+    const statuses = this.statusStore.byProject(this.projectId)();
+    const byStatusId = new Map(statuses.map(s => [s.id, s.name]));
+    const counts = new Map<string, number>();
+    for (const t of this.projectTasks()) {
+      const name = byStatusId.get(t.statusId) ?? 'Unknown';
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return { labels: [...counts.keys()], values: [...counts.values()] };
+  });
+
+  /** Tasks grouped by priority — keep a stable order so colors stay consistent. */
+  readonly priorityBreakdown = computed(() => {
+    const order: Array<{ key: string; label: string }> = [
+      { key: 'urgent', label: 'Urgent' },
+      { key: 'high', label: 'High' },
+      { key: 'medium', label: 'Medium' },
+      { key: 'low', label: 'Low' },
+      { key: 'none', label: 'None' },
+    ];
+    const counts = new Map<string, number>();
+    for (const t of this.projectTasks()) counts.set(t.priority, (counts.get(t.priority) ?? 0) + 1);
+    return {
+      labels: order.map(o => o.label),
+      values: order.map(o => counts.get(o.key) ?? 0),
+    };
+  });
+
+  /** Last 8 weeks: tasks created vs completed per week. */
+  readonly weeklyFlow = computed(() => {
+    const buckets = 8;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const start = new Date(now);
+    // Start from the Monday of the bucket window.
+    start.setDate(start.getDate() - 7 * (buckets - 1));
+    const labels: string[] = [];
+    const created = new Array(buckets).fill(0);
+    const completed = new Array(buckets).fill(0);
+    for (let i = 0; i < buckets; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + 7 * i);
+      labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    }
+    for (const t of this.projectTasks()) {
+      if (t.createdAt) {
+        const idx = this.bucketIndex(start, t.createdAt, buckets);
+        if (idx >= 0) created[idx]++;
+      }
+      if (t.completedAt) {
+        const idx = this.bucketIndex(start, t.completedAt, buckets);
+        if (idx >= 0) completed[idx]++;
+      }
+    }
+    return { labels, created, completed };
+  });
+
+  /** Tasks per assignee (top 6) for the workload bar. */
+  readonly workload = computed(() => {
+    const members = this.memberStore.byProject(this.projectId)();
+    const labelFor = (userId: string) =>
+      members.find(m => m.userId === userId)?.displayName ??
+      members.find(m => m.userId === userId)?.email ??
+      'User';
+    const counts = new Map<string, number>();
+    for (const t of this.projectTasks()) {
+      for (const uid of t.assigneeUserIds ?? []) counts.set(uid, (counts.get(uid) ?? 0) + 1);
+    }
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    return {
+      labels: sorted.map(([uid]) => labelFor(uid)),
+      values: sorted.map(([, n]) => n),
+    };
+  });
+
+  private bucketIndex(start: Date, iso: string, buckets: number): number {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return -1;
+    const days = Math.floor((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const idx = Math.floor(days / 7);
+    return idx >= 0 && idx < buckets ? idx : -1;
+  }
+
+  // Chart.js data builders — kept as plain methods to avoid a wider refactor.
+  statusChartData(): unknown {
+    const b = this.statusBreakdown();
+    return {
+      labels: b.labels,
+      datasets: [{
+        data: b.values,
+        backgroundColor: ['#818cf8', '#a78bfa', '#f0abfc', '#fb7185', '#fbbf24', '#34d399', '#60a5fa'],
+        borderWidth: 0,
+      }],
+    };
+  }
+
+  priorityChartData(): unknown {
+    const b = this.priorityBreakdown();
+    return {
+      labels: b.labels,
+      datasets: [{
+        data: b.values,
+        backgroundColor: ['#e11d48', '#f97316', '#f59e0b', '#0ea5e9', '#94a3b8'],
+        borderWidth: 0,
+      }],
+    };
+  }
+
+  flowChartData(): unknown {
+    const w = this.weeklyFlow();
+    return {
+      labels: w.labels,
+      datasets: [
+        {
+          label: 'Created',
+          data: w.created,
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.12)',
+          tension: 0.35,
+          fill: true,
+        },
+        {
+          label: 'Completed',
+          data: w.completed,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+          tension: 0.35,
+          fill: true,
+        },
+      ],
+    };
+  }
+
+  workloadChartData(): unknown {
+    const w = this.workload();
+    return {
+      labels: w.labels,
+      datasets: [{
+        label: 'Tasks',
+        data: w.values,
+        backgroundColor: '#7c3aed',
+        borderRadius: 6,
+      }],
+    };
+  }
 
   ngOnInit(): void {
     this.projectId = this.route.snapshot.paramMap.get('id') ?? '';

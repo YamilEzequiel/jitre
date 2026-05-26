@@ -7,6 +7,8 @@ import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { OptimisticUpdateService } from '../../../core/optimistic/optimistic-update.service';
 import { AiService } from '../../../core/ai/ai.service';
 import { ToastService } from '../../../core/toast/toast.service';
+import { ProjectMemberStore } from '../../../stores/project-member.store';
+import { CommentApiService } from '../../../stores/comment-api.service';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { signal, computed } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -78,6 +80,25 @@ describe('TaskDetailComponent', () => {
         { provide: AiService, useValue: aiMock },
         { provide: ToastService, useValue: toastMock },
         {
+          provide: ProjectMemberStore,
+          useValue: {
+            byProject: vi.fn(() => signal([])),
+            loadForProject: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: CommentApiService,
+          useValue: {
+            list: vi.fn().mockResolvedValue([]),
+            create: vi.fn().mockResolvedValue({
+              id: 'c1', workspaceId: 'ws1', contextType: 'task', contextId: 't1',
+              authorUserId: 'u1', body: 'hi', parentId: null,
+              createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+              deletedAt: null,
+            }),
+          },
+        },
+        {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
@@ -143,11 +164,11 @@ describe('TaskDetailComponent', () => {
     expect(comp.aiDescribeLoading()).toBe(false);
   });
 
-  it('comment text reset after submit attempt', () => {
+  it('comment draft resets to empty', () => {
     const comp = fixture.componentInstance;
-    comp.commentControl.setValue('My comment');
-    comp.commentControl.reset();
-    expect(comp.commentControl.value).toBeNull();
+    comp.commentDraft.set('My comment');
+    comp.commentDraft.set('');
+    expect(comp.commentDraft()).toBe('');
   });
 
   it('allows creating subtasks for a root task', () => {
@@ -211,6 +232,25 @@ describe('TaskDetailComponent', () => {
         { provide: OptimisticUpdateService, useValue: optimisticMock },
         { provide: AiService, useValue: aiMock },
         { provide: ToastService, useValue: toastMock },
+        {
+          provide: ProjectMemberStore,
+          useValue: {
+            byProject: vi.fn(() => signal([])),
+            loadForProject: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: CommentApiService,
+          useValue: {
+            list: vi.fn().mockResolvedValue([]),
+            create: vi.fn().mockResolvedValue({
+              id: 'c1', workspaceId: 'ws1', contextType: 'task', contextId: 't1',
+              authorUserId: 'u1', body: 'hi', parentId: null,
+              createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+              deletedAt: null,
+            }),
+          },
+        },
         {
           provide: ActivatedRoute,
           useValue: {

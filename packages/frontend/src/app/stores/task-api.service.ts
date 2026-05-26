@@ -26,6 +26,8 @@ export interface Task {
   rank: string;
   customFields?: Record<string, unknown>;
   completedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   // populated when requested:
   assigneeUserIds?: string[];
   labelIds?: string[];

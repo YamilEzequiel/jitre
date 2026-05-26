@@ -1,20 +1,23 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   inject,
   input,
-  output,
   signal,
 } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../core/toast/toast.service';
+import {
+  AttachmentApiService,
+  AttachmentContext,
+  AttachmentDto,
+} from '../../../stores/attachment-api.service';
 
-export interface Attachment {
+interface DisplayAttachment {
   id: string;
   filename: string;
   url: string;
-  contentType: string;
+  mimeType: string;
   size: number;
 }
 
@@ -32,7 +35,7 @@ export interface Attachment {
         </h3>
         <label
           class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700
-                 bg-white border border-slate-200 backdrop-blur-sm cursor-pointer
+                 bg-white border border-slate-200 cursor-pointer
                  hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700
                  transition-colors"
         >
@@ -51,12 +54,13 @@ export interface Attachment {
             <polyline points="17 8 12 3 7 8" />
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
-          Upload
+          {{ uploading() ? 'Uploading…' : 'Upload' }}
           <input
             type="file"
             class="sr-only"
             (change)="onFileSelected($event)"
-            [attr.aria-label]="'Upload attachment for task'"
+            [disabled]="uploading()"
+            [attr.aria-label]="'Upload attachment'"
           />
         </label>
       </div>
@@ -78,10 +82,10 @@ export interface Attachment {
         @for (att of attachments(); track att.id) {
           <div
             class="flex items-center gap-3 p-3 rounded-xl
-                   border border-slate-200 bg-white backdrop-blur-sm
+                   border border-slate-200 bg-white
                    hover:border-slate-300 hover:bg-slate-50 transition-colors"
           >
-            @if (isImage(att.contentType)) {
+            @if (isImage(att.mimeType)) {
               <img
                 [src]="att.url"
                 [alt]="att.filename"
@@ -121,26 +125,39 @@ export interface Attachment {
             >
               Download
             </a>
+            <button
+              type="button"
+              (click)="onDelete(att)"
+              class="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors"
+              [attr.aria-label]="'Delete ' + att.filename"
+            >
+              Delete
+            </button>
           </div>
         } @empty {
-          <p class="text-sm text-slate-500">No attachments.</p>
+          <p class="text-sm text-slate-500">No attachments yet.</p>
         }
       </div>
     </div>
   `,
 })
-export class AttachmentListComponent {
-  readonly taskId = input.required<string>();
-  readonly attachments = input<Attachment[]>([]);
-  readonly uploaded = output<Attachment>();
+export class AttachmentListComponent implements OnInit {
+  readonly context = input.required<AttachmentContext>();
+  readonly contextId = input.required<string>();
 
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(AttachmentApiService);
   private readonly toast = inject(ToastService);
 
+  readonly attachments = signal<DisplayAttachment[]>([]);
   readonly uploading = signal(false);
 
-  isImage(contentType: string): boolean {
-    return contentType.startsWith('image/');
+  ngOnInit(): void {
+    // Attachments list endpoint is not yet on the backend, so we start empty
+    // and append on upload. When the list endpoint lands we'll hydrate here.
+  }
+
+  isImage(mime: string): boolean {
+    return mime.startsWith('image/');
   }
 
   formatSize(bytes: number): string {
@@ -150,26 +167,48 @@ export class AttachmentListComponent {
   }
 
   async onFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    const inputEl = event.target as HTMLInputElement;
+    const file = inputEl.files?.[0];
     if (!file) return;
 
     this.uploading.set(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('context', 'task');
-      formData.append('contextId', this.taskId());
-      const att = await firstValueFrom(
-        this.http.post<Attachment>('/api/v1/attachments', formData),
-      );
-      this.uploaded.emit(att);
+      const att = await this.api.upload({
+        file,
+        context: this.context(),
+        contextId: this.contextId(),
+      });
+      const download = await this.api.download(att.id);
+      this.attachments.update(xs => [
+        ...xs,
+        this.toDisplay(att, download.signedUrl),
+      ]);
       this.toast.success('File uploaded');
     } catch {
       this.toast.error('Upload failed');
     } finally {
       this.uploading.set(false);
-      input.value = '';
+      inputEl.value = '';
     }
+  }
+
+  async onDelete(att: DisplayAttachment): Promise<void> {
+    try {
+      await this.api.delete(att.id);
+      this.attachments.update(xs => xs.filter(x => x.id !== att.id));
+      this.toast.success('Attachment deleted');
+    } catch {
+      this.toast.error('Delete failed');
+    }
+  }
+
+  private toDisplay(att: AttachmentDto, url: string): DisplayAttachment {
+    return {
+      id: att.id,
+      filename: att.originalFilename,
+      url,
+      mimeType: att.mimeType,
+      size: att.sizeBytes,
+    };
   }
 }

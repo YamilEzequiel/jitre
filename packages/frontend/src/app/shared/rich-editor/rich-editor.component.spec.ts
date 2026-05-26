@@ -1,6 +1,8 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RichEditorComponent, type RichEditorChangeEvent } from './rich-editor.component';
+import { AttachmentApiService } from '../../stores/attachment-api.service';
+import { ToastService } from '../../core/toast/toast.service';
 
 /**
  * The wrapper delegates DOM concerns to PrimeNG's <p-editor> (Quill).
@@ -14,7 +16,24 @@ describe('RichEditorComponent', () => {
   let comp: RichEditorComponent;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [RichEditorComponent] });
+    TestBed.configureTestingModule({
+      imports: [RichEditorComponent],
+      providers: [
+        {
+          provide: AttachmentApiService,
+          useValue: {
+            upload: vi.fn(),
+            download: vi.fn(),
+            uploadImage: vi.fn(),
+            delete: vi.fn(),
+          },
+        },
+        {
+          provide: ToastService,
+          useValue: { success: vi.fn(), error: vi.fn() },
+        },
+      ],
+    });
     fixture = TestBed.createComponent(RichEditorComponent);
     comp = fixture.componentInstance;
   });
