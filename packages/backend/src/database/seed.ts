@@ -37,11 +37,12 @@ import { TaskAssignmentEntity } from '../task/task-assignment.entity';
 import { TaskLabelEntity } from '../task/task-label.entity';
 import { Comment } from '../comment/comment.entity';
 import { DocumentEntity } from '../document/document.entity';
-import { ChatChannelEntity } from '../chat/chat-channel.entity';
+import { ChatChannelEntity, ChatChannelKind } from '../chat/chat-channel.entity';
 import { ChatMembershipEntity } from '../chat/chat-membership.entity';
 import { ChatMessageEntity } from '../chat/chat-message.entity';
 import { TimeEntryEntity } from '../time-tracking/time-entry.entity';
 import { Notification } from '../notification/notification.entity';
+import { PlanningItemEntity, PlanningItemType } from '../project/planning/planning-item.entity';
 
 import {
   WorkspaceRole,
@@ -387,6 +388,97 @@ async function seedLabels(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Planning items (epics, sprints, releases)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface SeededPlanning {
+  /** projectId -> { epics, sprints, releases } indexed by `key` for task wiring. */
+  byProject: Map<
+    string,
+    {
+      epics: Map<string, PlanningItemEntity>;
+      sprints: Map<string, PlanningItemEntity>;
+      releases: Map<string, PlanningItemEntity>;
+    }
+  >;
+}
+
+async function seedPlanningItems(
+  repo: Repo<PlanningItemEntity>,
+  workspace: WorkspaceEntity,
+  projects: SeededProjects,
+): Promise<SeededPlanning> {
+  interface Spec {
+    key: string;
+    type: PlanningItemType;
+    name: string;
+    goal: string | null;
+    status: string;
+    color: string | null;
+    startOffsetDays: number | null;
+    endOffsetDays: number | null;
+  }
+
+  // Two epics, two sprints (one active, one upcoming), one release per project.
+  const platformSpecs: Spec[] = [
+    { key: 'auth-hardening', type: 'epic', name: 'Auth Hardening', goal: 'Rotate, audit and lock down the auth surface.', status: 'active', color: '#6366f1', startOffsetDays: -30, endOffsetDays: 30 },
+    { key: 'kanban-mvp', type: 'epic', name: 'Kanban MVP', goal: 'Ship a usable kanban board v1.', status: 'active', color: '#0ea5e9', startOffsetDays: -14, endOffsetDays: 21 },
+    { key: 'sprint-22', type: 'sprint', name: 'Sprint 22', goal: 'Stabilize and ship.', status: 'active', color: '#10b981', startOffsetDays: -7, endOffsetDays: 7 },
+    { key: 'sprint-23', type: 'sprint', name: 'Sprint 23', goal: null, status: 'planned', color: '#a855f7', startOffsetDays: 7, endOffsetDays: 21 },
+    { key: 'release-1-2', type: 'release', name: 'v1.2', goal: 'Kanban + auth rotation.', status: 'planned', color: '#f59e0b', startOffsetDays: null, endOffsetDays: 30 },
+  ];
+
+  const marketingSpecs: Spec[] = [
+    { key: 'launch-campaign', type: 'epic', name: 'Launch Campaign', goal: 'Coordinate the public launch.', status: 'active', color: '#ec4899', startOffsetDays: -10, endOffsetDays: 30 },
+    { key: 'sprint-mkt-3', type: 'sprint', name: 'MKT Sprint 3', goal: 'Pricing page + hero copy.', status: 'active', color: '#10b981', startOffsetDays: -3, endOffsetDays: 10 },
+    { key: 'release-launch', type: 'release', name: 'Launch Day', goal: 'Public launch milestone.', status: 'planned', color: '#f43f5e', startOffsetDays: null, endOffsetDays: 21 },
+  ];
+
+  const byProject = new Map<
+    string,
+    {
+      epics: Map<string, PlanningItemEntity>;
+      sprints: Map<string, PlanningItemEntity>;
+      releases: Map<string, PlanningItemEntity>;
+    }
+  >();
+
+  async function upsertGroup(project: ProjectEntity, specs: Spec[]) {
+    const epics = new Map<string, PlanningItemEntity>();
+    const sprints = new Map<string, PlanningItemEntity>();
+    const releases = new Map<string, PlanningItemEntity>();
+    for (const s of specs) {
+      let existing = await repo.findOne({
+        where: { workspaceId: workspace.id, projectId: project.id, name: s.name, type: s.type },
+      });
+      if (!existing) {
+        existing = await repo.save(
+          repo.create({
+            workspaceId: workspace.id,
+            projectId: project.id,
+            type: s.type,
+            name: s.name,
+            goal: s.goal,
+            status: s.status,
+            color: s.color,
+            startDate: s.startOffsetDays == null ? null : daysFromNow(s.startOffsetDays),
+            endDate: s.endOffsetDays == null ? null : daysFromNow(s.endOffsetDays),
+          }),
+        );
+      }
+      if (s.type === 'epic') epics.set(s.key, existing);
+      else if (s.type === 'sprint') sprints.set(s.key, existing);
+      else releases.set(s.key, existing);
+    }
+    byProject.set(project.id, { epics, sprints, releases });
+  }
+
+  await upsertGroup(projects.platform, platformSpecs);
+  await upsertGroup(projects.marketing, marketingSpecs);
+  return { byProject };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tasks
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -404,6 +496,10 @@ interface TaskSpec {
   /** Local key used inside the seed to wire subtasks. */
   localKey?: string;
   parentLocalKey?: string;
+  /** Optional planning-item keys (resolved against SeededPlanning per project). */
+  epicKey?: string;
+  sprintKey?: string;
+  releaseKey?: string;
 }
 
 async function seedTasks(
@@ -414,6 +510,7 @@ async function seedTasks(
   projects: SeededProjects,
   statuses: SeededStatuses,
   labels: SeededLabels,
+  planning: SeededPlanning,
   users: SeededUsers,
 ): Promise<TaskEntity[]> {
   const platformStatuses = statuses.byProject.get(projects.platform.id)!;
@@ -429,33 +526,33 @@ async function seedTasks(
 
   const platformTasks: TaskSpec[] = [
     { localKey: 'p1', title: 'Set up CI pipeline', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 3, assigneeKeys: ['admin'], labelNames: ['backend'], rank: 'a', estimatedHours: 6 },
-    { localKey: 'p2', title: 'Implement JWT refresh rotation', description: 'Refresh tokens must rotate on each use.\n\n- [ ] Rotate on use\n- [ ] Invalidate previous', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['dev1'], labelNames: ['backend', 'feature'], dueOffsetDays: 7, rank: 'b', estimatedHours: 10 },
-    { localKey: 'p3', title: 'Fix N+1 in task list endpoint', description: 'Reported by perf monitoring on staging.', type: TaskType.BUG, priority: TaskPriority.URGENT, statusIdx: 1, assigneeKeys: ['dev1', 'dev2'], labelNames: ['backend', 'bug'], dueOffsetDays: 2, rank: 'c', estimatedHours: 4 },
-    { localKey: 'p4', title: 'Build kanban board UI', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['dev2'], labelNames: ['frontend', 'feature'], dueOffsetDays: 14, rank: 'd', estimatedHours: 16 },
-    { localKey: 'p5', title: 'Drag-and-drop reordering', parentLocalKey: 'p4', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'da', estimatedHours: 6 },
-    { localKey: 'p6', title: 'Optimistic UI updates', parentLocalKey: 'p4', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'db', estimatedHours: 4 },
-    { localKey: 'p7', title: 'Wire socket.io presence', type: TaskType.FEATURE, priority: TaskPriority.MEDIUM, statusIdx: 2, assigneeKeys: ['dev1'], labelNames: ['backend', 'frontend'], dueOffsetDays: -1, rank: 'e', estimatedHours: 8 },
+    { localKey: 'p2', title: 'Implement JWT refresh rotation', description: 'Refresh tokens must rotate on each use.\n\n- [ ] Rotate on use\n- [ ] Invalidate previous', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['dev1'], labelNames: ['backend', 'feature'], dueOffsetDays: 7, rank: 'b', estimatedHours: 10, epicKey: 'auth-hardening', sprintKey: 'sprint-22', releaseKey: 'release-1-2' },
+    { localKey: 'p3', title: 'Fix N+1 in task list endpoint', description: 'Reported by perf monitoring on staging.', type: TaskType.BUG, priority: TaskPriority.URGENT, statusIdx: 1, assigneeKeys: ['dev1', 'dev2'], labelNames: ['backend', 'bug'], dueOffsetDays: 2, rank: 'c', estimatedHours: 4, sprintKey: 'sprint-22' },
+    { localKey: 'p4', title: 'Build kanban board UI', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['dev2'], labelNames: ['frontend', 'feature'], dueOffsetDays: 14, rank: 'd', estimatedHours: 16, epicKey: 'kanban-mvp', sprintKey: 'sprint-22', releaseKey: 'release-1-2' },
+    { localKey: 'p5', title: 'Drag-and-drop reordering', parentLocalKey: 'p4', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'da', estimatedHours: 6, epicKey: 'kanban-mvp', sprintKey: 'sprint-23' },
+    { localKey: 'p6', title: 'Optimistic UI updates', parentLocalKey: 'p4', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'db', estimatedHours: 4, epicKey: 'kanban-mvp', sprintKey: 'sprint-23' },
+    { localKey: 'p7', title: 'Wire socket.io presence', type: TaskType.FEATURE, priority: TaskPriority.MEDIUM, statusIdx: 2, assigneeKeys: ['dev1'], labelNames: ['backend', 'frontend'], dueOffsetDays: -1, rank: 'e', estimatedHours: 8, sprintKey: 'sprint-22' },
     { localKey: 'p8', title: 'Audit log retention policy', type: TaskType.TASK, priority: TaskPriority.LOW, statusIdx: 0, assigneeKeys: [], labelNames: ['backend', 'tech-debt'], rank: 'f', estimatedHours: 3 },
     { localKey: 'p9', title: 'Replace TODO comments with issues', type: TaskType.TASK, priority: TaskPriority.LOW, statusIdx: 0, assigneeKeys: [], labelNames: ['tech-debt'], rank: 'g' },
-    { localKey: 'p10', title: 'Crash on attachment upload over 10MB', description: 'Stack trace attached.', type: TaskType.BUG, priority: TaskPriority.HIGH, statusIdx: 2, assigneeKeys: ['dev1'], labelNames: ['backend', 'bug'], dueOffsetDays: 3, rank: 'h', estimatedHours: 5 },
+    { localKey: 'p10', title: 'Crash on attachment upload over 10MB', description: 'Stack trace attached.', type: TaskType.BUG, priority: TaskPriority.HIGH, statusIdx: 2, assigneeKeys: ['dev1'], labelNames: ['backend', 'bug'], dueOffsetDays: 3, rank: 'h', estimatedHours: 5, sprintKey: 'sprint-22' },
     { localKey: 'p11', title: 'Production outage 2026-04-12', description: 'Postmortem in /docs.', type: TaskType.INCIDENT, priority: TaskPriority.URGENT, statusIdx: 3, assigneeKeys: ['admin', 'dev1'], labelNames: ['backend'], rank: 'i' },
     { localKey: 'p12', title: 'Migrate to TypeORM 0.3 query builder', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['dev1'], labelNames: ['backend', 'tech-debt'], rank: 'j', estimatedHours: 8 },
-    { localKey: 'p13', title: 'Add dark mode toggle', type: TaskType.FEATURE, priority: TaskPriority.LOW, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'k', estimatedHours: 3 },
+    { localKey: 'p13', title: 'Add dark mode toggle', type: TaskType.FEATURE, priority: TaskPriority.LOW, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'k', estimatedHours: 3, sprintKey: 'sprint-23' },
     { localKey: 'p14', title: 'Settings page split into tabs', parentLocalKey: 'p13', type: TaskType.TASK, priority: TaskPriority.LOW, statusIdx: 0, assigneeKeys: ['dev2'], labelNames: ['frontend'], rank: 'ka' },
-    { localKey: 'p15', title: 'Login form double-submit bug', type: TaskType.BUG, priority: TaskPriority.MEDIUM, statusIdx: 1, assigneeKeys: ['dev2'], labelNames: ['frontend', 'bug'], dueOffsetDays: -3, rank: 'l', estimatedHours: 2 },
-    { localKey: 'p16', title: 'Webhook delivery retry queue', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 2, assigneeKeys: ['dev1'], labelNames: ['backend'], dueOffsetDays: 10, rank: 'm', estimatedHours: 6 },
+    { localKey: 'p15', title: 'Login form double-submit bug', type: TaskType.BUG, priority: TaskPriority.MEDIUM, statusIdx: 1, assigneeKeys: ['dev2'], labelNames: ['frontend', 'bug'], dueOffsetDays: -3, rank: 'l', estimatedHours: 2, sprintKey: 'sprint-22' },
+    { localKey: 'p16', title: 'Webhook delivery retry queue', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 2, assigneeKeys: ['dev1'], labelNames: ['backend'], dueOffsetDays: 10, rank: 'm', estimatedHours: 6, sprintKey: 'sprint-23', releaseKey: 'release-1-2' },
     { localKey: 'p17', title: 'Document API rate limits', type: TaskType.TASK, priority: TaskPriority.LOW, statusIdx: 0, assigneeKeys: ['pm'], labelNames: ['backend'], rank: 'n' },
     { localKey: 'p18', title: 'Empty state illustrations', type: TaskType.TASK, priority: TaskPriority.NONE, statusIdx: 0, assigneeKeys: [], labelNames: ['frontend'], rank: 'o' },
   ];
 
   const marketingTasks: TaskSpec[] = [
-    { localKey: 'm1', title: 'Landing hero copy v2', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['pm'], labelNames: ['copy', 'design'], dueOffsetDays: 4, rank: 'a', estimatedHours: 3 },
+    { localKey: 'm1', title: 'Landing hero copy v2', type: TaskType.TASK, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['pm'], labelNames: ['copy', 'design'], dueOffsetDays: 4, rank: 'a', estimatedHours: 3, epicKey: 'launch-campaign', sprintKey: 'sprint-mkt-3', releaseKey: 'release-launch' },
     { localKey: 'm2', title: 'SEO audit Q2', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['pm'], labelNames: ['seo'], rank: 'b', estimatedHours: 5 },
     { localKey: 'm3', title: 'Sub-tasks: meta tags', parentLocalKey: 'm2', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 0, assigneeKeys: ['dev1'], labelNames: ['seo'], rank: 'ba' },
-    { localKey: 'm4', title: 'Pricing page broken layout on mobile', type: TaskType.BUG, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['dev1'], labelNames: ['design'], dueOffsetDays: 1, rank: 'c', estimatedHours: 2 },
+    { localKey: 'm4', title: 'Pricing page broken layout on mobile', type: TaskType.BUG, priority: TaskPriority.HIGH, statusIdx: 1, assigneeKeys: ['dev1'], labelNames: ['design'], dueOffsetDays: 1, rank: 'c', estimatedHours: 2, sprintKey: 'sprint-mkt-3' },
     { localKey: 'm5', title: 'Blog post: Why we built Jitre', type: TaskType.TASK, priority: TaskPriority.LOW, statusIdx: 3, assigneeKeys: ['pm'], labelNames: ['copy'], rank: 'd' },
-    { localKey: 'm6', title: 'OG image template', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 2, assigneeKeys: ['pm'], labelNames: ['design'], rank: 'e', estimatedHours: 2 },
-    { localKey: 'm7', title: 'Launch announcement email', type: TaskType.FEATURE, priority: TaskPriority.URGENT, statusIdx: 0, assigneeKeys: ['pm'], labelNames: ['copy'], dueOffsetDays: 12, rank: 'f' },
+    { localKey: 'm6', title: 'OG image template', type: TaskType.TASK, priority: TaskPriority.MEDIUM, statusIdx: 2, assigneeKeys: ['pm'], labelNames: ['design'], rank: 'e', estimatedHours: 2, epicKey: 'launch-campaign', sprintKey: 'sprint-mkt-3' },
+    { localKey: 'm7', title: 'Launch announcement email', type: TaskType.FEATURE, priority: TaskPriority.URGENT, statusIdx: 0, assigneeKeys: ['pm'], labelNames: ['copy'], dueOffsetDays: 12, rank: 'f', epicKey: 'launch-campaign', releaseKey: 'release-launch' },
   ];
 
   function userByKey(k: keyof SeededUsers): UserEntity {
@@ -472,6 +569,25 @@ async function seedTasks(
     // First pass: create parents (no parentLocalKey), then children.
     const ordered = [...specs.filter((s) => !s.parentLocalKey), ...specs.filter((s) => !!s.parentLocalKey)];
 
+    // Bootstrap issue_number counter from the current max for this project so
+    // a re-run picks up where the previous one (or the migration backfill)
+    // left off — no duplicate issue keys.
+    const maxRow = await repo
+      .createQueryBuilder('t')
+      .select('COALESCE(MAX(t.issueNumber), 0)', 'max')
+      .where('t.projectId = :pid', { pid: project.id })
+      .getRawOne<{ max: string | number | null }>();
+    let nextIssueNumber = Number(maxRow?.max ?? 0);
+
+    const planningForProject = planning.byProject.get(project.id);
+    function planningId(
+      group: 'epics' | 'sprints' | 'releases',
+      key: string | undefined,
+    ): string | null {
+      if (!key || !planningForProject) return null;
+      return planningForProject[group].get(key)?.id ?? null;
+    }
+
     for (const spec of ordered) {
       const status = statusList[spec.statusIdx];
       const parent = spec.parentLocalKey ? created.get(spec.parentLocalKey) : undefined;
@@ -483,10 +599,13 @@ async function seedTasks(
         },
       });
       if (!task) {
+        nextIssueNumber += 1;
         task = repo.create({
           workspaceId: workspace.id,
           projectId: project.id,
           statusId: status.id,
+          issueNumber: nextIssueNumber,
+          issueKey: `${project.key}-${nextIssueNumber}`,
           title: spec.title,
           description: spec.description ?? null,
           priority: spec.priority,
@@ -495,6 +614,9 @@ async function seedTasks(
           startDate: null,
           estimatedHours: spec.estimatedHours ?? null,
           parentTaskId: parent?.id ?? null,
+          epicId: planningId('epics', spec.epicKey),
+          sprintId: planningId('sprints', spec.sprintKey),
+          releaseId: planningId('releases', spec.releaseKey),
           rank: spec.rank,
           customFields: {},
           completedAt:
@@ -503,6 +625,20 @@ async function seedTasks(
               : null,
         });
         task = await repo.save(task);
+      } else {
+        // Task exists from a previous run — backfill planning links if they
+        // weren't set (e.g. seed pre-planning). Idempotent: only writes diff.
+        const patch: { epicId?: string; sprintId?: string; releaseId?: string } = {};
+        const wantedEpic = planningId('epics', spec.epicKey);
+        const wantedSprint = planningId('sprints', spec.sprintKey);
+        const wantedRelease = planningId('releases', spec.releaseKey);
+        if (wantedEpic && task.epicId !== wantedEpic) patch.epicId = wantedEpic;
+        if (wantedSprint && task.sprintId !== wantedSprint) patch.sprintId = wantedSprint;
+        if (wantedRelease && task.releaseId !== wantedRelease) patch.releaseId = wantedRelease;
+        if (Object.keys(patch).length > 0) {
+          await repo.update(task.id, patch);
+          Object.assign(task, patch);
+        }
       }
       if (spec.localKey) created.set(spec.localKey, task);
 
@@ -756,12 +892,15 @@ async function seedChat(
   membershipRepo: Repository<ChatMembershipEntity>,
   messageRepo: Repo<ChatMessageEntity>,
   workspace: WorkspaceEntity,
+  projects: SeededProjects,
   users: SeededUsers,
 ): Promise<{ channels: number; messages: number }> {
   async function ensureChannel(input: {
     name: string;
     description: string | null;
     type: 'public' | 'private' | 'dm';
+    kind: ChatChannelKind;
+    projectId?: string | null;
     createdBy: UserEntity;
     members: UserEntity[];
   }): Promise<{ channel: ChatChannelEntity; created: boolean }> {
@@ -776,10 +915,23 @@ async function seedChat(
           name: input.name,
           description: input.description,
           type: input.type,
+          kind: input.kind,
+          projectId: input.projectId ?? null,
           createdByUserId: input.createdBy.id,
           lastMessageAt: null,
         }),
       );
+    } else {
+      // Backfill kind/projectId for channels created before Fase 10 metadata.
+      const patch: { kind?: ChatChannelKind; projectId?: string | null } = {};
+      if (channel.kind !== input.kind) patch.kind = input.kind;
+      if ((channel.projectId ?? null) !== (input.projectId ?? null)) {
+        patch.projectId = input.projectId ?? null;
+      }
+      if (Object.keys(patch).length > 0) {
+        await channelRepo.update(channel.id, patch);
+        Object.assign(channel, patch);
+      }
     }
     for (const u of input.members) {
       const existing = await membershipRepo.findOne({
@@ -805,6 +957,7 @@ async function seedChat(
     name: 'general',
     description: 'Everything else',
     type: 'public',
+    kind: 'general',
     createdBy: users.admin,
     members: allUsers,
   });
@@ -813,6 +966,7 @@ async function seedChat(
     name: 'engineering',
     description: 'Engineering discussions',
     type: 'public',
+    kind: 'custom',
     createdBy: users.admin,
     members: [users.admin, users.pm, users.dev1, users.dev2],
   });
@@ -821,8 +975,30 @@ async function seedChat(
     name: 'design',
     description: 'Design reviews and feedback',
     type: 'private',
+    kind: 'custom',
     createdBy: users.pm,
     members: [users.admin, users.pm],
+  });
+
+  // Per-project channels (Fase 10 metadata)
+  const platformChannel = await ensureChannel({
+    name: 'proj-jitre-platform',
+    description: 'Channel for the Jitre Platform project.',
+    type: 'public',
+    kind: 'project',
+    projectId: projects.platform.id,
+    createdBy: users.admin,
+    members: [users.admin, users.pm, users.dev1, users.dev2],
+  });
+
+  const marketingChannel = await ensureChannel({
+    name: 'proj-marketing-site',
+    description: 'Channel for the Marketing Site project.',
+    type: 'public',
+    kind: 'project',
+    projectId: projects.marketing.id,
+    createdBy: users.pm,
+    members: [users.admin, users.pm, users.dev1],
   });
 
   // DM admin ↔ dev1 — name is sorted id pair (stable, hidden in UI)
@@ -831,11 +1007,12 @@ async function seedChat(
     name: `dm:${dmIds.join('-')}`,
     description: null,
     type: 'dm',
+    kind: 'dm',
     createdBy: users.admin,
     members: [users.admin, users.dev1],
   });
 
-  const channelCount = [general, engineering, design, dm].filter((c) => c.created).length;
+  const channelCount = [general, engineering, design, platformChannel, marketingChannel, dm].filter((c) => c.created).length;
 
   interface MsgSpec {
     author: keyof SeededUsers;
@@ -884,6 +1061,24 @@ async function seedChat(
         { author: 'pm', body: 'Good call, will tweak.', daysAgo: 3 },
         { author: 'pm', body: 'Updated — should pass AAA on body text now.', daysAgo: 2 },
         { author: 'admin', body: 'Ship it.', daysAgo: 1 },
+      ],
+    },
+    {
+      channel: platformChannel.channel,
+      messages: [
+        { author: 'admin', body: 'Kicking off the Auth Hardening epic this sprint.', daysAgo: 6 },
+        { author: 'dev1', body: 'I\'ll take JWT rotation. Should be done by Friday.', daysAgo: 5 },
+        { author: 'dev2', body: 'Kanban board PR is up — needs a frontend reviewer.', daysAgo: 3 },
+        { author: 'admin', body: 'On it.', daysAgo: 3, replyIdx: 2 },
+        { author: 'dev2', body: 'Optimistic updates merged.', daysAgo: 1 },
+      ],
+    },
+    {
+      channel: marketingChannel.channel,
+      messages: [
+        { author: 'pm', body: 'Launch Day is locked in for end of month.', daysAgo: 4 },
+        { author: 'pm', body: 'Hero copy variant B is the chosen one.', daysAgo: 2 },
+        { author: 'dev1', body: 'Pricing page bug — fix incoming today.', daysAgo: 1 },
       ],
     },
     {
@@ -1138,6 +1333,11 @@ async function main(): Promise<void> {
 
     const statuses = await seedStatuses(ds.getRepository(StatusEntity), workspace, projects);
     const labels = await seedLabels(ds.getRepository(LabelEntity), workspace, projects);
+    const planning = await seedPlanningItems(
+      ds.getRepository(PlanningItemEntity),
+      workspace,
+      projects,
+    );
 
     const tasksRepo = ds.getRepository(TaskEntity);
     await seedTasks(
@@ -1148,6 +1348,7 @@ async function main(): Promise<void> {
       projects,
       statuses,
       labels,
+      planning,
       users,
     );
     const allTasks = await tasksRepo.find({ where: { workspaceId: workspace.id } });
@@ -1171,6 +1372,7 @@ async function main(): Promise<void> {
       ds.getRepository(ChatMembershipEntity),
       ds.getRepository(ChatMessageEntity),
       workspace,
+      projects,
       users,
     );
 
@@ -1195,6 +1397,13 @@ async function main(): Promise<void> {
     const totalLabels =
       (labels.byProject.get(projects.platform.id)?.length ?? 0) +
       (labels.byProject.get(projects.marketing.id)?.length ?? 0);
+    const totalPlanning = (() => {
+      let n = 0;
+      for (const group of planning.byProject.values()) {
+        n += group.epics.size + group.sprints.size + group.releases.size;
+      }
+      return n;
+    })();
 
     console.log('✓ Seed complete');
     console.log('─'.repeat(45));
@@ -1207,12 +1416,13 @@ async function main(): Promise<void> {
     console.log('  dev2@jitre.test  / dev123    (Member)');
     console.log('');
     console.log('Data created (or already present):');
-    console.log(`  • 2 projects`);
+    console.log(`  • 2 projects (with issue keys JIT-* and MKT-*)`);
     console.log(`  • ${totalStatuses} workflow statuses (custom per project)`);
     console.log(`  • ${totalLabels} labels`);
-    console.log(`  • ${allTasks.length} tasks (with assignees, labels, subtasks, comments)`);
+    console.log(`  • ${totalPlanning} planning items (epics, sprints, releases)`);
+    console.log(`  • ${allTasks.length} tasks (assignees, labels, subtasks, planning links)`);
     console.log(`  • ${docCount} new documents this run (hierarchical wiki)`);
-    console.log(`  • ${chatRes.channels} new chat channels this run (3 public/private + 1 DM total)`);
+    console.log(`  • ${chatRes.channels} new chat channels this run (general + 2 custom + 2 project + 1 DM total)`);
     console.log(`  • ${chatRes.messages} new chat messages this run`);
     console.log(`  • ${timeCount} new time entries this run (1 active timer)`);
     console.log(`  • ${notifCount} new notifications this run`);
