@@ -6,11 +6,14 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseInterceptors,
   Body,
+  BadRequestException,
 } from '@nestjs/common';
+import { AttachmentContext } from '@jitre/shared';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -58,6 +61,34 @@ export class AttachmentController {
       uploaderUserId: req.user!.id,
       workspaceId: req.workspace!.id,
     });
+  }
+
+  @ApiOperation({ summary: 'List attachments for a context (task, project, comment, ...)' })
+  @ApiResponse({ status: 200, description: 'Attachment list with signed download URLs.' })
+  @Get()
+  async list(
+    @Query('context') context: string,
+    @Query('contextId') contextId: string,
+    @Req() req: AuthRequest,
+  ): Promise<unknown> {
+    if (!context || !contextId) {
+      throw new BadRequestException('context and contextId are required');
+    }
+    if (!Object.values(AttachmentContext).includes(context as AttachmentContext)) {
+      throw new BadRequestException('invalid context');
+    }
+    const rows = await this.attachmentService.listByContext(
+      req.workspace!.id,
+      context as AttachmentContext,
+      contextId,
+    );
+    // Return rows with signed URLs precomputed so the gallery is one round-trip.
+    return Promise.all(
+      rows.map(async att => ({
+        ...att,
+        signedUrl: await this.attachmentService.getSignedUrlFor(att),
+      })),
+    );
   }
 
   @ApiOperation({ summary: 'Get attachment metadata by ID' })

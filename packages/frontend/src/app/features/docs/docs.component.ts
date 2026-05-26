@@ -164,7 +164,7 @@ const SEARCH_DEBOUNCE_MS = 300;
       </aside>
 
       <!-- Main -->
-      <section class="flex-1 min-w-0 overflow-auto bg-[#f7f8fc]">
+      <section class="flex-1 min-w-0 overflow-auto bg-white">
         <div class="sticky top-0 z-20 flex items-center border-b border-slate-200 bg-white/95 px-4 py-3 lg:hidden">
           <button
             type="button"

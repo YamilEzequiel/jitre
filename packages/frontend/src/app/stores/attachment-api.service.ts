@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -22,6 +22,8 @@ export interface AttachmentDto {
   sizeBytes: number;
   checksum: string | null;
   createdAt: string;
+  /** Present when returned by the list-by-context endpoint. */
+  signedUrl?: string;
 }
 
 export interface DownloadResult {
@@ -33,6 +35,15 @@ export interface DownloadResult {
 @Injectable({ providedIn: 'root' })
 export class AttachmentApiService {
   private readonly http = inject(HttpClient);
+
+  list(query: { context: AttachmentContext; contextId: string }): Promise<AttachmentDto[]> {
+    const params = new HttpParams()
+      .set('context', query.context)
+      .set('contextId', query.contextId);
+    return firstValueFrom(
+      this.http.get<AttachmentDto[]>('/api/v1/attachments', { params }),
+    );
+  }
 
   upload(input: {
     file: File;

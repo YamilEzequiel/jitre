@@ -26,10 +26,19 @@ export interface RichEditorChangeEvent {
 }
 
 /** Minimal Quill surface we lean on. PrimeNG types Quill as `any`. */
+interface QuillClipboardMatcher {
+  (node: HTMLElement, delta: unknown): unknown;
+}
+interface QuillClipboard {
+  addMatcher(nodeOrSelector: number | string, matcher: QuillClipboardMatcher): void;
+}
+interface QuillToolbar {
+  addHandler(name: string, handler: () => void): void;
+}
 interface QuillLike {
-  getModule(name: string): {
-    addHandler?(name: string, handler: () => void): void;
-  } | null;
+  getModule(name: 'toolbar'): QuillToolbar | null;
+  getModule(name: 'clipboard'): QuillClipboard | null;
+  getModule(name: string): unknown;
   getSelection(focus?: boolean): { index: number; length: number } | null;
   insertEmbed(index: number, type: string, value: unknown, source?: string): void;
   setSelection(index: number, length: number, source?: string): void;
@@ -107,17 +116,28 @@ export class RichEditorComponent {
 
     // Replace Quill's default image button: open a file picker, upload to
     // the backend, then insert the signed URL — instead of inlining base64.
-    const toolbar = quill.getModule('toolbar');
-    toolbar?.addHandler?.('image', () => this.openImagePicker(quill));
-
-    // Catch pasted/dropped image files and upload them too.
-    quill.root.addEventListener('paste', evt =>
-      this.handlePasteOrDrop(quill, (evt as ClipboardEvent).clipboardData),
+    quill.getModule('toolbar')?.addHandler('image', () =>
+      this.openImagePicker(quill),
     );
-    quill.root.addEventListener('drop', evt => {
-      evt.preventDefault();
-      this.handlePasteOrDrop(quill, (evt as DragEvent).dataTransfer);
-    });
+
+    // Strip <img> tags that arrive through paste/drag — without this Quill's
+    // clipboard module would happily inline base64 strings.
+    quill.getModule('clipboard')?.addMatcher('IMG', () => ({ ops: [] }));
+
+    // Paste: detect image files in the clipboard, upload them, insert URL.
+    // Use the capture phase so we run before Quill's own clipboard handler.
+    quill.root.addEventListener(
+      'paste',
+      evt => this.interceptImagePaste(quill, evt as ClipboardEvent),
+      true,
+    );
+
+    // Drop: same idea — capture and prevent Quill from base64-ing the image.
+    quill.root.addEventListener(
+      'drop',
+      evt => this.interceptImageDrop(quill, evt as DragEvent),
+      true,
+    );
   }
 
   private openImagePicker(quill: QuillLike): void {
@@ -131,16 +151,25 @@ export class RichEditorComponent {
     input.click();
   }
 
-  private handlePasteOrDrop(
-    quill: QuillLike,
-    transfer: DataTransfer | null,
-  ): void {
-    if (!transfer?.files?.length) return;
-    for (const file of Array.from(transfer.files)) {
-      if (file.type.startsWith('image/')) {
-        void this.uploadAndInsert(quill, file);
-      }
-    }
+  private interceptImagePaste(quill: QuillLike, evt: ClipboardEvent): void {
+    const files = this.extractImageFiles(evt.clipboardData);
+    if (files.length === 0) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    for (const file of files) void this.uploadAndInsert(quill, file);
+  }
+
+  private interceptImageDrop(quill: QuillLike, evt: DragEvent): void {
+    const files = this.extractImageFiles(evt.dataTransfer);
+    if (files.length === 0) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    for (const file of files) void this.uploadAndInsert(quill, file);
+  }
+
+  private extractImageFiles(transfer: DataTransfer | null): File[] {
+    if (!transfer?.files?.length) return [];
+    return Array.from(transfer.files).filter(f => f.type.startsWith('image/'));
   }
 
   private async uploadAndInsert(quill: QuillLike, file: File): Promise<void> {

@@ -36,24 +36,24 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
   imports: [RichEditorComponent, DocEmojiPickerComponent],
   template: `
     @if (doc(); as d) {
-      <div class="flex flex-col h-full">
-        <!-- Top action bar (sticky, compact) -->
+      <div class="flex flex-col h-full bg-white">
+        <!-- Top action bar (Confluence-style: thin, all white, subtle border) -->
         <div
           class="sticky top-0 z-10 flex items-center justify-between gap-3
-                 border-b border-slate-200/70 bg-white/85 backdrop-blur
-                 px-6 sm:px-10 py-2.5"
+                 border-b border-slate-200 bg-white
+                 px-6 sm:px-10 lg:px-14 py-2.5"
         >
           <!-- Breadcrumb -->
-          <nav class="min-w-0 flex-1 text-[11px] text-slate-500" aria-label="Breadcrumb">
-            <ol class="flex flex-wrap items-center gap-1 min-w-0">
-              <li class="text-slate-400">Docs</li>
+          <nav class="min-w-0 flex-1 text-[12px] text-slate-500" aria-label="Breadcrumb">
+            <ol class="flex flex-wrap items-center gap-1.5 min-w-0">
+              <li class="text-slate-400 font-medium">Docs</li>
               @for (crumb of breadcrumbs(); track crumb.id) {
-                <li class="flex items-center gap-1 min-w-0">
+                <li class="flex items-center gap-1.5 min-w-0">
                   <span class="text-slate-300" aria-hidden="true">/</span>
                   <span
-                    class="truncate max-w-[180px]"
+                    class="truncate max-w-[200px]"
                     [class.font-semibold]="crumb.id === d.id"
-                    [class.text-slate-800]="crumb.id === d.id"
+                    [class.text-slate-900]="crumb.id === d.id"
                   >{{ crumb.title || 'Untitled' }}</span>
                 </li>
               }
@@ -70,10 +70,10 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
                 class="h-1.5 w-1.5 rounded-full"
                 [class]="
                   saveState() === 'saving'
-                    ? 'bg-amber-400 animate-pulse'
+                    ? 'bg-amber-500 animate-pulse'
                     : saveState() === 'error'
                       ? 'bg-rose-500'
-                      : 'bg-emerald-400'
+                      : 'bg-emerald-500'
                 "
                 aria-hidden="true"
               ></span>
@@ -85,9 +85,9 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
                 (click)="toggleMenu($event)"
                 [attr.aria-expanded]="menuOpen()"
                 aria-haspopup="menu"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600
                        hover:bg-slate-100 hover:text-slate-900
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                 aria-label="Document actions"
               >
                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -105,8 +105,8 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
                 ></button>
                 <div
                   role="menu"
-                  class="absolute right-0 top-9 z-40 w-48 rounded-xl border border-slate-200
-                         bg-white shadow-xl shadow-slate-200/80 py-1.5"
+                  class="absolute right-0 top-10 z-40 w-48 rounded-lg border border-slate-200
+                         bg-white shadow-lg shadow-slate-300/30 py-1"
                 >
                   <button
                     type="button"
@@ -132,32 +132,21 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
           </div>
         </div>
 
-        <!-- Cover band (subtle gradient — no image upload yet, keeps the canvas warm) -->
-        <div
-          class="h-28 sm:h-32 bg-gradient-to-br from-indigo-50 via-violet-50 to-fuchsia-50
-                 border-b border-slate-200/60"
-          aria-hidden="true"
-        ></div>
-
-        <!-- Scrollable content canvas -->
-        <article class="flex-1 min-h-0 overflow-auto">
-          <div class="mx-auto w-full max-w-3xl px-6 sm:px-10 -mt-10 sm:-mt-12 pb-16">
-            <!-- Title block: floats over the cover band -->
-            <header class="mb-2">
-              <div class="flex items-start gap-3">
-                <div class="rounded-2xl bg-white shadow-md shadow-slate-200/70 ring-1 ring-slate-200 p-1.5">
-                  <jt-doc-emoji-picker
-                    [value]="d.icon"
-                    (changed)="onIconChange($event)"
-                  />
-                </div>
-              </div>
+        <!-- Scrollable content canvas — pure white, generous spacing -->
+        <article class="flex-1 min-h-0 overflow-auto bg-white">
+          <div class="w-full px-6 sm:px-10 lg:px-14 pt-10 pb-16">
+            <!-- Title block: icon inline, no floating card, no gradient -->
+            <header class="mb-2 flex items-start gap-3">
+              <jt-doc-emoji-picker
+                [value]="d.icon"
+                (changed)="onIconChange($event)"
+              />
               <input
                 type="text"
-                class="mt-3 w-full bg-transparent border-0 outline-none
-                       text-4xl sm:text-5xl font-black tracking-tight text-slate-950
+                class="flex-1 min-w-0 bg-transparent border-0 outline-none
+                       text-3xl sm:text-4xl font-bold tracking-tight text-slate-900
                        placeholder:text-slate-300
-                       focus:placeholder:text-slate-400"
+                       focus:placeholder:text-slate-400 py-1"
                 [attr.aria-label]="'Document title'"
                 [value]="titleDraft()"
                 placeholder="Untitled"
@@ -167,11 +156,11 @@ const AUTOSAVE_DEBOUNCE_MS = 1500;
             </header>
 
             <!-- Meta sub-line -->
-            <p class="mb-8 text-[12px] text-slate-400">
-              {{ authorLabel(d.lastEditedByUserId) }} edited {{ relativeTime(d.lastEditedAt ?? d.updatedAt) }}
+            <p class="mb-8 ml-1 text-[12px] text-slate-500">
+              {{ authorLabel(d.lastEditedByUserId) }} · edited {{ relativeTime(d.lastEditedAt ?? d.updatedAt) }}
             </p>
 
-            <!-- Editor — flat, no card wrapper -->
+            <!-- Editor — flat, integrated -->
             <div class="prose-editor">
               <jt-rich-editor
                 [value]="editorValue()"

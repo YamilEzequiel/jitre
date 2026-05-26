@@ -159,6 +159,23 @@ export class AttachmentService {
     return att;
   }
 
+  /** List active attachments for a context (task, project, ...), workspace-scoped. */
+  async listByContext(
+    workspaceId: string,
+    context: AttachmentContext,
+    contextId: string,
+  ): Promise<Attachment[]> {
+    return this.attachmentRepo.find({
+      where: { workspaceId, context, contextId, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /** Issue a short-lived signed URL for an attachment that the caller already has. */
+  getSignedUrlFor(attachment: Attachment, ttlSeconds = 300): Promise<string> {
+    return this.driver.getSignedUrl(attachment.storageKey, { ttlSeconds });
+  }
+
   async download(id: string, workspaceId: string): Promise<DownloadResult> {
     const att = await this.findByIdScoped(id, workspaceId);
     const signedUrl = await this.driver.getSignedUrl(att.storageKey, {
