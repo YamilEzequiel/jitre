@@ -390,8 +390,8 @@ export class TimeLoggerComponent implements OnInit {
   async onStop(): Promise<void> {
     this.busyTimer.set(true);
     try {
-      await this.store.stop();
-      this.toast.success('Timer stopped');
+      const result = await this.store.stop();
+      if (result) this.toast.success('Timer stopped');
     } catch {
       this.toast.error('Failed to stop timer');
     } finally {

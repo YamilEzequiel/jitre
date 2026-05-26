@@ -13,7 +13,7 @@ import { AuthService } from '../../core/auth/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [SlicePipe],
   template: `
-    <div class="flex flex-col h-full max-w-3xl">
+    <div class="flex flex-col h-full w-full">
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 flex items-end justify-between gap-4 mb-6">
         <div class="space-y-3">
           <div

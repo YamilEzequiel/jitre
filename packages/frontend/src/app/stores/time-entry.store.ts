@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { createEntityStore } from './entity-store.factory';
 import {
   TimeEntry,
@@ -15,6 +16,10 @@ export class TimeEntryStore {
 
   private readonly _activeTimer = signal<TimeEntry | null>(null);
   private readonly _loadedTaskIds = signal<Set<string>>(new Set<string>());
+  private readonly _stopping = signal(false);
+  private _stopInFlight: Promise<TimeEntry | null> | null = null;
+
+  readonly stopping = this._stopping.asReadonly();
 
   readonly items = this.store.items;
   readonly byId = this.store.byId;
@@ -122,11 +127,31 @@ export class TimeEntryStore {
     return entry;
   }
 
-  async stop(): Promise<TimeEntry> {
-    const entry = await this.api.stopTimer();
-    this._activeTimer.set(null);
-    this.store.upsert(entry);
-    return entry;
+  async stop(): Promise<TimeEntry | null> {
+    // Coalesce concurrent stop calls so two visible Stop buttons (header pill +
+    // task time-logger) can't fire duplicate requests.
+    if (this._stopInFlight) return this._stopInFlight;
+    if (!this._activeTimer()) return null;
+
+    this._stopping.set(true);
+    this._stopInFlight = (async () => {
+      try {
+        const entry = await this.api.stopTimer();
+        this._activeTimer.set(null);
+        this.store.upsert(entry);
+        return entry;
+      } catch (err) {
+        if (err instanceof HttpErrorResponse && err.status === 404) {
+          this._activeTimer.set(null);
+          return null;
+        }
+        throw err;
+      } finally {
+        this._stopInFlight = null;
+        this._stopping.set(false);
+      }
+    })();
+    return this._stopInFlight;
   }
 
   applyEvent(event: { type: 'created' | 'updated' | 'deleted'; id: string }): Promise<void> {

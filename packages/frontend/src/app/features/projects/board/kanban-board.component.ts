@@ -117,23 +117,21 @@ interface DropZone {
                 </div>
               </header>
 
-              <!-- Drop zone before first item -->
-              <div
-                class="h-2 mx-3 rounded transition-colors"
-                [class]="dropTargetClass(status.id, null, firstTaskId(status.id))"
-                (dragover)="onDragOver($event, status.id, null, firstTaskId(status.id))"
-                (dragleave)="onDragLeave()"
-                (drop)="onDrop($event, status.id, undefined, firstTaskId(status.id))"
-              ></div>
-
               <!-- Task list -->
-              <div class="flex-1 flex flex-col gap-1.5 px-2.5 pb-2.5 min-h-20">
+              <div
+                class="flex-1 flex flex-col gap-1.5 px-2.5 pb-2.5 min-h-20"
+                (dragover)="onColumnDragOver($event, status.id)"
+                (drop)="onColumnDrop($event, status.id)"
+              >
                 @for (task of tasksFor(status.id); track task.id; let i = $index, last = $last) {
                   <div
                     draggable="true"
                     (dragstart)="onDragStart($event, task)"
                     (dragend)="onDragEnd()"
-                    [class]="draggingId() === task.id ? 'opacity-50' : ''"
+                    (dragover)="onCardDragOver($event, status.id, task.id, i)"
+                    (dragleave)="onDragLeave()"
+                    (drop)="onCardDrop($event, status.id, task.id, i)"
+                    [class]="(draggingId() === task.id ? 'opacity-50 ' : '') + cardDropHintClass(status.id, task.id, i)"
                   >
                     <jt-task-card
                       [task]="task"
@@ -144,13 +142,6 @@ interface DropZone {
                       (changedAssignee)="handleChangedAssignee($event)"
                     />
                   </div>
-                  <div
-                    class="h-2 rounded transition-colors"
-                    [class]="dropTargetClass(status.id, task.id, nextTaskId(status.id, i))"
-                    (dragover)="onDragOver($event, status.id, task.id, nextTaskId(status.id, i))"
-                    (dragleave)="onDragLeave()"
-                    (drop)="onDrop($event, status.id, task.id, nextTaskId(status.id, i))"
-                  ></div>
                 } @empty {
                   <div
                     class="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-center
@@ -294,11 +285,6 @@ export class KanbanBoardComponent implements OnInit {
     });
   }
 
-  firstTaskId(statusId: string): string | null {
-    const list = this.tasksFor(statusId);
-    return list.length > 0 ? list[0].id : null;
-  }
-
   nextTaskId(statusId: string, index: number): string | null {
     const list = this.tasksFor(statusId);
     return list[index + 1]?.id ?? null;
@@ -351,6 +337,72 @@ export class KanbanBoardComponent implements OnInit {
     return this.hoverDropKey() === this.dropKey(statusId, beforeId, afterId)
       ? 'bg-indigo-500/40 border border-dashed border-indigo-300/60 h-6'
       : '';
+  }
+
+  /** Card-level dragover: split the card into top/bottom halves to decide before/after. */
+  onCardDragOver(event: DragEvent, statusId: string, taskId: string, index: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    const dropAbove = this.isPointerAboveMidpoint(event);
+    if (dropAbove) {
+      const prev = this.prevTaskId(statusId, index);
+      this.hoverDropKey.set(this.dropKey(statusId, prev, taskId));
+    } else {
+      const next = this.nextTaskId(statusId, index);
+      this.hoverDropKey.set(this.dropKey(statusId, taskId, next));
+    }
+  }
+
+  /** Card-level drop: same top/bottom split as dragover. */
+  onCardDrop(event: DragEvent, statusId: string, taskId: string, index: number): void {
+    event.stopPropagation();
+    const dropAbove = this.isPointerAboveMidpoint(event);
+    if (dropAbove) {
+      const prev = this.prevTaskId(statusId, index);
+      void this.onDrop(event, statusId, prev ?? undefined, taskId);
+    } else {
+      const next = this.nextTaskId(statusId, index);
+      void this.onDrop(event, statusId, taskId, next);
+    }
+  }
+
+  /** Column-level fallback (catches drops in empty space below the last card). */
+  onColumnDragOver(event: DragEvent, statusId: string): void {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    const list = this.tasksFor(statusId);
+    const lastId = list.length > 0 ? list[list.length - 1].id : null;
+    this.hoverDropKey.set(this.dropKey(statusId, lastId, null));
+  }
+
+  onColumnDrop(event: DragEvent, statusId: string): void {
+    const list = this.tasksFor(statusId);
+    const lastId = list.length > 0 ? list[list.length - 1].id : undefined;
+    void this.onDrop(event, statusId, lastId, undefined);
+  }
+
+  /** Visual hint on the card while another card is hovering over a specific half. */
+  cardDropHintClass(statusId: string, taskId: string, index: number): string {
+    const aboveKey = this.dropKey(statusId, this.prevTaskId(statusId, index), taskId);
+    const belowKey = this.dropKey(statusId, taskId, this.nextTaskId(statusId, index));
+    const hover = this.hoverDropKey();
+    if (hover === aboveKey) return 'border-t-2 border-indigo-400 -mt-px';
+    if (hover === belowKey) return 'border-b-2 border-indigo-400 -mb-px';
+    return '';
+  }
+
+  private prevTaskId(statusId: string, index: number): string | null {
+    if (index <= 0) return null;
+    const list = this.tasksFor(statusId);
+    return list[index - 1]?.id ?? null;
+  }
+
+  private isPointerAboveMidpoint(event: DragEvent): boolean {
+    const target = event.currentTarget as HTMLElement | null;
+    if (!target) return true;
+    const rect = target.getBoundingClientRect();
+    return event.clientY < rect.top + rect.height / 2;
   }
 
   async onDrop(event: DragEvent, statusId: string, beforeId: string | undefined, afterId: string | null | undefined): Promise<void> {

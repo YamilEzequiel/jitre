@@ -65,20 +65,52 @@ html, body {
   border-radius: 4px;
 }
 
-/* Custom scrollbar — Discord style */
+/* Custom scrollbar — light shell, slate tint, brand hover */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-bg-tertiary);
-  border-radius: 4px;
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 150ms ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-strong);
+  background: rgba(79, 70, 229, 0.55);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:active {
+  background: rgba(79, 70, 229, 0.75);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Dark surfaces (sidebar nav, command palette) get a paler thumb. */
+.bg-\[\#070b1f\] *,
+[data-scroll-theme='dark'] {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.bg-\[\#070b1f\] ::-webkit-scrollbar-thumb,
+[data-scroll-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  background-clip: padding-box;
+}
+.bg-\[\#070b1f\] ::-webkit-scrollbar-thumb:hover,
+[data-scroll-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+  background-clip: padding-box;
 }
 
 /* ============================================================

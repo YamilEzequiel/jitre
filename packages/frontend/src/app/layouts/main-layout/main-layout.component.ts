@@ -213,7 +213,66 @@ interface NavItem {
             <button type="button" aria-label="Help" class="text-slate-400 transition hover:text-indigo-600">
               <i class="pi pi-question-circle text-sm" aria-hidden="true"></i>
             </button>
-            <span class="h-8 w-8 rounded-full bg-gradient-to-br from-[#11162e] to-[#15363a]" aria-label="Account"></span>
+
+            <div class="relative">
+              <button
+                type="button"
+                (click)="toggleUserMenu($event)"
+                [attr.aria-expanded]="userMenuOpen()"
+                aria-haspopup="menu"
+                aria-label="Open account menu"
+                class="flex h-8 w-8 items-center justify-center rounded-full
+                       bg-gradient-to-br from-indigo-500 to-violet-600 text-[11px] font-bold text-white
+                       shadow-md shadow-indigo-500/25
+                       hover:shadow-lg hover:shadow-indigo-500/40
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60
+                       focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                       transition-shadow"
+              >
+                {{ userInitials() }}
+              </button>
+
+              @if (userMenuOpen()) {
+                <button
+                  type="button"
+                  class="fixed inset-0 z-30 cursor-default bg-transparent"
+                  aria-label="Close account menu"
+                  (click)="closeUserMenu()"
+                ></button>
+                <div
+                  class="absolute right-0 top-10 z-40 w-60 rounded-xl border border-slate-200
+                         bg-white shadow-xl shadow-slate-200/80 py-2"
+                  role="menu"
+                >
+                  <div class="px-3 py-2 border-b border-slate-100">
+                    <p class="truncate text-sm font-bold text-slate-950">
+                      {{ userDisplayName() }}
+                    </p>
+                    <p class="truncate text-xs text-slate-500">
+                      {{ userEmail() }}
+                    </p>
+                  </div>
+                  <a
+                    routerLink="/settings"
+                    role="menuitem"
+                    (click)="closeUserMenu()"
+                    class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700
+                           hover:bg-slate-50"
+                  >
+                    <i class="pi pi-cog text-[11px]" aria-hidden="true"></i> Settings
+                  </a>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    (click)="logout()"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-rose-600
+                           hover:bg-rose-50"
+                  >
+                    <i class="pi pi-sign-out text-[11px]" aria-hidden="true"></i> Log out
+                  </button>
+                </div>
+              }
+            </div>
           </div>
         </header>
 
@@ -246,10 +305,21 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private _unregisterHelp?: () => void;
   private _tickHandle?: ReturnType<typeof setInterval>;
 
-  readonly stopping = signal(false);
+  readonly stopping = computed(() => this.timeStore.stopping());
   readonly nowMs = signal<number>(Date.now());
+  readonly userMenuOpen = signal(false);
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
+  readonly userDisplayName = computed(() => this.auth.currentUser()?.displayName ?? 'Guest');
+  readonly userEmail = computed(() => this.auth.currentUser()?.email ?? '');
+  readonly userInitials = computed(() => {
+    const name = this.auth.currentUser()?.displayName?.trim() ?? '';
+    if (!name) return '?';
+    const parts = name.split(/\s+/).filter(Boolean);
+    const first = parts[0]?.[0] ?? '';
+    const second = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + second).toUpperCase() || '?';
+  });
   readonly activeTimer = computed(() => this.timeStore.activeTimer());
   readonly primaryNav = computed<NavItem[]>(() => [
     { label: 'Dashboard', route: '/', icon: 'pi-th-large', exact: true },
@@ -310,6 +380,21 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.palette.open();
   }
 
+  toggleUserMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.userMenuOpen.update(v => !v);
+  }
+
+  closeUserMenu(): void {
+    this.userMenuOpen.set(false);
+  }
+
+  logout(): void {
+    this.userMenuOpen.set(false);
+    this.auth.logout();
+    void this.router.navigate(['/login']);
+  }
+
   goToTimerTask(): void {
     const t = this.activeTimer();
     if (!t) return;
@@ -317,14 +402,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   async stopTimer(): Promise<void> {
-    this.stopping.set(true);
     try {
-      await this.timeStore.stop();
-      this.toast.success('Timer stopped');
+      const result = await this.timeStore.stop();
+      if (result) this.toast.success('Timer stopped');
     } catch {
       this.toast.error('Failed to stop timer');
-    } finally {
-      this.stopping.set(false);
     }
   }
 }

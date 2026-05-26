@@ -205,11 +205,19 @@ interface WorkspaceStats {
             <p class="text-sm text-slate-500">No projects yet.</p>
           } @else {
             <ul class="space-y-2.5">
-              @for (project of projectStore.items().slice(0, 5); track $index) {
-                <li class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm text-slate-700">
-                  <span class="h-2 w-2 rounded-full bg-violet-500" aria-hidden="true"></span>
-                  <span class="min-w-0 flex-1 truncate font-semibold">{{ project.name }}</span>
-                  <i class="pi pi-chevron-right text-[10px] text-slate-300" aria-hidden="true"></i>
+              @for (project of projectStore.items().slice(0, 5); track project.id) {
+                <li>
+                  <a
+                    [routerLink]="['/projects', project.id]"
+                    class="group flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-sm text-slate-700
+                           hover:border-indigo-200 hover:bg-indigo-50/40 hover:text-slate-900
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60
+                           transition-colors"
+                  >
+                    <span class="h-2 w-2 rounded-full bg-violet-500" aria-hidden="true"></span>
+                    <span class="min-w-0 flex-1 truncate font-semibold">{{ project.name }}</span>
+                    <i class="pi pi-chevron-right text-[10px] text-slate-300 group-hover:text-indigo-500" aria-hidden="true"></i>
+                  </a>
                 </li>
               }
             </ul>
