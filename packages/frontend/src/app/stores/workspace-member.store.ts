@@ -83,6 +83,7 @@ export class WorkspaceMemberStore {
     if (!userId) return fallback ?? '';
     const member = this.byId()[userId];
     if (member?.displayName) return member.displayName;
+    if (member?.email) return member.email;
     return fallback ?? shortId(userId);
   }
 

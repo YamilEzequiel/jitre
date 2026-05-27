@@ -19,6 +19,9 @@ import {
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
+import { TaskStore } from '../../stores/task.store';
+import { TaskApiService } from '../../stores/task-api.service';
+import { ProjectStore } from '../../stores/project.store';
 import { formatMinutes } from './duration.util';
 
 interface SummaryCardData {
@@ -350,6 +353,9 @@ export class TimeReportsComponent implements OnInit {
   private readonly api = inject(TimeEntryApiService);
   private readonly auth = inject(AuthService);
   private readonly memberStore = inject(WorkspaceMemberStore);
+  private readonly projectStore = inject(ProjectStore);
+  private readonly taskStore = inject(TaskStore);
+  private readonly taskApi = inject(TaskApiService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -428,10 +434,30 @@ export class TimeReportsComponent implements OnInit {
     return formatMinutes(min);
   }
 
+  /**
+   * Resolve the row key (which is a UUID for user/project/task or a date
+   * string for date grouping) into a human label. Falls back to a short
+   * hash-style fragment of the UUID when the entity hasn't been fetched yet,
+   * which is far less hostile than dumping the full UUID in the UI.
+   */
   labelForGroupKey(key: string | null | undefined): string {
     if (!key) return '—';
-    if (this.groupBy() !== 'user') return key;
-    return this.memberStore.displayNameFor(key, key);
+    const gb = this.groupBy();
+    if (gb === 'user') return this.memberStore.displayNameFor(key, this.shortId(key, 'User'));
+    if (gb === 'project') {
+      const project = this.projectStore.byId()[key];
+      return project?.name ?? this.shortId(key, 'Project');
+    }
+    if (gb === 'task') {
+      const task = this.taskStore.byId()[key];
+      return task?.title ?? this.shortId(key, 'Task');
+    }
+    // 'date' — already human (ISO date string)
+    return key;
+  }
+
+  private shortId(uuid: string, prefix: string): string {
+    return `${prefix} #${uuid.slice(0, 6)}`;
   }
 
   rowPct(row: TimeReportRow): number {
@@ -455,11 +481,31 @@ export class TimeReportsComponent implements OnInit {
       this.rows.set(
         rows.slice().sort((a, b) => b.totalMinutes - a.totalMinutes),
       );
+      // Prefetch entity names for keys we don't have cached. Project + user
+      // stores are loaded on workspace switch; tasks are project-scoped and
+      // often missing here, so fetch the unknowns in parallel.
+      void this.hydrateUnknownKeys();
     } catch {
       this.rows.set([]);
       this.toast.error('Failed to load report');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private async hydrateUnknownKeys(): Promise<void> {
+    const gb = this.groupBy();
+    if (gb !== 'task') return;
+    const known = this.taskStore.byId();
+    const missing = Array.from(
+      new Set(this.rows().map(r => r.groupKey).filter(k => k && !known[k])),
+    );
+    if (missing.length === 0) return;
+    const fetched = await Promise.allSettled(missing.map(id => this.taskApi.getById(id)));
+    for (const result of fetched) {
+      if (result.status === 'fulfilled') {
+        this.taskStore.upsert(result.value);
+      }
     }
   }
 
