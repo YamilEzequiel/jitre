@@ -33,6 +33,7 @@ import { TaskModule } from './task/task.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { AiModule } from './ai/ai.module';
 import { AiPromptTemplateModule } from './ai/prompt-template/ai-prompt-template.module';
+import { AiDailyDigestModule } from './ai/daily-digest/ai-daily-digest.module';
 import { AutomationModule } from './automation/automation.module';
 import { EmailModule } from './email/email.module';
 // Fase 8 — Analytics
@@ -131,6 +132,7 @@ import { AreaModule } from './area/area.module';
     ScheduleModule.forRoot(),
     AiModule,
     AiPromptTemplateModule,
+    AiDailyDigestModule,
     EmailModule,
     AutomationModule,
     RealtimeModule,

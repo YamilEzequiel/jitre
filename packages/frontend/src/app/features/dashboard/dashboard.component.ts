@@ -5,6 +5,7 @@ import { ProjectStore } from '../../stores/project.store';
 import { AnalyticsService } from '../../core/analytics/analytics.service';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
 import { AppFooterComponent } from '../../shared/app-footer/app-footer.component';
+import { DailyDigestWidgetComponent } from './daily-digest-widget.component';
 
 interface WorkspaceStats {
   totalTasks: number;
@@ -16,7 +17,7 @@ interface WorkspaceStats {
 @Component({
   selector: 'jt-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, SkeletonComponent, AppFooterComponent],
+  imports: [RouterLink, SkeletonComponent, AppFooterComponent, DailyDigestWidgetComponent],
   template: `
     <div class="mx-auto max-w-[70rem] space-y-5 text-slate-950">
       <header class="relative overflow-hidden rounded-2xl border border-slate-100 bg-white px-6 py-6 shadow-sm shadow-slate-200/70">
@@ -53,6 +54,8 @@ interface WorkspaceStats {
         </p>
         </div>
       </header>
+
+      <jt-daily-digest-widget />
 
       <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
         @if (statsLoading()) {
