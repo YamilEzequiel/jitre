@@ -69,7 +69,7 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
             formControlName="email"
             autocomplete="email"
             placeholder="yamil@gmail.com"
-            class="w-full rounded-lg border border-slate-200 bg-slate-100/80 px-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-600 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 aria-[invalid=true]:border-rose-400"
+            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 aria-[invalid=true]:border-rose-400"
           />
           <jt-field-error controlName="email" />
         </div>
@@ -85,7 +85,7 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
             formControlName="name"
             autocomplete="name"
             placeholder="Maya Rodríguez"
-            class="w-full rounded-lg border border-slate-200 bg-slate-100/80 px-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-600 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 aria-[invalid=true]:border-rose-400"
+            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 aria-[invalid=true]:border-rose-400"
           />
           <jt-field-error controlName="name" />
         </div>
@@ -120,11 +120,25 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
         </div>
 
         <label class="flex cursor-pointer select-none items-start gap-2.5 text-xs leading-relaxed text-slate-600">
-          <input
-            type="checkbox"
-            formControlName="acceptTerms"
-            class="mt-0.5 h-4 w-4 rounded border-slate-300 bg-white text-indigo-500 focus:ring-indigo-500/40 focus:ring-offset-0"
-          />
+          <span class="relative mt-0.5 inline-flex h-4 w-4 flex-none">
+            <input
+              type="checkbox"
+              formControlName="acceptTerms"
+              class="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+            />
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-white opacity-0 transition-opacity peer-checked:opacity-100"
+            >
+              <path d="M3 8.5 6.5 12 13 5" />
+            </svg>
+          </span>
           <span>
             I agree to Jitre's
             <a href="/terms" class="font-semibold text-indigo-600 transition hover:text-violet-700">Terms of Service</a>

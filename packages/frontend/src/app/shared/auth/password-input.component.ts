@@ -19,7 +19,7 @@ import { EMPTY } from 'rxjs';
         [attr.aria-describedby]="capsLockOn() ? id() + '-caps' : null"
         (keyup)="onKey($event)"
         (keydown)="onKey($event)"
-        class="w-full rounded-lg border border-slate-200 bg-slate-100/80 px-4 py-3 pr-12 text-sm font-medium text-slate-900 placeholder:text-slate-600 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 aria-[invalid=true]:border-rose-400 aria-[invalid=true]:focus:ring-rose-500/30"
+        class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 pr-12 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 aria-[invalid=true]:border-rose-400 aria-[invalid=true]:focus:ring-rose-500/30"
         [placeholder]="placeholder()"
       />
       <button
