@@ -34,6 +34,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { AiModule } from './ai/ai.module';
 import { AiPromptTemplateModule } from './ai/prompt-template/ai-prompt-template.module';
 import { AiDailyDigestModule } from './ai/daily-digest/ai-daily-digest.module';
+import { AiAutoPrioritizeModule } from './ai/auto-prioritize/ai-auto-prioritize.module';
 import { AutomationModule } from './automation/automation.module';
 import { EmailModule } from './email/email.module';
 // Fase 8 — Analytics
@@ -133,6 +134,7 @@ import { AreaModule } from './area/area.module';
     AiModule,
     AiPromptTemplateModule,
     AiDailyDigestModule,
+    AiAutoPrioritizeModule,
     EmailModule,
     AutomationModule,
     RealtimeModule,
