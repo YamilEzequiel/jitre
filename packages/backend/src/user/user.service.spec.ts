@@ -4,12 +4,17 @@ import { ConflictException } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 import { UserService } from './user.service';
 import { UserEntity } from './user.entity';
+import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.entity';
 
 const mockRepo = {
   findOne: jest.fn(),
   create: jest.fn(),
   save: jest.fn(),
   update: jest.fn(),
+};
+
+const mockMembershipRepo = {
+  find: jest.fn(),
 };
 
 describe('UserService', () => {
@@ -21,6 +26,10 @@ describe('UserService', () => {
       providers: [
         UserService,
         { provide: getRepositoryToken(UserEntity), useValue: mockRepo },
+        {
+          provide: getRepositoryToken(WorkspaceMembershipEntity),
+          useValue: mockMembershipRepo,
+        },
       ],
     }).compile();
 

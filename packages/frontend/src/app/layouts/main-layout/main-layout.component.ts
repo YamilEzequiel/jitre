@@ -391,7 +391,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     { labelKey: 'nav.docs', route: '/docs', icon: 'pi-file' },
     { labelKey: 'nav.chat', route: '/chat', icon: 'pi-comments', badge: 'chat' },
     ...(this.isAdmin()
-      ? [{ labelKey: 'nav.timeReports', route: '/time-reports', icon: 'pi-chart-bar' }]
+      ? [
+          { labelKey: 'nav.timeReports', route: '/time-reports', icon: 'pi-chart-bar' },
+          { labelKey: 'nav.employees', route: '/employees', icon: 'pi-users' },
+        ]
       : []),
   ]);
   readonly footerNav: NavItem[] = [

@@ -102,6 +102,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'employees',
+        loadComponent: () =>
+          import('./features/employees/employees.component').then(
+            m => m.EmployeesComponent,
+          ),
+      },
+      {
         path: 'my-time',
         loadComponent: () =>
           import('./features/time-tracking/my-time.component').then(

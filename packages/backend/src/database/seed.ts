@@ -113,11 +113,55 @@ async function hashPassword(plain: string): Promise<string> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function seedUsers(repo: Repo<UserEntity>): Promise<SeededUsers> {
-  const definitions: Array<UserSeed & { key: keyof SeededUsers }> = [
-    { key: 'admin', email: 'admin@jitre.test', displayName: 'Alex Admin', password: 'admin123', role: WorkspaceRole.OWNER },
-    { key: 'pm', email: 'pm@jitre.test', displayName: 'Pat Manager', password: 'pm123', role: WorkspaceRole.ADMIN },
-    { key: 'dev1', email: 'dev1@jitre.test', displayName: 'Dani Developer', password: 'dev123', role: WorkspaceRole.MEMBER },
-    { key: 'dev2', email: 'dev2@jitre.test', displayName: 'Sam Engineer', password: 'dev123', role: WorkspaceRole.MEMBER },
+  const definitions: Array<
+    UserSeed & {
+      key: keyof SeededUsers;
+      employee: {
+        position: string;
+        department: string;
+        phone: string;
+        hireDate: string;
+        employeeCode: string;
+        bio: string;
+      };
+    }
+  > = [
+    {
+      key: 'admin', email: 'admin@jitre.test', displayName: 'Alex Admin',
+      password: 'admin123', role: WorkspaceRole.OWNER,
+      employee: {
+        position: 'CEO & Founder', department: 'Leadership',
+        phone: '+54 11 4000-0001', hireDate: '2022-01-15',
+        employeeCode: 'EMP-001', bio: 'Founder. Loves shipping fast and well.',
+      },
+    },
+    {
+      key: 'pm', email: 'pm@jitre.test', displayName: 'Pat Manager',
+      password: 'pm123', role: WorkspaceRole.ADMIN,
+      employee: {
+        position: 'Product Manager', department: 'Product',
+        phone: '+54 11 4000-0002', hireDate: '2022-06-01',
+        employeeCode: 'EMP-002', bio: 'Roadmaps, releases, and the occasional sprint demo.',
+      },
+    },
+    {
+      key: 'dev1', email: 'dev1@jitre.test', displayName: 'Dani Developer',
+      password: 'dev123', role: WorkspaceRole.MEMBER,
+      employee: {
+        position: 'Senior Engineer', department: 'Engineering',
+        phone: '+54 11 4000-0003', hireDate: '2023-03-10',
+        employeeCode: 'EMP-003', bio: 'Backend + infra. Coffee budget exhausted.',
+      },
+    },
+    {
+      key: 'dev2', email: 'dev2@jitre.test', displayName: 'Sam Engineer',
+      password: 'dev123', role: WorkspaceRole.MEMBER,
+      employee: {
+        position: 'Frontend Engineer', department: 'Engineering',
+        phone: '+54 11 4000-0004', hireDate: '2023-09-22',
+        employeeCode: 'EMP-004', bio: 'Pixels, animations, and tasteful violet gradients.',
+      },
+    },
   ];
 
   const result = {} as SeededUsers;
@@ -132,8 +176,27 @@ async function seedUsers(repo: Repo<UserEntity>): Promise<SeededUsers> {
         avatarUrl: null,
         status: 'active',
         lastLoginAt: null,
+        position: def.employee.position,
+        department: def.employee.department,
+        phone: def.employee.phone,
+        hireDate: def.employee.hireDate,
+        employeeCode: def.employee.employeeCode,
+        bio: def.employee.bio,
       });
       user = await repo.save(user);
+    } else {
+      // Backfill employee fields on existing seeded users (idempotent).
+      const patch: Record<string, unknown> = {};
+      if (!user.position) patch['position'] = def.employee.position;
+      if (!user.department) patch['department'] = def.employee.department;
+      if (!user.phone) patch['phone'] = def.employee.phone;
+      if (!user.hireDate) patch['hireDate'] = def.employee.hireDate;
+      if (!user.employeeCode) patch['employeeCode'] = def.employee.employeeCode;
+      if (!user.bio) patch['bio'] = def.employee.bio;
+      if (Object.keys(patch).length > 0) {
+        await repo.update(user.id, patch);
+        Object.assign(user, patch);
+      }
     }
     result[def.key] = user;
   }
