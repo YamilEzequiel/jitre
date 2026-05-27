@@ -6,7 +6,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { TaskStore } from '../../../stores/task.store';
@@ -53,6 +54,32 @@ interface DisplayComment {
   ],
   template: `
     <div class="flex flex-col h-full w-full overflow-auto">
+      <!-- Back navigation -->
+      <nav class="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <button
+          type="button"
+          (click)="goBack()"
+          class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          aria-label="Volver"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Volver
+        </button>
+        @if (task(); as t) {
+          <span class="text-slate-300" aria-hidden="true">/</span>
+          <a
+            [routerLink]="['/projects', t.projectId]"
+            class="rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            Proyecto
+          </a>
+        }
+      </nav>
+
       @if (!task()) {
         <jt-skeleton variant="card" />
       } @else {
@@ -383,6 +410,8 @@ interface DisplayComment {
 })
 export class TaskDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly taskStore = inject(TaskStore);
   private readonly taskApi = inject(TaskApiService);
   private readonly statusStore = inject(WorkflowStatusStore, { optional: true });
@@ -569,11 +598,36 @@ export class TaskDetailComponent implements OnInit {
     });
   }
 
+  goBack(): void {
+    // Prefer browser history (preserves scroll/filters on the previous page).
+    // If we landed here directly (no history), fall back to the project.
+    const hasHistory = typeof window !== 'undefined' && window.history.length > 1;
+    if (hasHistory) {
+      this.location.back();
+      return;
+    }
+    const t = this.task();
+    if (t) {
+      void this.router.navigate(['/projects', t.projectId]);
+    } else {
+      void this.router.navigate(['/']);
+    }
+  }
+
   async aiDescribe(): Promise<void> {
     const t = this.task();
     if (!t) return;
     try {
-      await this.ai.describeTask(t.id);
+      const result = (await this.ai.describeTask(t.id)) as {
+        description?: string;
+        applied?: boolean;
+      } | null;
+      if (result?.description) {
+        // Backend applies the description server-side (applied: true) — sync
+        // the local store so the UI reflects the new value without a refetch.
+        this.taskStore.upsert({ ...t, description: result.description });
+        this.toast.success('Descripción generada por AI');
+      }
     } catch {
       this.toast.error('AI describe failed');
     }
