@@ -24,6 +24,7 @@ import { TaskStore } from '../../stores/task.store';
 import { ToastService } from '../../core/toast/toast.service';
 import { formatTimerSeconds } from '../../features/time-tracking/duration.util';
 import { LocaleService, SUPPORTED_LOCALES, SupportedLocale } from '../../core/i18n/locale.service';
+import { APP_VERSION, REPO_URL } from '../../core/app-info';
 
 interface NavItem {
   labelKey: string;
@@ -156,7 +157,7 @@ interface NavItem {
           }
         </ul>
 
-        <div class="space-y-1 border-t border-white/[0.06] px-3 py-4">
+        <div class="space-y-1 border-t border-white/[0.06] px-3 py-3">
           @for (item of footerNav; track item.route) {
             <a
               [routerLink]="item.route"
@@ -167,6 +168,46 @@ interface NavItem {
               {{ item.labelKey | translate }}
             </a>
           }
+          <a
+            routerLink="/changelog"
+            routerLinkActive="bg-white/[0.07] text-white"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+          >
+            <i class="pi pi-history text-[12px]" aria-hidden="true"></i>
+            Changelog
+          </a>
+          <a
+            routerLink="/license"
+            routerLinkActive="bg-white/[0.07] text-white"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+          >
+            <i class="pi pi-file text-[12px]" aria-hidden="true"></i>
+            License
+          </a>
+        </div>
+
+        <div class="border-t border-white/[0.06] px-4 py-3">
+          <div class="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <a
+              [href]="repoUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 transition hover:text-white"
+              aria-label="Open Jitre on GitHub"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.57.11.78-.25.78-.55v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.95.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.45.11-3.03 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.74.11 3.03.74.81 1.18 1.84 1.18 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.07.78 2.16v3.2c0 .31.21.67.79.55A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/>
+              </svg>
+              GitHub
+            </a>
+            <a
+              routerLink="/changelog"
+              class="font-mono tracking-tight text-slate-400 transition hover:text-white"
+              [attr.aria-label]="'Current version v' + appVersion"
+            >
+              v{{ appVersion }}
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -388,6 +429,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private readonly locale = inject(LocaleService);
 
   readonly chatUnread = this.chatChannelStore.totalUnread;
+  readonly appVersion = APP_VERSION;
+  readonly repoUrl = REPO_URL;
 
   private _unregisterCmdK?: () => void;
   private _unregisterHelp?: () => void;
@@ -440,7 +483,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   ]);
   readonly footerNav: NavItem[] = [
     { labelKey: 'nav.settings', route: '/settings', icon: 'pi-cog' },
-    { labelKey: 'nav.support', route: '/docs', icon: 'pi-question-circle' },
   ];
 
   readonly timerLabel = computed(() => {

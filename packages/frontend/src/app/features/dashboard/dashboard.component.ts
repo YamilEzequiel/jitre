@@ -4,6 +4,7 @@ import { TaskStore } from '../../stores/task.store';
 import { ProjectStore } from '../../stores/project.store';
 import { AnalyticsService } from '../../core/analytics/analytics.service';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
+import { AppFooterComponent } from '../../shared/app-footer/app-footer.component';
 
 interface WorkspaceStats {
   totalTasks: number;
@@ -15,7 +16,7 @@ interface WorkspaceStats {
 @Component({
   selector: 'jt-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, SkeletonComponent],
+  imports: [RouterLink, SkeletonComponent, AppFooterComponent],
   template: `
     <div class="mx-auto max-w-[70rem] space-y-5 text-slate-950">
       <header class="relative overflow-hidden rounded-2xl border border-slate-100 bg-white px-6 py-6 shadow-sm shadow-slate-200/70">
@@ -282,6 +283,8 @@ interface WorkspaceStats {
         </div>
       </div>
     </div>
+
+    <jt-app-footer />
   `,
 })
 export class DashboardComponent implements OnInit {

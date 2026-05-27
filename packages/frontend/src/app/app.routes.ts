@@ -148,6 +148,16 @@ export const routes: Routes = [
           },
         ],
       },
+      {
+        path: 'changelog',
+        loadComponent: () =>
+          import('./features/changelog/changelog.component').then(m => m.ChangelogComponent),
+      },
+      {
+        path: 'license',
+        loadComponent: () =>
+          import('./features/license/license.component').then(m => m.LicenseComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

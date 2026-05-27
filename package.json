@@ -3,6 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "description": "Jitre — AI-first project management platform",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://github.com/YamilEzequiel/jitre",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YamilEzequiel/jitre.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YamilEzequiel/jitre/issues"
+  },
+  "author": "Yamil Lazzari",
   "workspaces": [
     "packages/shared",
     "packages/backend",
