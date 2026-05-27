@@ -21,6 +21,7 @@ import { WorkflowStatusStore } from '../../stores/workflow-status.store';
 import { ProjectMemberStore } from '../../stores/project-member.store';
 import { LabelStore } from '../../stores/label.store';
 import { ToastService } from '../../core/toast/toast.service';
+import { CheckboxComponent } from '../../shared/checkbox/checkbox.component';
 
 const TRIGGER_LABELS: Record<AutomationTrigger, string> = {
   'task.created': 'Cuando se crea una tarea',
@@ -50,7 +51,7 @@ const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'];
 @Component({
   selector: 'jt-automations-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SelectModule],
+  imports: [FormsModule, SelectModule, CheckboxComponent],
   template: `
     <section class="space-y-4">
       <header class="flex flex-wrap items-end justify-between gap-3">
@@ -76,10 +77,14 @@ const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'];
               <input type="text" [(ngModel)]="form.name" name="name" required
                      class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none" />
             </label>
-            <label class="flex items-end gap-2 text-xs text-slate-700 pb-1">
-              <input type="checkbox" [(ngModel)]="form.enabled" name="enabled" class="accent-violet-600" />
-              Habilitada
-            </label>
+            <span class="flex items-end gap-2 pb-1">
+              <jt-checkbox
+                [checked]="form.enabled"
+                (checkedChange)="form.enabled = $event"
+                label="Habilitada"
+                size="sm"
+              />
+            </span>
           </div>
 
           <label class="flex flex-col gap-1">

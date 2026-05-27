@@ -7,6 +7,7 @@ import { ToastService } from '../../../core/toast/toast.service';
 import { AnalyticsService } from '../../../core/analytics/analytics.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 interface AiSettingsResponse {
   'ai.provider'?: 'GEMINI' | 'OPENAI' | 'ANTHROPIC';
@@ -56,7 +57,7 @@ const GEMINI_MODEL_OPTIONS = [
 @Component({
   selector: 'jt-ai-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SelectModule],
+  imports: [ReactiveFormsModule, SelectModule, CheckboxComponent],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
@@ -190,11 +191,7 @@ const GEMINI_MODEL_OPTIONS = [
         </div>
 
         <label class="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 bg-white p-4 hover:border-violet-300 transition">
-          <input
-            type="checkbox"
-            formControlName="enabled"
-            class="mt-0.5"
-          />
+          <jt-checkbox formControlName="enabled" ariaLabel="Habilitar funciones de IA" />
           <span>
             <span class="block text-sm font-semibold text-slate-900">Habilitar funciones de IA</span>
             <span class="block text-xs text-slate-500 mt-0.5">

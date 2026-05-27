@@ -12,6 +12,7 @@ import { SelectModule } from 'primeng/select';
 import { WorkflowApiService, WorkflowTransition } from '../../stores/workflow-api.service';
 import { WorkflowStatusStore } from '../../stores/workflow-status.store';
 import { ToastService } from '../../core/toast/toast.service';
+import { CheckboxComponent } from '../../shared/checkbox/checkbox.component';
 
 /**
  * Per-project workflow editor — lets admins define which status transitions
@@ -23,7 +24,7 @@ import { ToastService } from '../../core/toast/toast.service';
 @Component({
   selector: 'jt-workflow-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SelectModule],
+  imports: [FormsModule, SelectModule, CheckboxComponent],
   template: `
     <section class="space-y-4">
       <header class="flex flex-wrap items-end justify-between gap-3">
@@ -67,10 +68,12 @@ import { ToastService } from '../../core/toast/toast.service';
               styleClass="w-full"
             />
           </div>
-          <label class="flex items-center gap-2 text-xs text-slate-700">
-            <input type="checkbox" [(ngModel)]="newRequiresAssignee" class="accent-violet-600" />
-            Requiere asignado
-          </label>
+          <jt-checkbox
+            [checked]="newRequiresAssignee"
+            (checkedChange)="newRequiresAssignee = $event"
+            label="Requiere asignado"
+            size="sm"
+          />
           <button
             type="button"
             (click)="add()"

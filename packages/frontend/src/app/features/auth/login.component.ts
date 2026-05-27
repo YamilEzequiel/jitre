@@ -11,11 +11,12 @@ import { TaskStore } from '../../stores/task.store';
 import { NotificationStore } from '../../stores/notification.store';
 import { FieldErrorComponent } from '../../shared/auth/field-error.component';
 import { PasswordInputComponent } from '../../shared/auth/password-input.component';
+import { CheckboxComponent } from '../../shared/checkbox/checkbox.component';
 
 @Component({
   selector: 'jt-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, PasswordInputComponent, FieldErrorComponent, TranslatePipe],
+  imports: [ReactiveFormsModule, RouterLink, PasswordInputComponent, FieldErrorComponent, TranslatePipe, CheckboxComponent],
   template: `
     <div class="space-y-7">
       <header class="space-y-3">
@@ -64,28 +65,11 @@ import { PasswordInputComponent } from '../../shared/auth/password-input.compone
           <jt-password-input id="password" controlName="password" autocomplete="current-password" [placeholder]="'auth.login.passwordPlaceholder' | translate" />
           <jt-field-error controlName="password" [messages]="passwordErrors()" />
           <div class="mt-3 flex items-center justify-between gap-3">
-            <label class="group inline-flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-slate-600">
-              <span class="relative inline-flex h-4 w-4 flex-none">
-                <input
-                  type="checkbox"
-                  formControlName="rememberMe"
-                  class="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40"
-                />
-                <svg
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                  class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-white opacity-0 transition-opacity peer-checked:opacity-100"
-                >
-                  <path d="M3 8.5 6.5 12 13 5" />
-                </svg>
-              </span>
-              {{ 'auth.login.rememberMe' | translate }}
-            </label>
+            <jt-checkbox
+              formControlName="rememberMe"
+              [label]="'auth.login.rememberMe' | translate"
+              size="sm"
+            />
             <a routerLink="/reset-password" class="text-xs font-semibold text-indigo-600 transition hover:text-violet-700">
               {{ 'auth.login.forgotPassword' | translate }}
             </a>

@@ -17,6 +17,7 @@ import {
   CustomFieldDefinition,
 } from '../../stores/custom-field-api.service';
 import { ProjectMemberStore } from '../../stores/project-member.store';
+import { CheckboxComponent } from '../checkbox/checkbox.component';
 
 /**
  * Renders the project's typed custom fields as a dynamic form.
@@ -36,7 +37,7 @@ import { ProjectMemberStore } from '../../stores/project-member.store';
 @Component({
   selector: 'jt-custom-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SelectModule],
+  imports: [FormsModule, SelectModule, CheckboxComponent],
   template: `
     @if (loading()) {
       <p class="text-xs text-slate-400">Cargando campos…</p>
@@ -71,13 +72,13 @@ import { ProjectMemberStore } from '../../stores/project-member.store';
                        class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm focus:border-violet-500 focus:outline-none" />
               }
               @case ('boolean') {
-                <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm">
-                  <input type="checkbox"
-                         [ngModel]="currentValue(def)"
-                         (ngModelChange)="setValue(def, $event)"
-                         class="accent-violet-600" />
-                  <span class="text-slate-700">Sí</span>
-                </label>
+                <span class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm">
+                  <jt-checkbox
+                    [checked]="!!currentValue(def)"
+                    (checkedChange)="setValue(def, $event)"
+                    label="Sí"
+                  />
+                </span>
               }
               @case ('select') {
                 <p-select [ngModel]="currentValue(def)"
@@ -90,13 +91,14 @@ import { ProjectMemberStore } from '../../stores/project-member.store';
               @case ('multi_select') {
                 <div class="flex flex-wrap gap-1.5 rounded-lg border border-slate-200 bg-white p-2">
                   @for (opt of def.options ?? []; track opt) {
-                    <label class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-0.5 text-xs text-slate-700 hover:border-violet-300">
-                      <input type="checkbox"
-                             [checked]="isMultiSelected(def, opt)"
-                             (change)="toggleMulti(def, opt)"
-                             class="accent-violet-600" />
+                    <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-0.5 text-xs text-slate-700 hover:border-violet-300">
+                      <jt-checkbox
+                        size="sm"
+                        [checked]="isMultiSelected(def, opt)"
+                        (checkedChange)="toggleMulti(def, opt)"
+                      />
                       {{ opt }}
-                    </label>
+                    </span>
                   }
                 </div>
               }

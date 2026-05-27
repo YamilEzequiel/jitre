@@ -12,6 +12,7 @@ import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
 import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 export type TaskCardVariant = 'row' | 'tile';
 
@@ -69,6 +70,7 @@ function hashHue(input: string): number {
 @Component({
   selector: 'jt-task-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CheckboxComponent],
   template: `
     @if (variant() === 'tile') {
       <div
@@ -204,7 +206,7 @@ function hashHue(input: string): number {
               <div class="border-t border-slate-200 mt-2 pt-2 space-y-1 max-h-48 overflow-auto">
                 @for (m of memberOptions(); track m.userId) {
                   <label class="flex items-center gap-2 px-2 py-1 rounded text-xs text-slate-700 hover:bg-slate-100 cursor-pointer">
-                    <input type="checkbox" class="h-3.5 w-3.5" [checked]="isAssignee(m.userId)" (change)="toggleAssignee(m.userId, $event)" />
+                    <jt-checkbox size="sm" [checked]="isAssignee(m.userId)" (checkedChange)="toggleAssigneeBool(m.userId, $event)" />
                     <span class="truncate">{{ memberLabel(m) }}</span>
                   </label>
                 } @empty {
@@ -231,13 +233,13 @@ function hashHue(input: string): number {
         tabindex="0"
         [attr.aria-label]="ariaLabel()"
       >
-        <input
-          type="checkbox"
-          [checked]="isSelected()"
-          (click)="$event.stopPropagation(); toggleSelect.emit(task().id)"
-          class="h-4 w-4 rounded border-slate-300 bg-white text-indigo-500 focus:ring-indigo-500/40 focus:ring-offset-0 cursor-pointer"
-          [attr.aria-label]="'Select task ' + task().title"
-        />
+        <span (click)="$event.stopPropagation()">
+          <jt-checkbox
+            [checked]="isSelected()"
+            (checkedChange)="toggleSelect.emit(task().id)"
+            [ariaLabel]="'Select task ' + task().title"
+          />
+        </span>
 
         <i
           [class]="typeMeta().icon + ' ' + typeMeta().color"
@@ -356,7 +358,7 @@ function hashHue(input: string): number {
               <div class="border-t border-slate-200 mt-2 pt-2 space-y-1 max-h-48 overflow-auto">
                 @for (m of memberOptions(); track m.userId) {
                   <label class="flex items-center gap-2 px-2 py-1 rounded text-xs text-slate-700 hover:bg-slate-100 cursor-pointer">
-                    <input type="checkbox" class="h-3.5 w-3.5" [checked]="isAssignee(m.userId)" (change)="toggleAssignee(m.userId, $event)" />
+                    <jt-checkbox size="sm" [checked]="isAssignee(m.userId)" (checkedChange)="toggleAssigneeBool(m.userId, $event)" />
                     <span class="truncate">{{ memberLabel(m) }}</span>
                   </label>
                 } @empty {
@@ -578,6 +580,14 @@ export class TaskCardComponent {
 
   toggleAssignee(userId: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
+    this.changedAssignee.emit({
+      task: this.task(),
+      userId,
+      action: checked ? 'add' : 'remove',
+    });
+  }
+
+  toggleAssigneeBool(userId: string, checked: boolean): void {
     this.changedAssignee.emit({
       task: this.task(),
       userId,

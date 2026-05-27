@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../core/toast/toast.service';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 interface NotificationPrefs {
   in_app: boolean;
@@ -21,6 +22,7 @@ interface MySettingsResponse {
 @Component({
   selector: 'jt-notification-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CheckboxComponent],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
@@ -35,10 +37,10 @@ interface MySettingsResponse {
                      border border-slate-200 bg-white backdrop-blur-sm
                      px-4 py-3 hover:bg-violet-50 hover:border-violet-200 transition-colors"
             >
-              <input
-                type="checkbox"
+              <jt-checkbox
                 [checked]="prefs()![pref.key]"
-                (change)="toggle(pref.key)"
+                (checkedChange)="toggle(pref.key)"
+                [ariaLabel]="pref.label"
               />
               <span class="text-sm text-slate-700">{{ pref.label }}</span>
             </label>

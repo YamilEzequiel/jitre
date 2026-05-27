@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../core/toast/toast.service';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 interface MeResponse {
   emailMentions?: boolean;
@@ -20,6 +21,7 @@ type PrefKey = 'emailMentions' | 'emailAssignments' | 'emailDueDates';
 @Component({
   selector: 'jt-email-prefs-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CheckboxComponent],
   template: `
     <section class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm shadow-slate-200/70">
       <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-1">Email</h2>
@@ -29,9 +31,11 @@ type PrefKey = 'emailMentions' | 'emailAssignments' | 'emailDueDates';
         <div class="space-y-2 max-w-md">
           @for (pref of prefKeys; track pref.key) {
             <label class="flex items-center gap-3 cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-3 hover:bg-violet-50 hover:border-violet-200 transition-colors">
-              <input type="checkbox"
-                     [checked]="value(pref.key)"
-                     (change)="toggle(pref.key)" />
+              <jt-checkbox
+                [checked]="value(pref.key)"
+                (checkedChange)="toggle(pref.key)"
+                [ariaLabel]="pref.label"
+              />
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-semibold text-slate-800">{{ pref.label }}</p>
                 <p class="text-xs text-slate-500">{{ pref.help }}</p>

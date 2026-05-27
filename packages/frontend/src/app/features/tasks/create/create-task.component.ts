@@ -19,12 +19,13 @@ import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
 import { PlanningApiService, PlanningItem } from '../../../stores/planning-api.service';
 import { ToastService } from '../../../core/toast/toast.service';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 @Component({
   selector: 'jt-create-task',
   host: { class: 'block h-full w-full' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TabsModule, SelectModule, CustomFieldsRendererComponent],
+  imports: [ReactiveFormsModule, TabsModule, SelectModule, CustomFieldsRendererComponent, CheckboxComponent],
   styles: [`
     /* Form controls — consistent hover/focus across selects, inputs, dates, textareas. */
     .jt-input,
@@ -303,10 +304,9 @@ import { ToastService } from '../../../core/toast/toast.service';
                   <div class="min-h-32 space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-2">
                     @for (member of memberOptions(); track member.userId) {
                       <label class="jt-pick-row">
-                        <input
-                          type="checkbox"
+                        <jt-checkbox
                           [checked]="isSelected('assigneeUserIds', member.userId)"
-                          (change)="toggleArrayValue('assigneeUserIds', member.userId, $event)"
+                          (checkedChange)="toggleArrayValueBool('assigneeUserIds', member.userId, $event)"
                         />
                         <span class="min-w-0">
                           <strong class="block truncate font-semibold text-slate-900">
@@ -326,10 +326,9 @@ import { ToastService } from '../../../core/toast/toast.service';
                   <div class="min-h-32 space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-2">
                     @for (label of labelOptions(); track label.id) {
                       <label class="jt-pick-row">
-                        <input
-                          type="checkbox"
+                        <jt-checkbox
                           [checked]="isSelected('labelIds', label.id)"
-                          (change)="toggleArrayValue('labelIds', label.id, $event)"
+                          (checkedChange)="toggleArrayValueBool('labelIds', label.id, $event)"
                         />
                         <span
                           class="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -478,6 +477,14 @@ export class CreateTaskComponent implements OnInit {
 
   toggleArrayValue(controlName: 'assigneeUserIds' | 'labelIds', value: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
+    this.toggleArrayValueBool(controlName, value, checked);
+  }
+
+  toggleArrayValueBool(
+    controlName: 'assigneeUserIds' | 'labelIds',
+    value: string,
+    checked: boolean,
+  ): void {
     const current = this.form.controls[controlName].value;
     const next = checked ? [...new Set([...current, value])] : current.filter(v => v !== value);
     this.form.controls[controlName].setValue(next);

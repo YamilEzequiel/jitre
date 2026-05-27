@@ -17,6 +17,7 @@ import { NotificationStore } from '../../stores/notification.store';
 import { FieldErrorComponent } from '../../shared/auth/field-error.component';
 import { PasswordInputComponent } from '../../shared/auth/password-input.component';
 import { PasswordStrengthMeterComponent } from '../../shared/auth/password-strength-meter.component';
+import { CheckboxComponent } from '../../shared/checkbox/checkbox.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 function passwordMatch(group: AbstractControl): ValidationErrors | null {
@@ -35,6 +36,7 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
     PasswordInputComponent,
     PasswordStrengthMeterComponent,
     FieldErrorComponent,
+    CheckboxComponent,
   ],
   template: `
     <div class="space-y-5">
@@ -119,33 +121,15 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
         </div>
         </div>
 
-        <label class="flex cursor-pointer select-none items-start gap-2.5 text-xs leading-relaxed text-slate-600">
-          <span class="relative mt-0.5 inline-flex h-4 w-4 flex-none">
-            <input
-              type="checkbox"
-              formControlName="acceptTerms"
-              class="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40"
-            />
-            <svg
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-white opacity-0 transition-opacity peer-checked:opacity-100"
-            >
-              <path d="M3 8.5 6.5 12 13 5" />
-            </svg>
-          </span>
+        <div class="flex items-start gap-2.5 text-xs leading-relaxed text-slate-600">
+          <jt-checkbox formControlName="acceptTerms" ariaLabel="Accept terms" />
           <span>
             I agree to Jitre's
             <a href="/terms" class="font-semibold text-indigo-600 transition hover:text-violet-700">Terms of Service</a>
             and
             <a href="/privacy" class="font-semibold text-indigo-600 transition hover:text-violet-700">Privacy Policy</a>
           </span>
-        </label>
+        </div>
 
         <button
           type="submit"

@@ -12,6 +12,7 @@ import { TaskApiService, Task } from '../../../stores/task-api.service';
 import { TaskStore } from '../../../stores/task.store';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { ToastService } from '../../../core/toast/toast.service';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 interface SuggestResult {
   subtasks: string[];
@@ -20,6 +21,7 @@ interface SuggestResult {
 @Component({
   selector: 'jt-ai-subtask-suggest',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CheckboxComponent],
   template: `
     <div>
       <button
@@ -67,12 +69,9 @@ interface SuggestResult {
                        border border-transparent hover:bg-white hover:border-slate-200
                        transition-colors"
               >
-                <input
-                  type="checkbox"
+                <jt-checkbox
                   [checked]="checked().has(s)"
-                  (change)="toggleCheck(s)"
-                  class="h-4 w-4 rounded border-slate-300 bg-white text-indigo-500
-                         focus:ring-indigo-500/40 focus:ring-offset-0"
+                  (checkedChange)="toggleCheck(s)"
                 />
                 <span class="text-sm text-slate-700">{{ s }}</span>
               </label>
