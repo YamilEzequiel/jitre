@@ -27,13 +27,46 @@ describe('ai-rate-card.config', () => {
       expect(entry).toBeDefined();
     });
 
-    it('contains stub entries for anthropic and openai', () => {
-      const anthropic = AI_RATE_CARD.find(
-        (e) => e.provider === AiProvider.ANTHROPIC,
+    it('contains current Gemini 2.5 models', () => {
+      const flash = AI_RATE_CARD.find(
+        (e) => e.provider === AiProvider.GEMINI && e.model === 'gemini-2.5-flash',
       );
-      const openai = AI_RATE_CARD.find((e) => e.provider === AiProvider.OPENAI);
-      expect(anthropic).toBeDefined();
-      expect(openai).toBeDefined();
+      const pro = AI_RATE_CARD.find(
+        (e) => e.provider === AiProvider.GEMINI && e.model === 'gemini-2.5-pro',
+      );
+      expect(flash).toBeDefined();
+      expect(pro).toBeDefined();
+    });
+
+    it('contains current Anthropic models', () => {
+      const sonnet = AI_RATE_CARD.find(
+        (e) =>
+          e.provider === AiProvider.ANTHROPIC &&
+          e.model === 'claude-3-5-sonnet-20241022',
+      );
+      const haiku = AI_RATE_CARD.find(
+        (e) =>
+          e.provider === AiProvider.ANTHROPIC &&
+          e.model === 'claude-3-5-haiku-20241022',
+      );
+      expect(sonnet).toBeDefined();
+      expect(haiku).toBeDefined();
+    });
+
+    it('contains current OpenAI models', () => {
+      const mini = AI_RATE_CARD.find(
+        (e) => e.provider === AiProvider.OPENAI && e.model === 'gpt-4o-mini',
+      );
+      const full = AI_RATE_CARD.find(
+        (e) => e.provider === AiProvider.OPENAI && e.model === 'gpt-4o',
+      );
+      const embed = AI_RATE_CARD.find(
+        (e) =>
+          e.provider === AiProvider.OPENAI && e.model === 'text-embedding-3-small',
+      );
+      expect(mini).toBeDefined();
+      expect(full).toBeDefined();
+      expect(embed).toBeDefined();
     });
   });
 
@@ -136,7 +169,7 @@ describe('ai-rate-card.config', () => {
       expect(parts[1]).toHaveLength(6);
     });
 
-    it('calculates cost for anthropic claude-3-5-sonnet stub', () => {
+    it('calculates cost for anthropic claude-3-5-sonnet (legacy alias kept for historical rows)', () => {
       // pricePerMillionPromptTokens: 3.00, pricePerMillionCompletionTokens: 15.00
       // 1000 prompt: 0.003, 500 completion: 0.0075 → total: 0.010500
       const result = calculateCost(
@@ -146,6 +179,35 @@ describe('ai-rate-card.config', () => {
         500,
       );
       expect(result).toBe('0.010500');
+    });
+
+    it('calculates cost for the dated claude-3-5-sonnet-20241022', () => {
+      const result = calculateCost(
+        AiProvider.ANTHROPIC,
+        'claude-3-5-sonnet-20241022',
+        1000,
+        500,
+      );
+      expect(result).toBe('0.010500');
+    });
+
+    it('calculates cost for gpt-4o (full)', () => {
+      // 2.5 per 1M prompt, 10 per 1M completion
+      // 1000 prompt: 0.0025, 500 completion: 0.005 → 0.007500
+      const result = calculateCost(AiProvider.OPENAI, 'gpt-4o', 1000, 500);
+      expect(result).toBe('0.007500');
+    });
+
+    it('handles embed-token branch for text-embedding-3-small', () => {
+      // pricePerMillionEmbedTokens: 0.02
+      const result = calculateCost(
+        AiProvider.OPENAI,
+        'text-embedding-3-small',
+        0,
+        0,
+        2000,
+      );
+      expect(result).toBe('0.000040');
     });
   });
 });
