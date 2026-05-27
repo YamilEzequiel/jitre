@@ -9,7 +9,12 @@ import { NotificationSetting } from './notification-setting.entity';
 
 const makeRepo = () => ({
   findOne: jest.fn(),
+  // Kept for legacy tests that still assert .upsert was called; new code
+  // uses findOne + update/save instead.
   upsert: jest.fn().mockResolvedValue(undefined),
+  update: jest.fn().mockResolvedValue(undefined),
+  save: jest.fn().mockResolvedValue({}),
+  create: jest.fn((x: unknown) => x),
 });
 
 describe('SettingsService', () => {
@@ -53,8 +58,10 @@ describe('SettingsService', () => {
     });
 
     it('upserts a valid user key', async () => {
+      userRepo.findOne.mockResolvedValueOnce(null);
       await service.setUserSetting('U1', 'user.timezone', 'UTC+3');
-      expect(userRepo.upsert).toHaveBeenCalled();
+      // No existing row → save path
+      expect(userRepo.save).toHaveBeenCalled();
     });
   });
 

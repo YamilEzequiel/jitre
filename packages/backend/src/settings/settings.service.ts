@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
-import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { UserSetting } from './user-setting.entity';
 import { WorkspaceSetting } from './workspace-setting.entity';
 import { AiSetting } from './ai-setting.entity';
@@ -73,10 +72,19 @@ export class SettingsService {
     value: unknown,
   ): Promise<void> {
     assertKnownKey(SETTING_SCOPE.USER, key);
-    await this.userRepo.upsert(
-      { userId, key, value } as QueryDeepPartialEntity<UserSetting>,
-      { conflictPaths: ['userId', 'key'] },
-    );
+    // We can't use `repo.upsert(...)` here: the unique index is partial
+    // (WHERE deleted_at IS NULL) and Postgres rejects ON CONFLICT against a
+    // partial index unless the WHERE clause is replicated exactly, which
+    // TypeORM doesn't do. findOne + update/insert preserves the same
+    // semantics without that constraint.
+    const existing = await this.userRepo.findOne({
+      where: { userId, key, deletedAt: IsNull() },
+    });
+    if (existing) {
+      await this.userRepo.update(existing.id, { value });
+    } else {
+      await this.userRepo.save(this.userRepo.create({ userId, key, value }));
+    }
   }
 
   // ── Workspace settings ─────────────────────────────────────────────────────
@@ -99,10 +107,17 @@ export class SettingsService {
   ): Promise<void> {
     assertKnownKey(SETTING_SCOPE.WORKSPACE, key);
     this.validateWorkspaceSettingValue(key, value);
-    await this.workspaceRepo.upsert(
-      { workspaceId, key, value } as QueryDeepPartialEntity<WorkspaceSetting>,
-      { conflictPaths: ['workspaceId', 'key'] },
-    );
+    // See note on setUserSetting — partial unique index forces find-then-write.
+    const existing = await this.workspaceRepo.findOne({
+      where: { workspaceId, key, deletedAt: IsNull() },
+    });
+    if (existing) {
+      await this.workspaceRepo.update(existing.id, { value });
+    } else {
+      await this.workspaceRepo.save(
+        this.workspaceRepo.create({ workspaceId, key, value }),
+      );
+    }
   }
 
   /**
@@ -141,10 +156,17 @@ export class SettingsService {
   ): Promise<void> {
     assertKnownKey(SETTING_SCOPE.AI, key);
     this.validateAiSettingValue(key, value);
-    await this.aiRepo.upsert(
-      { workspaceId, key, value } as QueryDeepPartialEntity<AiSetting>,
-      { conflictPaths: ['workspaceId', 'key'] },
-    );
+    // See note on setUserSetting — partial unique index forces find-then-write.
+    const existing = await this.aiRepo.findOne({
+      where: { workspaceId, key, deletedAt: IsNull() },
+    });
+    if (existing) {
+      await this.aiRepo.update(existing.id, { value });
+    } else {
+      await this.aiRepo.save(
+        this.aiRepo.create({ workspaceId, key, value }),
+      );
+    }
   }
 
   /**
@@ -213,10 +235,23 @@ export class SettingsService {
     value: unknown,
   ): Promise<void> {
     assertKnownKey(SETTING_SCOPE.NOTIFICATION, key);
-    await this.notificationRepo.upsert(
-      { userId, workspaceId, key, value } as QueryDeepPartialEntity<NotificationSetting>,
-      { conflictPaths: ['userId', 'workspaceId', 'key'] },
-    );
+    // See note on setUserSetting — partial unique index forces find-then-write.
+    // `workspaceId` can be null (per-user-global setting) — handle both cases.
+    const existing = await this.notificationRepo.findOne({
+      where: {
+        userId,
+        workspaceId: workspaceId === null ? IsNull() : workspaceId,
+        key,
+        deletedAt: IsNull(),
+      } as Record<string, unknown>,
+    });
+    if (existing) {
+      await this.notificationRepo.update(existing.id, { value });
+    } else {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({ userId, workspaceId, key, value }),
+      );
+    }
   }
 
   // ── Merged preferences ─────────────────────────────────────────────────────

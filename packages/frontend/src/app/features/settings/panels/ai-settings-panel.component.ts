@@ -26,21 +26,20 @@ interface AiUsagePoint {
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
              shadow-sm shadow-slate-200/70 space-y-7"
     >
-      <h2 class="text-xl font-bold tracking-tight text-slate-950">AI &amp; Quota</h2>
+      <header>
+        <h2 class="text-xl font-bold tracking-tight text-slate-950">IA & Cuota</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Configurá el proveedor de IA, el presupuesto diario y habilitá las funciones generativas
+          (borradores de tareas, sub-tareas asistidas, resúmenes y búsqueda semántica).
+        </p>
+      </header>
 
       @if (spentUsd()) {
-        <div
-          class="rounded-xl border border-slate-200 bg-white backdrop-blur-sm p-5"
-        >
+        <div class="rounded-xl border border-slate-200 bg-white backdrop-blur-sm p-5">
           <div class="flex items-center justify-between">
-            <p
-              class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500"
-            >
-              <span
-                class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 animate-pulse"
-                aria-hidden="true"
-              ></span>
-              Last 30 Days Spend
+            <p class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 animate-pulse" aria-hidden="true"></span>
+              Consumo últimos 30 días
             </p>
             <p class="text-xs font-semibold text-slate-600">
               <span class="text-slate-400">USD </span>
@@ -50,13 +49,17 @@ interface AiUsagePoint {
         </div>
       }
 
+      @if (errorMessage()) {
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <p class="font-semibold">No pudimos guardar la configuración</p>
+          <p class="text-xs">{{ errorMessage() }}</p>
+        </div>
+      }
+
       <form [formGroup]="form" (ngSubmit)="save()" class="space-y-5 max-w-md" novalidate>
         <div>
-          <label
-            for="ai-provider"
-            class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2"
-          >
-            Provider
+          <label for="ai-provider" class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
+            Proveedor de IA
           </label>
           <p-select
             inputId="ai-provider"
@@ -68,35 +71,40 @@ interface AiUsagePoint {
             styleClass="w-full"
           />
           <p class="mt-2 text-xs text-slate-500">
-            Gemini is currently the available provider.
+            Gemini es el único proveedor activo. Anthropic / OpenAI están preparados pero todavía como stubs.
           </p>
         </div>
+
         <div>
-          <label
-            for="ai-budget"
-            class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2"
-          >
-            Daily Budget (USD)
+          <label for="ai-budget" class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
+            Presupuesto diario (USD)
           </label>
           <input
             id="ai-budget"
             type="number"
             formControlName="dailyBudget"
             min="0.01"
-            class="w-full rounded-lg bg-white border border-slate-200
-                   px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400
-                   outline-none transition
-                   focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
+            step="0.01"
+            class="w-full rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
           />
+          <p class="mt-2 text-xs text-slate-500">
+            Tope de gasto por día. Cuando se supera, las llamadas de IA devuelven 429 hasta el corte de día siguiente.
+          </p>
         </div>
-        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+
+        <label class="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 bg-white p-4 hover:border-violet-300 transition">
           <input
             type="checkbox"
             formControlName="enabled"
-            class="h-4 w-4 rounded border-slate-300 bg-white text-indigo-500
-                   focus:ring-indigo-500/40 focus:ring-offset-0"
+            class="mt-0.5 h-4 w-4 rounded border-slate-300 bg-white text-violet-600 focus:ring-violet-500/40"
           />
-          <span class="text-sm text-slate-700">AI features enabled</span>
+          <span>
+            <span class="block text-sm font-semibold text-slate-900">Habilitar funciones de IA</span>
+            <span class="block text-xs text-slate-500 mt-0.5">
+              Cuando está habilitado, el botón “Crear con IA” aparece en la UI y las acciones de IA en tareas/comentarios funcionan.
+              Si lo desactivás, los endpoints de IA devuelven 403 hasta volver a habilitarlo.
+            </span>
+          </span>
         </label>
         <button
           type="submit"
@@ -114,9 +122,9 @@ interface AiUsagePoint {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
             </svg>
-            Saving…
+            Guardando…
           } @else {
-            Save AI Settings
+            Guardar configuración
           }
         </button>
       </form>
@@ -132,6 +140,7 @@ export class AiSettingsPanelComponent implements OnInit {
 
   readonly saving = signal(false);
   readonly spentUsd = signal<string | null>(null);
+  readonly errorMessage = signal<string | null>(null);
 
   readonly providerOptions = [{ label: 'Gemini', value: 'GEMINI' }];
 
@@ -173,32 +182,31 @@ export class AiSettingsPanelComponent implements OnInit {
     if (this.form.invalid) return;
     const workspaceId = this.auth.currentWorkspace()?.id;
     if (!workspaceId) {
-      this.toast.error('No active workspace selected');
+      this.toast.error('No hay workspace activo');
       return;
     }
     this.saving.set(true);
+    this.errorMessage.set(null);
     try {
       const values = this.form.getRawValue();
-      await Promise.all([
-        firstValueFrom(this.http.patch('/api/v1/settings/ai', {
-          workspaceId,
-          key: 'ai.provider',
-          value: 'GEMINI',
-        })),
-        firstValueFrom(this.http.patch('/api/v1/settings/ai', {
-          workspaceId,
-          key: 'ai.daily_budget_usd',
-          value: values.dailyBudget,
-        })),
-        firstValueFrom(this.http.patch('/api/v1/settings/ai', {
-          workspaceId,
-          key: 'ai.enabled',
-          value: values.enabled,
-        })),
-      ]);
-      this.toast.success('AI settings saved');
-    } catch {
-      this.toast.error('Failed to save AI settings');
+      // Sequential writes so we can pinpoint which key failed (helpful in
+      // the error toast / inline banner). The three writes are cheap.
+      await firstValueFrom(this.http.patch('/api/v1/settings/ai', {
+        workspaceId, key: 'ai.provider', value: 'GEMINI',
+      }));
+      await firstValueFrom(this.http.patch('/api/v1/settings/ai', {
+        workspaceId, key: 'ai.daily_budget_usd', value: values.dailyBudget,
+      }));
+      await firstValueFrom(this.http.patch('/api/v1/settings/ai', {
+        workspaceId, key: 'ai.enabled', value: values.enabled,
+      }));
+      this.toast.success('Configuración de IA guardada');
+    } catch (err) {
+      const detail =
+        (err as { error?: { detail?: string } })?.error?.detail ??
+        (err instanceof Error ? err.message : 'Error desconocido');
+      this.errorMessage.set(detail);
+      this.toast.error(`No pudimos guardar: ${detail}`);
     } finally {
       this.saving.set(false);
     }
