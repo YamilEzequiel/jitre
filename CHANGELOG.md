@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **i18n keys** for the surfaces shipped in 0.2.0: navigation (Changelog / License / AI Prompts), dashboard widgets (daily digest + priority suggestions), task detail (back / prev-next / comments / AI describe), settings → AI Prompts panel, and time-tracking duration helper text. Both `es` and `en` cover the same tree.
 - Sidebar Changelog and License entries now translate.
 - Dashboard daily-digest and priority-suggestions widgets fully translated (badges, titles, metric labels, empty states, toasts).
+- AI Prompts settings panel fully translated (badge, title, description, operation tabs, list, editor, all toasts).
+- Task detail: back button, breadcrumb, prev/next aria labels, AI Describe success/failed toasts and comment composer toasts (success / file / files / failed / attachmentsFailed) now translate.
+- **AI Explain on Hover** — `POST /api/v1/ai/tasks/:taskId/explain` returns a 2-sentence explanation of a task. Frontend exposes a reusable `<jt-ai-explain-popover [taskId]="…">` wrapper that triggers the call after 700ms of hover and shows the result in a tiny violet card with the `pi pi-sparkles` AI badge. AiService memoizes per task id for 5 minutes so flicking the mouse across a list never bills twice.
+- Backend tests for `AiPromptTemplateService` (invariants: only-one-default swap, built-in read-only, operation-scoped, default-delete refusal, getDefaultFor, {{var}} interpolation) and `AiAutoPrioritizeService` (heuristic coverage + accept/dismiss lifecycle + stale-previous-suggestion behaviour).
+- Provider specs rewritten for the real implementations (Anthropic + OpenAI): success path, JSON-mode, error code mapping, embeddings ordering, network errors, AiProviderError shape.
+- Rate-card spec adds current-model entries (gemini-2.5-flash/pro, claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022, gpt-4o, gpt-4o-mini, text-embedding-3-small).
+
+### Changed
+
+- Cut `0.2.0` (this release). The Unreleased section above now accumulates work that lands on top.
 
 ---
 

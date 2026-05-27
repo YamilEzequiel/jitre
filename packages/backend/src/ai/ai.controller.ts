@@ -29,6 +29,7 @@ import {
   parseSubtasksResponse,
 } from './prompts/suggest-subtasks.prompt';
 import { buildSummaryPrompt } from './prompts/summary.prompt';
+import { buildExplainTaskPrompt } from './prompts/explain-task.prompt';
 import { AiPromptTemplateService } from './prompt-template/ai-prompt-template.service';
 
 @ApiTags('ai')
@@ -220,6 +221,63 @@ export class AiController {
 
     return {
       subtasks,
+      usage: {
+        promptTokens: response.promptTokens,
+        completionTokens: response.completionTokens,
+        totalTokens: response.totalTokens,
+        costUsd: response.costUsd,
+        model: response.model,
+      },
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Quick 2-sentence explanation of a task (used by the hover popover)',
+  })
+  @ApiResponse({ status: 200, description: 'Explanation generated.' })
+  @ApiResponse({ status: 403, description: 'Feature disabled.' })
+  @ApiResponse({ status: 429, description: 'Quota exceeded.' })
+  @Post('tasks/:taskId/explain')
+  async explainTask(
+    @Param('taskId') taskId: string,
+  ): Promise<{
+    explanation: string;
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      costUsd: string;
+      model: string;
+    };
+  }> {
+    const workspaceId = this.requestContext.getWorkspaceId()!;
+    const userId = this.requestContext.getUserId()!;
+
+    const featureEnabled = await this.settings.getAiSetting<boolean>(
+      workspaceId,
+      'ai.task_describe_enabled',
+      true,
+    );
+    if (!featureEnabled) {
+      throw new AiFeatureDisabledException('ai.task_describe_enabled');
+    }
+
+    const task = await this.taskService.getById(taskId, undefined, workspaceId);
+
+    const { systemPrompt, userPrompt } = buildExplainTaskPrompt({
+      taskTitle: task.title,
+      taskDescription: task.description,
+    });
+
+    const response = await this.aiService.generateCompletion({
+      workspaceId,
+      userId,
+      operation: AiOperation.DESCRIBE,
+      request: { systemPrompt, userPrompt, maxTokens: 160, temperature: 0.4 },
+    });
+
+    return {
+      explanation: response.text.trim(),
       usage: {
         promptTokens: response.promptTokens,
         completionTokens: response.completionTokens,

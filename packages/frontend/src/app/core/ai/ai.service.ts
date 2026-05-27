@@ -10,7 +10,33 @@ export class AiService {
     describe: signal(false),
     suggestSubtasks: signal(false),
     summary: signal(false),
+    explain: signal(false),
   };
+
+  /**
+   * Process-wide tiny cache for explain responses. Same task ID asked again
+   * within 5 minutes returns the cached explanation — the popover fires on
+   * hover and we don't want to bill twice for a flick of the mouse.
+   */
+  private readonly explainCache = new Map<string, { at: number; explanation: string }>();
+  private readonly EXPLAIN_TTL_MS = 5 * 60 * 1000;
+
+  async explainTask(taskId: string): Promise<{ explanation: string } | null> {
+    const cached = this.explainCache.get(taskId);
+    if (cached && Date.now() - cached.at < this.EXPLAIN_TTL_MS) {
+      return { explanation: cached.explanation };
+    }
+    this.loading.explain.set(true);
+    try {
+      const res = (await firstValueFrom(
+        this.http.post<{ explanation: string }>(`/api/v1/ai/tasks/${taskId}/explain`, {}),
+      )) as { explanation: string };
+      this.explainCache.set(taskId, { at: Date.now(), explanation: res.explanation });
+      return res;
+    } finally {
+      this.loading.explain.set(false);
+    }
+  }
 
   async describeTask(
     taskId: string,
