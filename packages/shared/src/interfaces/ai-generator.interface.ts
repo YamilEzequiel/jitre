@@ -39,6 +39,7 @@ export interface AiTaskWithSubtasksDraft {
   subtasks: Array<{
     title: string;
     description?: string | null;
+    priority?: TaskPriority | null;
   }>;
 }
 

@@ -71,9 +71,10 @@ const MIN_PROMPT_CHARS = 3;
         (click)="close()"
       >
         <section
-          class="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-950/20"
+          class="w-full max-w-2xl max-h-[calc(100vh-6rem)] flex flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 overflow-hidden"
           (click)="$event.stopPropagation()"
         >
+          <div class="overflow-auto p-6 flex-1">
           <header class="mb-5 flex items-start justify-between gap-3">
             <div>
               <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-600">AI</p>
@@ -306,28 +307,51 @@ const MIN_PROMPT_CHARS = 3;
                 </div>
 
                 <div>
-                  <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
-                    Sub-tareas ({{ subtasks().length }})
-                  </p>
-                  <ul class="space-y-2">
+                  <div class="mb-2 flex items-center justify-between">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                      Sub-tareas ({{ subtasks().length }})
+                    </p>
+                    <button
+                      type="button"
+                      (click)="addSubtask()"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:border-violet-300 hover:text-violet-700"
+                    >
+                      <i class="pi pi-plus text-[9px]" aria-hidden="true"></i> Agregar
+                    </button>
+                  </div>
+                  <ul class="space-y-2 max-h-72 overflow-auto pr-1 rounded-xl border border-slate-100 bg-slate-50/40 p-2">
                     @for (subtask of subtasks(); track $index) {
-                      <li class="flex items-center gap-2">
+                      <li class="grid grid-cols-[1.5rem_1fr_8rem_2rem] items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                        <span class="flex h-5 w-5 items-center justify-center rounded-md bg-violet-50 text-[10px] font-bold text-violet-700 tabular-nums">
+                          {{ $index + 1 }}
+                        </span>
                         <input
                           type="text"
                           [ngModel]="subtask.title"
                           (ngModelChange)="updateSubtask($index, $event)"
-                          class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900
-                                 focus:border-violet-400 focus:outline-none"
+                          placeholder="Título de la sub-tarea"
+                          class="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
+                        />
+                        <p-select
+                          [options]="priorities"
+                          [ngModel]="subtask.priority ?? null"
+                          (ngModelChange)="updateSubtaskPriority($index, $event)"
+                          optionLabel="label"
+                          optionValue="value"
+                          appendTo="body"
+                          size="small"
                         />
                         <button
                           type="button"
                           (click)="removeSubtask($index)"
-                          class="rounded-full p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                          class="rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                           [attr.aria-label]="'Quitar sub-tarea ' + ($index + 1)"
                         >
                           <i class="pi pi-trash text-xs" aria-hidden="true"></i>
                         </button>
                       </li>
+                    } @empty {
+                      <li class="px-2 py-4 text-center text-xs italic text-slate-400">Sin sub-tareas — agregá la primera.</li>
                     }
                   </ul>
                 </div>
@@ -497,6 +521,7 @@ const MIN_PROMPT_CHARS = 3;
               </div>
             </div>
           }
+          </div>
         </section>
       </div>
     }
@@ -545,7 +570,9 @@ export class AiCreateDialogComponent {
   protected readonly parentDescription = signal('');
   protected readonly parentPriority = signal<TaskPriority | null>(null);
   protected readonly parentProjectId = signal<string | null>(null);
-  protected readonly subtasks = signal<Array<{ title: string; description: string | null }>>([]);
+  protected readonly subtasks = signal<
+    Array<{ title: string; description: string | null; priority: TaskPriority | null }>
+  >([]);
 
   // ── doc fields
   protected readonly docTitle = signal('');
@@ -670,6 +697,21 @@ export class AiCreateDialogComponent {
     });
   }
 
+  protected updateSubtaskPriority(index: number, priority: TaskPriority | null): void {
+    this.subtasks.update((list) => {
+      const next = list.slice();
+      next[index] = { ...next[index], priority };
+      return next;
+    });
+  }
+
+  protected addSubtask(): void {
+    this.subtasks.update((list) => [
+      ...list,
+      { title: '', description: null, priority: null },
+    ]);
+  }
+
   protected removeSubtask(index: number): void {
     this.subtasks.update((list) => list.filter((_, i) => i !== index));
   }
@@ -689,7 +731,11 @@ export class AiCreateDialogComponent {
       this.parentPriority.set(draft.parent.priority ?? null);
       this.parentProjectId.set(draft.projectId ?? this.selectedProjectId());
       this.subtasks.set(
-        draft.subtasks.map((s) => ({ title: s.title, description: s.description ?? null })),
+        draft.subtasks.map((s) => ({
+          title: s.title,
+          description: s.description ?? null,
+          priority: (s as { priority?: TaskPriority }).priority ?? null,
+        })),
       );
       return;
     }
@@ -735,6 +781,7 @@ export class AiCreateDialogComponent {
           .map((s) => ({
             title: s.title.trim(),
             description: (s.description ?? '').trim() || null,
+            priority: s.priority ?? null,
           })),
       };
       return withSubtasks;

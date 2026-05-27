@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
 import { Employee, EmployeeApiService, UpdateEmployeeBody } from '../../stores/employee-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
@@ -31,7 +32,7 @@ function initials(name: string | null | undefined): string {
 @Component({
   selector: 'jt-employees',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SelectModule, DatePipe],
+  imports: [FormsModule, SelectModule, TableModule, DatePipe],
   template: `
     <div class="space-y-6 max-w-7xl">
       <!-- Header -->
@@ -56,64 +57,143 @@ function initials(name: string | null | undefined): string {
           </p>
         </div>
         <div class="flex items-center gap-2">
-          <input
-            type="search"
-            [ngModel]="search()"
-            (ngModelChange)="search.set($event)"
-            placeholder="Buscar por nombre, email, puesto…"
-            class="w-64 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20"
-          />
+          <div class="relative">
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" aria-hidden="true"></i>
+            <input
+              type="search"
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+              placeholder="Buscar por nombre, email, puesto…"
+              class="w-72 rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20"
+            />
+          </div>
+          <div class="inline-flex rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <button type="button" (click)="viewMode.set('list')"
+                    [class]="'px-3 py-2 text-xs font-bold transition ' + (viewMode() === 'list' ? 'bg-violet-600 text-white' : 'text-slate-600 hover:bg-slate-50')"
+                    aria-label="Vista lista">
+              <i class="pi pi-list text-xs" aria-hidden="true"></i>
+            </button>
+            <button type="button" (click)="viewMode.set('grid')"
+                    [class]="'px-3 py-2 text-xs font-bold transition ' + (viewMode() === 'grid' ? 'bg-violet-600 text-white' : 'text-slate-600 hover:bg-slate-50')"
+                    aria-label="Vista cuadrícula">
+              <i class="pi pi-th-large text-xs" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
       </header>
 
-      <!-- Grid -->
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Employee list">
-        @for (emp of filtered(); track emp.id) {
-          <article
-            class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 transition-shadow hover:shadow-md hover:shadow-violet-200/60 cursor-pointer"
-            (click)="open(emp)"
-            (keydown.enter)="open(emp)"
-            tabindex="0"
-            role="button"
-            [attr.aria-label]="'Abrir perfil de ' + emp.displayName"
-          >
-            <div class="flex items-start gap-4">
-              <span
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white text-lg font-bold shadow-md"
-                [style.background]="avatarBg(emp.id)"
-              >
-                @if (emp.avatarUrl) {
-                  <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-2xl object-cover" />
-                } @else {
-                  {{ initials(emp.displayName) }}
+      <!-- LIST view (default) -->
+      @if (viewMode() === 'list') {
+        <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm shadow-slate-200/70" aria-label="Employee table">
+          <div class="max-h-[calc(100vh-18rem)] overflow-auto">
+            <table class="w-full text-sm">
+              <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                <tr>
+                  <th class="px-4 py-3 text-left font-bold w-12"></th>
+                  <th class="px-4 py-3 text-left font-bold">Nombre</th>
+                  <th class="px-4 py-3 text-left font-bold">Email</th>
+                  <th class="px-4 py-3 text-left font-bold">Puesto</th>
+                  <th class="px-4 py-3 text-left font-bold">Departamento</th>
+                  <th class="px-4 py-3 text-left font-bold">Código</th>
+                  <th class="px-4 py-3 text-left font-bold">Ingreso</th>
+                  <th class="px-4 py-3 text-left font-bold">Rol</th>
+                  <th class="px-4 py-3 text-right font-bold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (emp of filtered(); track emp.id) {
+                  <tr class="border-t border-slate-100 transition-colors hover:bg-violet-50/40 cursor-pointer"
+                      (click)="open(emp)"
+                      (keydown.enter)="open(emp)"
+                      tabindex="0"
+                      role="button">
+                    <td class="px-4 py-2.5">
+                      <span class="flex h-9 w-9 items-center justify-center rounded-full text-white text-[11px] font-bold shadow-sm"
+                            [style.background]="avatarBg(emp.id)">
+                        @if (emp.avatarUrl) {
+                          <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-full object-cover" />
+                        } @else {
+                          {{ initials(emp.displayName) }}
+                        }
+                      </span>
+                    </td>
+                    <td class="px-4 py-2.5">
+                      <p class="font-semibold text-slate-950 truncate max-w-[14rem]">{{ emp.displayName }}</p>
+                    </td>
+                    <td class="px-4 py-2.5 text-slate-600 truncate max-w-[14rem]">{{ emp.email }}</td>
+                    <td class="px-4 py-2.5 text-slate-700 truncate max-w-[12rem]">{{ emp.position || '—' }}</td>
+                    <td class="px-4 py-2.5 text-slate-600 truncate max-w-[10rem]">{{ emp.department || '—' }}</td>
+                    <td class="px-4 py-2.5 font-mono text-xs text-slate-500">{{ emp.employeeCode || '—' }}</td>
+                    <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+                      {{ emp.hireDate ? (emp.hireDate | date:'mediumDate') : '—' }}
+                    </td>
+                    <td class="px-4 py-2.5">
+                      <span [class]="'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ' + roleBadgeClass(emp.workspaceRole)">
+                        {{ emp.workspaceRole }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2.5 text-right">
+                      <button type="button" (click)="open(emp); $event.stopPropagation()"
+                              class="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-700"
+                              aria-label="Editar">
+                        <i class="pi pi-pencil text-xs" aria-hidden="true"></i>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="9" class="px-4 py-12 text-center text-sm text-slate-400 italic">
+                      No hay empleados que coincidan con la búsqueda.
+                    </td>
+                  </tr>
                 }
-              </span>
-              <div class="min-w-0 flex-1">
-                <h3 class="truncate text-base font-bold text-slate-950">{{ emp.displayName }}</h3>
-                <p class="truncate text-xs text-slate-500">{{ emp.email }}</p>
-                @if (emp.position) {
-                  <p class="mt-2 text-xs text-slate-700"><i class="pi pi-briefcase text-[10px] mr-1" aria-hidden="true"></i>{{ emp.position }}</p>
-                }
-                @if (emp.department) {
-                  <p class="text-xs text-slate-500"><i class="pi pi-building text-[10px] mr-1" aria-hidden="true"></i>{{ emp.department }}</p>
-                }
-              </div>
-              <span
-                [class]="
-                  'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ' +
-                  roleBadgeClass(emp.workspaceRole)
-                "
-              >
-                {{ emp.workspaceRole }}
-              </span>
-            </div>
-          </article>
-        } @empty {
-          <div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-            <p class="text-sm text-slate-500">No hay empleados que coincidan con la búsqueda.</p>
+              </tbody>
+            </table>
           </div>
-        }
-      </section>
+        </section>
+      } @else {
+        <!-- GRID view -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Employee grid">
+          @for (emp of filtered(); track emp.id) {
+            <article
+              class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60 transition-shadow hover:shadow-md hover:shadow-violet-200/60 cursor-pointer"
+              (click)="open(emp)"
+              (keydown.enter)="open(emp)"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="'Abrir perfil de ' + emp.displayName"
+            >
+              <div class="flex items-start gap-4">
+                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white text-lg font-bold shadow-md"
+                      [style.background]="avatarBg(emp.id)">
+                  @if (emp.avatarUrl) {
+                    <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-2xl object-cover" />
+                  } @else {
+                    {{ initials(emp.displayName) }}
+                  }
+                </span>
+                <div class="min-w-0 flex-1">
+                  <h3 class="truncate text-base font-bold text-slate-950">{{ emp.displayName }}</h3>
+                  <p class="truncate text-xs text-slate-500">{{ emp.email }}</p>
+                  @if (emp.position) {
+                    <p class="mt-2 text-xs text-slate-700"><i class="pi pi-briefcase text-[10px] mr-1" aria-hidden="true"></i>{{ emp.position }}</p>
+                  }
+                  @if (emp.department) {
+                    <p class="text-xs text-slate-500"><i class="pi pi-building text-[10px] mr-1" aria-hidden="true"></i>{{ emp.department }}</p>
+                  }
+                </div>
+                <span [class]="'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ' + roleBadgeClass(emp.workspaceRole)">
+                  {{ emp.workspaceRole }}
+                </span>
+              </div>
+            </article>
+          } @empty {
+            <div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+              <p class="text-sm text-slate-500">No hay empleados que coincidan con la búsqueda.</p>
+            </div>
+          }
+        </section>
+      }
 
       <!-- Detail / edit panel -->
       @if (selected(); as emp) {
@@ -291,6 +371,7 @@ export class EmployeesComponent implements OnInit {
   readonly saving = signal(false);
   readonly selected = signal<Employee | null>(null);
   readonly search = signal('');
+  readonly viewMode = signal<'list' | 'grid'>('list');
 
   protected readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 

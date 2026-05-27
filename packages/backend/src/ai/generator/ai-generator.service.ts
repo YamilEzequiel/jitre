@@ -171,6 +171,7 @@ export class AiGeneratorService {
         statusId,
         title: child.title,
         description: child.description ?? null,
+        ...(child.priority ? { priority: child.priority } : {}),
         parentTaskId: parent.id,
         actorUserId: userId,
       } satisfies CreateTaskDto);
