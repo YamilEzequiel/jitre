@@ -33,17 +33,16 @@ interface MentionMatch {
     <div class="relative">
       <textarea
         #editor
-        [value]="value()"
         [rows]="rows()"
         [placeholder]="placeholder()"
         [attr.aria-label]="ariaLabel()"
         (input)="onInput($event)"
         (keydown)="onKeydown($event)"
         (blur)="onBlur()"
-        class="w-full rounded-lg bg-white border border-slate-200
+        class="w-full rounded-lg bg-white border border-slate-300
                px-4 py-3 text-sm text-slate-950 placeholder:text-slate-400
-               outline-none transition resize-y
-               focus:border-indigo-400 focus:bg-slate-50 focus:ring-2 focus:ring-indigo-500/30"
+               outline-none transition resize-y hover:border-slate-400
+               focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
       ></textarea>
 
       @if (showSuggestions()) {
@@ -109,6 +108,36 @@ export class MentionInputComponent {
    */
   private readonly mentionRegistry = new Map<string, string>();
 
+  /**
+   * Whatever encoded value we last emitted upward. If the parent's `value()`
+   * input matches this we know it's a round-trip (parent stored what we
+   * sent) and we must NOT overwrite the textarea — that's what caused the
+   * "@[Name](uuid)" leak while typing.
+   */
+  private lastEmitted = '';
+
+  constructor() {
+    // Sync only on external resets (e.g. parent clears the draft after
+    // posting). Detection: external `value()` differs from `lastEmitted`.
+    effect(() => {
+      const incoming = this.value();
+      if (incoming === this.lastEmitted) return;
+      const ta = this.editor()?.nativeElement;
+      if (!ta) return;
+      // Decode the friendly form before showing it (in case the parent
+      // hands us back a stored markdown value, e.g. when editing).
+      const friendly = this.decode(incoming);
+      if (ta.value !== friendly) ta.value = friendly;
+      this.lastEmitted = incoming;
+    });
+
+    effect(() => {
+      // Reset suggestion highlight when the list shrinks below current index.
+      const len = this.filtered().length;
+      if (this.activeIndex() >= len) this.activeIndex.set(0);
+    });
+  }
+
   readonly filtered = computed<MentionCandidate[]>(() => {
     const m = this.match();
     if (!m) return [];
@@ -121,14 +150,6 @@ export class MentionInputComponent {
   });
 
   readonly showSuggestions = computed(() => this.match() !== null && this.filtered().length >= 0);
-
-  constructor() {
-    effect(() => {
-      // Reset index when the candidate list shrinks below current selection.
-      const len = this.filtered().length;
-      if (this.activeIndex() >= len) this.activeIndex.set(0);
-    });
-  }
 
   initials(name: string): string {
     const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -146,7 +167,9 @@ export class MentionInputComponent {
   onInput(event: Event): void {
     const ta = event.target as HTMLTextAreaElement;
     const text = ta.value;
-    this.valueChange.emit(this.encode(text));
+    const encoded = this.encode(text);
+    this.lastEmitted = encoded;
+    this.valueChange.emit(encoded);
     this.updateMatch(text, ta.selectionStart ?? text.length);
   }
 
@@ -232,7 +255,21 @@ export class MentionInputComponent {
     // Record the name -> id mapping so we can re-expand the markdown form
     // on every valueChange emission.
     this.mentionRegistry.set(c.displayName.toLowerCase(), c.userId);
-    this.valueChange.emit(this.encode(next));
+    const encoded = this.encode(next);
+    this.lastEmitted = encoded;
+    this.valueChange.emit(encoded);
+  }
+
+  /**
+   * Inverse of `encode`: collapse `@[Name](id)` markdown back to `@Name`
+   * for textarea display. Used when the parent feeds us a stored value
+   * (initial render or after an external reset).
+   */
+  private decode(markdown: string): string {
+    return markdown.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, (_match, name: string, id: string) => {
+      this.mentionRegistry.set(name.toLowerCase(), id);
+      return `@${name}`;
+    });
   }
 
   /**

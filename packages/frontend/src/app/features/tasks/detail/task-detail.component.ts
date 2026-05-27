@@ -398,8 +398,25 @@ interface DisplayComment {
                     class="text-sm text-slate-700 prose prose-sm prose-slate max-w-none"
                     [innerHTML]="renderMentions(comment.body) | markdown"
                   ></div>
-                  <div class="mt-3 -mx-1">
-                    <jt-attachment-list context="comment" [contextId]="comment.id" />
+                  <div class="mt-3">
+                    <button
+                      type="button"
+                      (click)="toggleCommentAttachments(comment.id)"
+                      [attr.aria-expanded]="isCommentAttachmentsOpen(comment.id)"
+                      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700"
+                    >
+                      <i class="pi pi-paperclip text-[10px]" aria-hidden="true"></i>
+                      {{ isCommentAttachmentsOpen(comment.id) ? 'Ocultar adjuntos' : 'Ver adjuntos' }}
+                      <i
+                        [class]="'pi text-[10px] transition-transform ' + (isCommentAttachmentsOpen(comment.id) ? 'pi-chevron-up' : 'pi-chevron-down')"
+                        aria-hidden="true"
+                      ></i>
+                    </button>
+                    @if (isCommentAttachmentsOpen(comment.id)) {
+                      <div class="mt-2 -mx-1">
+                        <jt-attachment-list context="comment" [contextId]="comment.id" />
+                      </div>
+                    }
                   </div>
                 </div>
               } @empty {
@@ -511,6 +528,20 @@ export class TaskDetailComponent implements OnInit {
 
   readonly commentDraft = signal('');
   readonly pendingAttachments = signal<File[]>([]);
+  private readonly openCommentAttachments = signal<Set<string>>(new Set());
+
+  isCommentAttachmentsOpen(commentId: string): boolean {
+    return this.openCommentAttachments().has(commentId);
+  }
+
+  toggleCommentAttachments(commentId: string): void {
+    this.openCommentAttachments.update((curr) => {
+      const next = new Set(curr);
+      if (next.has(commentId)) next.delete(commentId);
+      else next.add(commentId);
+      return next;
+    });
+  }
   readonly submittingComment = signal(false);
 
   readonly mentionCandidates = computed<MentionCandidate[]>(() => {
