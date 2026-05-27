@@ -109,6 +109,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'audit',
+        loadComponent: () =>
+          import('./features/audit/audit-log.component').then(
+            m => m.AuditLogComponent,
+          ),
+      },
+      {
         path: 'my-time',
         loadComponent: () =>
           import('./features/time-tracking/my-time.component').then(

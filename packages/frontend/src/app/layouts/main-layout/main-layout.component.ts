@@ -7,6 +7,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { KeyboardShortcutService } from '../../core/keyboard/keyboard-shortcut.service';
@@ -94,16 +96,45 @@ interface NavItem {
           </span>
         </a>
 
-        <div class="mx-4 mb-4 rounded-lg border border-white/[0.07] bg-white/[0.04] p-3">
-          <div class="flex items-center gap-2.5">
-            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-violet-500/15 text-violet-300">
+        <div class="relative mx-4 mb-4">
+          <button
+            type="button"
+            (click)="toggleWorkspaceMenu($event)"
+            [attr.aria-expanded]="workspaceMenuOpen()"
+            class="flex w-full items-center gap-2.5 rounded-lg border border-white/[0.07] bg-white/[0.04] p-3 transition hover:bg-white/[0.07]"
+          >
+            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-violet-500/15 text-violet-300 shrink-0">
               <i class="pi pi-sparkles text-xs" aria-hidden="true"></i>
             </span>
-            <div class="min-w-0">
-              <p class="truncate text-xs font-bold text-white">{{ 'layout.productTeam' | translate }}</p>
+            <div class="min-w-0 flex-1 text-left">
+              <p class="truncate text-xs font-bold text-white">{{ currentWorkspaceName() }}</p>
               <p class="truncate text-[9px] font-semibold text-emerald-400">● {{ 'layout.activeWorkspace' | translate }}</p>
             </div>
-          </div>
+            <i class="pi pi-angle-down text-[10px] text-slate-400 shrink-0" aria-hidden="true"></i>
+          </button>
+          @if (workspaceMenuOpen()) {
+            <button type="button" class="fixed inset-0 z-30 cursor-default bg-transparent" (click)="closeWorkspaceMenu()" aria-label="Close workspaces"></button>
+            <div class="absolute left-0 right-0 top-full z-40 mt-1 rounded-lg border border-white/10 bg-[#0a0f24] py-1 shadow-2xl">
+              <p class="px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">Workspaces</p>
+              @for (ws of availableWorkspaces(); track ws.id) {
+                <button
+                  type="button"
+                  (click)="switchWorkspace(ws)"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                >
+                  <span class="h-1.5 w-1.5 shrink-0 rounded-full"
+                        [class.bg-emerald-400]="ws.id === currentWorkspaceId()"
+                        [class.bg-slate-600]="ws.id !== currentWorkspaceId()"></span>
+                  <span class="truncate flex-1">{{ ws.name }}</span>
+                  @if (ws.id === currentWorkspaceId()) {
+                    <i class="pi pi-check text-[10px] text-emerald-400" aria-hidden="true"></i>
+                  }
+                </button>
+              } @empty {
+                <p class="px-3 py-2 text-xs italic text-slate-500">Sin workspaces.</p>
+              }
+            </div>
+          }
         </div>
 
         <ul class="flex-1 space-y-1 px-3">
@@ -363,9 +394,18 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private _unregisterAiCreate?: () => void;
   private _tickHandle?: ReturnType<typeof setInterval>;
 
+  private readonly http = inject(HttpClient);
+
   readonly stopping = computed(() => this.timeStore.stopping());
   readonly nowMs = signal<number>(Date.now());
   readonly userMenuOpen = signal(false);
+  readonly workspaceMenuOpen = signal(false);
+  readonly availableWorkspaces = signal<Array<{ id: string; name: string; slug: string; role: string }>>([]);
+
+  readonly currentWorkspaceName = computed(
+    () => this.auth.currentWorkspace()?.name ?? 'Workspace',
+  );
+  readonly currentWorkspaceId = computed(() => this.auth.currentWorkspace()?.id ?? null);
 
   readonly locales = SUPPORTED_LOCALES;
   readonly currentLocale = this.locale.current;
@@ -394,6 +434,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       ? [
           { labelKey: 'nav.timeReports', route: '/time-reports', icon: 'pi-chart-bar' },
           { labelKey: 'nav.employees', route: '/employees', icon: 'pi-users' },
+          { labelKey: 'nav.audit', route: '/audit', icon: 'pi-shield' },
         ]
       : []),
   ]);
@@ -461,6 +502,44 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   closeUserMenu(): void {
     this.userMenuOpen.set(false);
+  }
+
+  async toggleWorkspaceMenu(event: MouseEvent): Promise<void> {
+    event.stopPropagation();
+    const willOpen = !this.workspaceMenuOpen();
+    this.workspaceMenuOpen.set(willOpen);
+    if (willOpen && this.availableWorkspaces().length === 0) {
+      try {
+        const list = await firstValueFrom(
+          this.http.get<Array<{ id: string; name: string; slug: string; role: string }>>(
+            '/api/v1/workspaces',
+          ),
+        );
+        this.availableWorkspaces.set(list ?? []);
+      } catch {
+        this.toast.error('No pudimos cargar los workspaces');
+      }
+    }
+  }
+
+  closeWorkspaceMenu(): void {
+    this.workspaceMenuOpen.set(false);
+  }
+
+  switchWorkspace(ws: { id: string; name: string; slug: string; role: string }): void {
+    this.closeWorkspaceMenu();
+    const current = this.auth.currentWorkspace();
+    if (current?.id === ws.id) return;
+    this.auth.switchWorkspace({
+      id: ws.id,
+      name: ws.name,
+      slug: ws.slug,
+      role: ws.role as 'owner' | 'admin' | 'member',
+    });
+    // Force a hard reload so every store/route binding re-hydrates against
+    // the new workspace cleanly. Simpler than threading "workspace-switched"
+    // events through every store.
+    window.location.assign('/');
   }
 
   setLocale(loc: SupportedLocale): void {

@@ -14,6 +14,7 @@ import { CustomFieldService } from '../project/custom-field/custom-field.service
 import { TaskAssignmentService } from './task-assignment.service';
 import { TaskLabelService } from './task-label.service';
 import { EventBusService } from '../events/event-bus.service';
+import { WorkflowTransitionService } from '../project/workflow/workflow-transition.service';
 import {
   TaskCreatedEvent,
   TaskUpdatedEvent,
@@ -95,6 +96,7 @@ export class TaskService {
     private readonly assignmentService: TaskAssignmentService,
     private readonly labelService: TaskLabelService,
     private readonly eventBus: EventBusService,
+    private readonly workflowService: WorkflowTransitionService,
   ) {}
 
   async create(dto: CreateTaskDto): Promise<TaskEntity> {
@@ -273,6 +275,21 @@ export class TaskService {
       ],
     });
     if (!newStatus) throw new NotFoundException('STATUS_NOT_FOUND');
+
+    // Enforce the project's workflow state machine (if any). When the project
+    // has zero transitions defined this returns null and any move is OK.
+    const transition = await this.workflowService.assertAllowed(
+      task.projectId,
+      task.workspaceId,
+      task.statusId,
+      statusId,
+    );
+    if (transition?.requiresAssignee) {
+      const assignees = await this.assignmentService.listAssignees(id);
+      if (assignees.length === 0) {
+        throw new BadRequestException('TRANSITION_REQUIRES_ASSIGNEE');
+      }
+    }
 
     const previousStatusId = task.statusId;
     task.statusId = statusId;

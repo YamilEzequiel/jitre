@@ -21,6 +21,7 @@ import { ToastService } from '../../../core/toast/toast.service';
 import { SkeletonComponent } from '../../../shared/skeleton/skeleton.component';
 import { MarkdownPipe } from '../../../shared/markdown/markdown.pipe';
 import { TimeLoggerComponent } from '../../time-tracking/time-logger.component';
+import { TaskLinksComponent } from '../links/task-links.component';
 import { AttachmentListComponent } from '../attachments/attachment-list.component';
 import {
   MentionCandidate,
@@ -46,6 +47,7 @@ interface DisplayComment {
     MarkdownPipe,
     RouterLink,
     TimeLoggerComponent,
+    TaskLinksComponent,
     AttachmentListComponent,
     MentionInputComponent,
   ],
@@ -218,6 +220,11 @@ interface DisplayComment {
         <!-- Time tracking -->
         <div class="mb-6">
           <jt-time-logger [taskId]="task()!.id" />
+        </div>
+
+        <!-- Linked issues -->
+        <div class="mb-6">
+          <jt-task-links [taskId]="task()!.id" [projectId]="task()!.projectId" />
         </div>
 
         <!-- Attachments -->

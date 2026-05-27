@@ -37,6 +37,7 @@ import {
 } from '../../tasks/list/task-filter-bar.component';
 import { KanbanBoardComponent } from '../board/kanban-board.component';
 import { ProjectMembersComponent } from '../members/project-members.component';
+import { WorkflowEditorComponent } from '../../workflow/workflow-editor.component';
 import { AttachmentListComponent } from '../../tasks/attachments/attachment-list.component';
 import { ChartComponent } from '../../analytics/chart.component';
 import {
@@ -63,6 +64,7 @@ type TaskView = 'board' | 'list';
     RouterLink,
     FormsModule,
     SelectModule,
+    WorkflowEditorComponent,
   ],
   template: `
     <div class="flex min-w-0 flex-col max-w-none">
@@ -567,6 +569,11 @@ type TaskView = 'board' | 'list';
                     Agregar estado
                   </button>
                 </div>
+              </section>
+
+              <!-- Workflow transitions -->
+              <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70">
+                <jt-workflow-editor [projectId]="projectId" />
               </section>
             }
           }

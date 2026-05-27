@@ -97,6 +97,9 @@ describe('TaskService â€” CRUD cluster', () => {
     };
     labelService = { addLabel: jest.fn().mockResolvedValue({}) };
     eventBus = { publish: jest.fn() };
+    const workflowService = {
+      assertAllowed: jest.fn().mockResolvedValue(null),
+    };
 
     service = new TaskService(
       taskRepo as never,
@@ -108,6 +111,7 @@ describe('TaskService â€” CRUD cluster', () => {
       assignmentService as never,
       labelService as never,
       eventBus as never,
+      workflowService as never,
     );
   });
 

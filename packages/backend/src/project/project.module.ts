@@ -12,6 +12,7 @@ import { CustomFieldModule } from './custom-field/custom-field.module';
 import { EventsModule } from '../events/events.module';
 import { PlanningModule } from './planning/planning.module';
 import { ChatModule } from '../chat/chat.module';
+import { WorkflowModule } from './workflow/workflow.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ChatModule } from '../chat/chat.module';
     CustomFieldModule,
     EventsModule,
     PlanningModule,
+    WorkflowModule,
     forwardRef(() => ChatModule),
   ],
   providers: [ProjectMembershipService, ProjectService],
@@ -36,6 +38,7 @@ import { ChatModule } from '../chat/chat.module';
     LabelModule,
     CustomFieldModule,
     PlanningModule,
+    WorkflowModule,
   ],
 })
 export class ProjectModule {}
