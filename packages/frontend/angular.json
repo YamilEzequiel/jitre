@@ -24,13 +24,8 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ],
-            "allowedCommonJsDependencies": [
-              "quill-delta",
-              "quill"
-            ]
+            "styles": ["src/styles.css"],
+            "allowedCommonJsDependencies": ["quill-delta", "quill"]
           },
           "configurations": {
             "production": {
@@ -46,7 +41,8 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,

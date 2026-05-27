@@ -1,0 +1,87 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "close": "Close",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "required": "Required",
+    "optional": "Optional",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "aiInsights": "AI Insights",
+    "automations": "Automations",
+    "tickets": "Tickets",
+    "docs": "Docs",
+    "chat": "Chat",
+    "timeReports": "Time Reports",
+    "settings": "Settings",
+    "support": "Support",
+    "notifications": "Notifications",
+    "help": "Help"
+  },
+  "layout": {
+    "brandTagline": "Plan and ship",
+    "activeWorkspace": "Active workspace",
+    "productTeam": "Product team",
+    "searchCommands": "Search commands…",
+    "openCommandPalette": "Open command palette",
+    "openAccountMenu": "Open account menu",
+    "closeAccountMenu": "Close account menu",
+    "settings": "Settings",
+    "logout": "Log out",
+    "timer": {
+      "ariaActiveTimer": "Active timer",
+      "trackingTask": "Tracking task",
+      "goToTask": "Go to task {{title}}",
+      "stop": "Stop",
+      "stopAria": "Stop timer",
+      "stopped": "Timer stopped",
+      "stopFailed": "Failed to stop timer"
+    }
+  },
+  "auth": {
+    "login": {
+      "welcomeBadge": "Welcome back",
+      "title1": "Log in to your",
+      "title2": "workspace.",
+      "subtitle": "Sign in to your workspace to continue with projects, tasks, and time.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@email.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "loggingIn": "Logging in…",
+      "logIn": "Log In",
+      "noAccount": "Need an account?",
+      "register": "Register",
+      "errors": {
+        "minPassword": "Password must be at least 6 characters",
+        "checkFields": "Please check the highlighted fields.",
+        "invalidCredentials": "Invalid email or password.",
+        "userInactive": "Your account is disabled. Contact support.",
+        "generic": "Login failed. Please try again."
+      }
+    }
+  },
+  "language": {
+    "es": "Spanish",
+    "en": "English",
+    "switchTo": "Switch to {{language}}"
+  }
+}

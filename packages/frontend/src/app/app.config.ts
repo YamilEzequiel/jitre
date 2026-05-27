@@ -3,11 +3,14 @@ import {
   inject,
   provideBrowserGlobalErrorListeners,
   provideAppInitializer,
+  isDevMode,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
 import { requestIdInterceptor } from './core/http/request-id.interceptor';
@@ -16,6 +19,7 @@ import { csrfInterceptor } from './core/http/csrf.interceptor';
 import { workspaceInterceptor } from './core/http/workspace.interceptor';
 import { errorInterceptor } from './core/http/error.interceptor';
 import { AuthService } from './core/auth/auth.service';
+import { LocaleService, DEFAULT_LOCALE } from './core/i18n/locale.service';
 import { ProjectStore } from './stores/project.store';
 import { TaskStore } from './stores/task.store';
 import { NotificationStore } from './stores/notification.store';
@@ -25,6 +29,7 @@ import { TaskSearchProvider } from './shared/command-palette/providers/task-sear
 import { ProjectSearchProvider } from './shared/command-palette/providers/project-search.provider';
 import { AiActionProvider } from './shared/command-palette/providers/ai-action.provider';
 import { SettingsProvider } from './shared/command-palette/providers/settings.provider';
+import { provideServiceWorker } from '@angular/service-worker';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -47,6 +52,13 @@ export const appConfig: ApplicationConfig = {
           cssLayer: false,
         },
       },
+    }),
+    provideTranslateService({
+      fallbackLang: DEFAULT_LOCALE,
+      loader: provideTranslateHttpLoader({ prefix: '/i18n/', suffix: '.json' }),
+    }),
+    provideAppInitializer(() => {
+      inject(LocaleService).init();
     }),
     provideAppInitializer(async () => {
       const auth = inject(AuthService);
@@ -71,6 +83,10 @@ export const appConfig: ApplicationConfig = {
       palette.registerProvider(inject(ProjectSearchProvider));
       palette.registerProvider(inject(AiActionProvider));
       palette.registerProvider(inject(SettingsProvider));
+    }),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
     }),
   ],
 };

@@ -1,0 +1,87 @@
+{
+  "common": {
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "retry": "Reintentar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "yes": "Sí",
+    "no": "No",
+    "actions": "Acciones",
+    "required": "Obligatorio",
+    "optional": "Opcional",
+    "language": "Idioma"
+  },
+  "nav": {
+    "dashboard": "Tablero",
+    "projects": "Proyectos",
+    "aiInsights": "IA Insights",
+    "automations": "Automatizaciones",
+    "tickets": "Tickets",
+    "docs": "Documentos",
+    "chat": "Chat",
+    "timeReports": "Reportes de tiempo",
+    "settings": "Configuración",
+    "support": "Soporte",
+    "notifications": "Notificaciones",
+    "help": "Ayuda"
+  },
+  "layout": {
+    "brandTagline": "Planificá y entregá",
+    "activeWorkspace": "Workspace activo",
+    "productTeam": "Equipo de producto",
+    "searchCommands": "Buscar comandos…",
+    "openCommandPalette": "Abrir paleta de comandos",
+    "openAccountMenu": "Abrir menú de cuenta",
+    "closeAccountMenu": "Cerrar menú de cuenta",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión",
+    "timer": {
+      "ariaActiveTimer": "Temporizador activo",
+      "trackingTask": "Tarea en curso",
+      "goToTask": "Ir a la tarea {{title}}",
+      "stop": "Detener",
+      "stopAria": "Detener temporizador",
+      "stopped": "Temporizador detenido",
+      "stopFailed": "No se pudo detener el temporizador"
+    }
+  },
+  "auth": {
+    "login": {
+      "welcomeBadge": "Bienvenido de nuevo",
+      "title1": "Ingresá a tu",
+      "title2": "workspace.",
+      "subtitle": "Entrá a tu workspace para seguir con proyectos, tareas y tiempos.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@email.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresá tu contraseña",
+      "rememberMe": "Recordarme",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "loggingIn": "Ingresando…",
+      "logIn": "Ingresar",
+      "noAccount": "¿No tenés cuenta?",
+      "register": "Registrate",
+      "errors": {
+        "minPassword": "La contraseña debe tener al menos 6 caracteres",
+        "checkFields": "Revisá los campos marcados.",
+        "invalidCredentials": "Email o contraseña incorrectos.",
+        "userInactive": "Tu cuenta está deshabilitada. Contactá soporte.",
+        "generic": "No pudimos ingresar. Intentá de nuevo."
+      }
+    }
+  },
+  "language": {
+    "es": "Español",
+    "en": "Inglés",
+    "switchTo": "Cambiar a {{language}}"
+  }
+}
