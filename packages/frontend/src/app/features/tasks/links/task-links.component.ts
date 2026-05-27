@@ -18,6 +18,7 @@ import {
   TASK_LINK_TYPES,
 } from '../../../stores/task-link-api.service';
 import { TaskStore } from '../../../stores/task.store';
+import { TaskApiService } from '../../../stores/task-api.service';
 import { ToastService } from '../../../core/toast/toast.service';
 
 const TYPE_LABEL: Record<TaskLinkType, { out: string; in: string; icon: string; color: string }> = {
@@ -66,9 +67,10 @@ const TYPE_LABEL: Record<TaskLinkType, { out: string; in: string; icon: string; 
             [options]="targetOptions()"
             optionLabel="label"
             optionValue="value"
-            placeholder="Buscar tarea…"
+            [placeholder]="loadingTargets() ? 'Cargando tareas…' : (targetOptions().length === 0 ? 'No hay otras tareas en este proyecto' : 'Buscar tarea…')"
             [filter]="true"
             appendTo="body"
+            [disabled]="loadingTargets() || targetOptions().length === 0"
           />
           <button type="button" (click)="add()"
                   [disabled]="!newTargetId || saving()"
@@ -106,6 +108,7 @@ export class TaskLinksComponent implements OnChanges {
   readonly projectId = input.required<string>();
 
   private readonly api = inject(TaskLinkApiService);
+  private readonly taskApi = inject(TaskApiService);
   private readonly taskStore = inject(TaskStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -113,6 +116,7 @@ export class TaskLinksComponent implements OnChanges {
   readonly links = signal<HydratedTaskLink[]>([]);
   readonly saving = signal(false);
   readonly showForm = signal(false);
+  readonly loadingTargets = signal(false);
 
   newType: TaskLinkType = 'relates_to';
   newTargetId = '';
@@ -143,9 +147,29 @@ export class TaskLinksComponent implements OnChanges {
     }
   }
 
-  toggleForm(): void {
-    this.showForm.update((v) => !v);
+  async toggleForm(): Promise<void> {
+    const willOpen = !this.showForm();
+    this.showForm.set(willOpen);
     this.newTargetId = '';
+    if (!willOpen) return;
+
+    // When opening the picker, ensure the project tasks are hydrated.
+    // The link-issues panel may be the first thing a user opens after
+    // landing directly on /tasks/:id, in which case the store only has
+    // the current task — the dropdown would otherwise come up empty.
+    const pid = this.projectId();
+    const haveSiblings = this.taskStore.byProject(pid)().length > 1;
+    if (haveSiblings) return;
+
+    this.loadingTargets.set(true);
+    try {
+      const all = await this.taskApi.list(pid);
+      for (const t of all) this.taskStore.upsert(t);
+    } catch {
+      // Non-fatal: dropdown will just stay empty.
+    } finally {
+      this.loadingTargets.set(false);
+    }
   }
 
   async add(): Promise<void> {

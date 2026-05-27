@@ -16,6 +16,7 @@ import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
 import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
 import { CommentApiService, CommentDto } from '../../../stores/comment-api.service';
+import { AttachmentApiService } from '../../../stores/attachment-api.service';
 import { OptimisticUpdateService } from '../../../core/optimistic/optimistic-update.service';
 import { AiService } from '../../../core/ai/ai.service';
 import { ToastService } from '../../../core/toast/toast.service';
@@ -28,6 +29,7 @@ import {
   MentionCandidate,
   MentionInputComponent,
 } from '../../../shared/mention-input/mention-input.component';
+import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
 interface DisplayComment {
   id: string;
@@ -51,32 +53,67 @@ interface DisplayComment {
     TaskLinksComponent,
     AttachmentListComponent,
     MentionInputComponent,
+    CheckboxComponent,
   ],
   template: `
-    <div class="flex flex-col h-full w-full overflow-auto">
-      <!-- Back navigation -->
-      <nav class="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <button
-          type="button"
-          (click)="goBack()"
-          class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-          aria-label="Volver"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          Volver
-        </button>
-        @if (task(); as t) {
-          <span class="text-slate-300" aria-hidden="true">/</span>
-          <a
-            [routerLink]="['/projects', t.projectId]"
-            class="rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900"
+    <div class="flex w-full flex-col">
+      <!-- Back navigation + prev/next between tasks of the same project -->
+      <nav class="mb-4 flex items-center justify-between gap-2 text-xs font-semibold text-slate-500">
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="goBack()"
+            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            aria-label="Volver"
           >
-            Proyecto
-          </a>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Volver
+          </button>
+          @if (task(); as t) {
+            <span class="text-slate-300" aria-hidden="true">/</span>
+            <a
+              [routerLink]="['/projects', t.projectId]"
+              class="rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900"
+            >
+              Proyecto
+            </a>
+          }
+        </div>
+
+        @if (siblingsCount() > 1) {
+          <div class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-1.5 py-1 shadow-sm">
+            <button
+              type="button"
+              (click)="goToPrev()"
+              [disabled]="!prevTask()"
+              class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+              [attr.aria-label]="prevTask() ? 'Tarea anterior: ' + prevTask()!.title : 'No hay tarea anterior'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span class="px-1 text-[10px] font-bold uppercase tracking-[0.16em] tabular-nums text-slate-500">
+              {{ siblingIndex() }} / {{ siblingsCount() }}
+            </span>
+            <button
+              type="button"
+              (click)="goToNext()"
+              [disabled]="!nextTask()"
+              class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+              [attr.aria-label]="nextTask() ? 'Siguiente tarea: ' + nextTask()!.title : 'No hay siguiente tarea'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
         }
       </nav>
 
@@ -275,12 +312,10 @@ interface DisplayComment {
             <ul class="space-y-2 mb-4">
               @for (sub of subtasks(); track sub.id) {
                 <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                  <input
-                    type="checkbox"
+                  <jt-checkbox
                     [checked]="isSubtaskDone(sub)"
-                    (change)="toggleSubtaskDone(sub)"
-                    class="h-4 w-4 rounded border-slate-300 bg-white text-indigo-500 focus:ring-indigo-500/40 focus:ring-offset-0 cursor-pointer"
-                    [attr.aria-label]="'Toggle done for ' + sub.title"
+                    (checkedChange)="toggleSubtaskDone(sub)"
+                    [ariaLabel]="'Toggle done for ' + sub.title"
                   />
                   <a
                     [routerLink]="['/tasks', sub.id]"
@@ -363,14 +398,17 @@ interface DisplayComment {
                     class="text-sm text-slate-700 prose prose-sm prose-slate max-w-none"
                     [innerHTML]="renderMentions(comment.body) | markdown"
                   ></div>
+                  <div class="mt-3 -mx-1">
+                    <jt-attachment-list context="comment" [contextId]="comment.id" />
+                  </div>
                 </div>
               } @empty {
                 <p class="text-sm text-slate-500">No comments yet. Be the first to say something.</p>
               }
             </div>
 
-            <!-- Comment composer with @mention autocomplete -->
-            <div class="space-y-3">
+            <!-- Comment composer with @mention autocomplete + attachments -->
+            <div class="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
               <jt-mention-input
                 [value]="commentDraft()"
                 [candidates]="mentionCandidates()"
@@ -380,17 +418,56 @@ interface DisplayComment {
                 (valueChange)="commentDraft.set($event)"
                 (submit)="submitComment()"
               />
-              <div class="flex items-center justify-between gap-3">
-                <p class="text-[11px] text-slate-400">
-                  Tip: <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">@</kbd>
-                  to mention &middot;
-                  <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">Ctrl</kbd>+<kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">Enter</kbd>
-                  to submit
-                </p>
+
+              @if (pendingAttachments().length > 0) {
+                <ul class="flex flex-wrap gap-2" aria-label="Pending attachments">
+                  @for (file of pendingAttachments(); track file.name + file.size; let i = $index) {
+                    <li
+                      class="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-800"
+                    >
+                      <i class="pi pi-paperclip text-[10px]" aria-hidden="true"></i>
+                      <span class="max-w-[14rem] truncate" [attr.title]="file.name">{{ file.name }}</span>
+                      <span class="text-indigo-500">{{ formatFileSize(file.size) }}</span>
+                      <button
+                        type="button"
+                        (click)="removePendingAttachment(i)"
+                        class="ml-1 rounded p-0.5 text-indigo-500 transition hover:bg-indigo-100 hover:text-indigo-900"
+                        [attr.aria-label]="'Quitar ' + file.name"
+                      >
+                        <i class="pi pi-times text-[10px]" aria-hidden="true"></i>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <label
+                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
+                  >
+                    <i class="pi pi-paperclip text-[11px]" aria-hidden="true"></i>
+                    Adjuntar
+                    <input
+                      type="file"
+                      multiple
+                      class="sr-only"
+                      (change)="onPickAttachments($event)"
+                      accept="image/*,application/pdf,text/plain,text/csv,application/zip,application/json,.log,.txt"
+                      aria-label="Adjuntar archivos al comentario"
+                    />
+                  </label>
+                  <p class="hidden text-[11px] text-slate-400 sm:block">
+                    <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">@</kbd>
+                    mention &middot;
+                    <kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">Ctrl</kbd>+<kbd class="rounded border border-slate-300 px-1 py-0.5 text-[10px]">Enter</kbd>
+                    submit
+                  </p>
+                </div>
                 <button
                   type="button"
                   (click)="submitComment()"
-                  [disabled]="!commentDraft().trim() || submittingComment()"
+                  [disabled]="(!commentDraft().trim() && pendingAttachments().length === 0) || submittingComment()"
                   class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white
                          bg-gradient-to-r from-indigo-600 to-violet-600
                          shadow-md shadow-indigo-500/25
@@ -418,6 +495,7 @@ export class TaskDetailComponent implements OnInit {
   private readonly memberStore = inject(ProjectMemberStore);
   private readonly workspaceMemberStore = inject(WorkspaceMemberStore, { optional: true });
   private readonly commentApi = inject(CommentApiService);
+  private readonly attachmentApi = inject(AttachmentApiService);
   private readonly optimistic = inject(OptimisticUpdateService);
   private readonly ai = inject(AiService);
   private readonly toast = inject(ToastService);
@@ -432,6 +510,7 @@ export class TaskDetailComponent implements OnInit {
   readonly savingMetadata = signal(false);
 
   readonly commentDraft = signal('');
+  readonly pendingAttachments = signal<File[]>([]);
   readonly submittingComment = signal(false);
 
   readonly mentionCandidates = computed<MentionCandidate[]>(() => {
@@ -598,6 +677,50 @@ export class TaskDetailComponent implements OnInit {
     });
   }
 
+  readonly siblings = computed<Task[]>(() => {
+    const t = this.task();
+    if (!t) return [];
+    return (this.taskStore.byProject(t.projectId)() as Task[]).filter(
+      (s) => !s.parentTaskId, // top-level tasks of the project
+    );
+  });
+
+  readonly siblingsCount = computed(() => this.siblings().length);
+
+  readonly siblingIndex = computed(() => {
+    const t = this.task();
+    if (!t) return 0;
+    const list = this.siblings();
+    const idx = list.findIndex((s) => s.id === t.id);
+    return idx >= 0 ? idx + 1 : 0;
+  });
+
+  readonly prevTask = computed<Task | null>(() => {
+    const t = this.task();
+    if (!t) return null;
+    const list = this.siblings();
+    const idx = list.findIndex((s) => s.id === t.id);
+    return idx > 0 ? list[idx - 1] : null;
+  });
+
+  readonly nextTask = computed<Task | null>(() => {
+    const t = this.task();
+    if (!t) return null;
+    const list = this.siblings();
+    const idx = list.findIndex((s) => s.id === t.id);
+    return idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
+  });
+
+  goToPrev(): void {
+    const prev = this.prevTask();
+    if (prev) void this.router.navigate(['/tasks', prev.id]);
+  }
+
+  goToNext(): void {
+    const next = this.nextTask();
+    if (next) void this.router.navigate(['/tasks', next.id]);
+  }
+
   goBack(): void {
     // Prefer browser history (preserves scroll/filters on the previous page).
     // If we landed here directly (no history), fall back to the project.
@@ -758,20 +881,64 @@ export class TaskDetailComponent implements OnInit {
     }
   }
 
+  onPickAttachments(event: Event): void {
+    const inputEl = event.target as HTMLInputElement;
+    const picked = Array.from(inputEl.files ?? []);
+    if (picked.length === 0) return;
+    this.pendingAttachments.update((curr) => [...curr, ...picked]);
+    inputEl.value = '';
+  }
+
+  removePendingAttachment(index: number): void {
+    this.pendingAttachments.update((curr) => curr.filter((_, i) => i !== index));
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
   async submitComment(): Promise<void> {
     const body = this.commentDraft().trim();
+    const files = this.pendingAttachments();
     const t = this.task();
-    if (!body || !t || this.submittingComment()) return;
+    if ((!body && files.length === 0) || !t || this.submittingComment()) return;
     this.submittingComment.set(true);
     try {
+      // 1. Create the comment row. If the user only attached files, post a
+      //    placeholder body so we always have something visible in the thread.
       const created = await this.commentApi.create({
         contextType: 'task',
         contextId: t.id,
-        body,
+        body: body || '_(adjuntos)_',
       });
       this.comments.update(cs => [...cs, this.toDisplayComment(created)]);
       this.commentDraft.set('');
-      this.toast.success('Comment posted');
+
+      // 2. Upload any attached files in parallel against the new comment id.
+      if (files.length > 0) {
+        const results = await Promise.allSettled(
+          files.map((file) =>
+            this.attachmentApi.upload({
+              file,
+              context: 'comment',
+              contextId: created.id,
+            }),
+          ),
+        );
+        const failures = results.filter((r) => r.status === 'rejected').length;
+        this.pendingAttachments.set([]);
+        if (failures > 0) {
+          this.toast.error(`${failures} adjunto(s) fallaron`);
+        } else if (results.length > 0) {
+          this.toast.success(
+            results.length === 1 ? 'Comentario y archivo subidos' : `Comentario y ${results.length} archivos subidos`,
+          );
+        }
+      } else {
+        this.toast.success('Comment posted');
+      }
     } catch {
       this.toast.error('Failed to add comment');
     } finally {

@@ -101,6 +101,14 @@ export class MentionInputComponent {
   private readonly match = signal<MentionMatch | null>(null);
   readonly activeIndex = signal(0);
 
+  /**
+   * Display-name -> userId mapping for mentions inserted via the picker.
+   * The textarea shows the friendly `@Name` form; we expand it back to the
+   * markdown `@[Name](id)` form when emitting `valueChange` so the storage
+   * format stays canonical and the renderer keeps rendering nice badges.
+   */
+  private readonly mentionRegistry = new Map<string, string>();
+
   readonly filtered = computed<MentionCandidate[]>(() => {
     const m = this.match();
     if (!m) return [];
@@ -138,7 +146,7 @@ export class MentionInputComponent {
   onInput(event: Event): void {
     const ta = event.target as HTMLTextAreaElement;
     const text = ta.value;
-    this.valueChange.emit(text);
+    this.valueChange.emit(this.encode(text));
     this.updateMatch(text, ta.selectionStart ?? text.length);
   }
 
@@ -212,13 +220,32 @@ export class MentionInputComponent {
     if (!m) return;
     const ta = this.editor().nativeElement;
     const text = ta.value;
-    const insert = `@[${c.displayName}](${c.userId}) `;
-    const next = text.slice(0, m.start) + insert + text.slice(m.end);
+    // Insert the human-friendly form in the textarea so the user sees
+    // "@Yamil " instead of "@[Yamil](uuid-…)".
+    const friendly = `@${c.displayName} `;
+    const next = text.slice(0, m.start) + friendly + text.slice(m.end);
     ta.value = next;
-    const caret = m.start + insert.length;
+    const caret = m.start + friendly.length;
     ta.setSelectionRange(caret, caret);
     ta.focus();
     this.match.set(null);
-    this.valueChange.emit(next);
+    // Record the name -> id mapping so we can re-expand the markdown form
+    // on every valueChange emission.
+    this.mentionRegistry.set(c.displayName.toLowerCase(), c.userId);
+    this.valueChange.emit(this.encode(next));
+  }
+
+  /**
+   * Convert the friendly textarea content into the canonical markdown
+   * mention format consumed by the backend / renderer. Only mentions that
+   * the picker inserted in this session are expanded — typing `@foo` by
+   * hand stays as `@foo` (the parser server-side handles that loosely).
+   */
+  private encode(friendlyText: string): string {
+    if (this.mentionRegistry.size === 0) return friendlyText;
+    return friendlyText.replace(/@([A-Za-zÀ-ÿ0-9._-]+(?:\s+[A-Za-zÀ-ÿ0-9._-]+)?)/g, (match, name: string) => {
+      const id = this.mentionRegistry.get(name.toLowerCase());
+      return id ? `@[${name}](${id})` : match;
+    });
   }
 }
