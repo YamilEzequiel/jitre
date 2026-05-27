@@ -89,7 +89,7 @@ describe('CreateTaskComponent', () => {
 
   it('submit with valid title calls api.create with the default statusId', async () => {
     const comp = fixture.componentInstance;
-    comp.form.setValue({ title: 'Fix the bug', description: '', statusId: 'status-1', priority: 'none', type: 'task', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], customFieldsJson: '', parentTaskId: '' });
+    comp.form.setValue({ title: 'Fix the bug', description: '', statusId: 'status-1', priority: 'none', type: 'task', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], parentTaskId: '' });
     await comp.submit();
     expect(apiMock.create).toHaveBeenCalledWith(
       'p1',
@@ -99,7 +99,7 @@ describe('CreateTaskComponent', () => {
 
   it('submit with empty title skips api call', async () => {
     const comp = fixture.componentInstance;
-    comp.form.setValue({ title: '', description: '', statusId: 'status-1', priority: 'none', type: 'task', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], customFieldsJson: '', parentTaskId: '' });
+    comp.form.setValue({ title: '', description: '', statusId: 'status-1', priority: 'none', type: 'task', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], parentTaskId: '' });
     await comp.submit();
     expect(apiMock.create).not.toHaveBeenCalled();
   });
@@ -116,7 +116,7 @@ describe('CreateTaskComponent', () => {
 
   it('submit forwards selected type to api.create', async () => {
     const comp = fixture.componentInstance;
-    comp.form.setValue({ title: 'Login broken', description: '', statusId: 'status-1', priority: 'none', type: 'bug', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], customFieldsJson: '', parentTaskId: '' });
+    comp.form.setValue({ title: 'Login broken', description: '', statusId: 'status-1', priority: 'none', type: 'bug', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], parentTaskId: '' });
     await comp.submit();
     expect(apiMock.create).toHaveBeenCalledWith(
       'p1',
@@ -137,7 +137,7 @@ describe('CreateTaskComponent', () => {
   it('submit skips when no statuses are available', async () => {
     statusStoreMock.byProject.mockReturnValueOnce(signal([]));
     const comp = fixture.componentInstance;
-    comp.form.setValue({ title: 'A task', description: '', statusId: '', priority: 'none', type: 'task', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], customFieldsJson: '', parentTaskId: '' });
+    comp.form.setValue({ title: 'A task', description: '', statusId: '', priority: 'none', type: 'task', startDate: '', dueDate: '', estimatedHours: null, epicId: '', sprintId: '', releaseId: '', assigneeUserIds: [], labelIds: [], parentTaskId: '' });
     await comp.submit();
     // defaultStatusId returns null with empty list â€” submit should bail out
     // Note: byProject mock returns empty signal but only when called after first access;

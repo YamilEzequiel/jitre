@@ -11,6 +11,7 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
+import { CustomFieldsRendererComponent } from '../../../shared/custom-fields/custom-fields-renderer.component';
 import { TaskApiService, Task, TaskType } from '../../../stores/task-api.service';
 import { TaskStore } from '../../../stores/task.store';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
@@ -23,7 +24,7 @@ import { ToastService } from '../../../core/toast/toast.service';
   selector: 'jt-create-task',
   host: { class: 'block h-full w-full' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TabsModule, SelectModule],
+  imports: [ReactiveFormsModule, TabsModule, SelectModule, CustomFieldsRendererComponent],
   styles: [`
     /* Form controls — consistent hover/focus across selects, inputs, dates, textareas. */
     .jt-input,
@@ -348,14 +349,13 @@ import { ToastService } from '../../../core/toast/toast.service';
             <!-- TAB: Campos -->
             <p-tabpanel value="fields">
               <section class="my-5 max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 class="text-sm font-black text-slate-950">Campos personalizados</h3>
-                <p class="mb-4 text-xs text-slate-500">Datos avanzados en formato JSON</p>
-                <textarea
-                  formControlName="customFieldsJson"
-                  rows="7"
-                  class="jt-input font-mono text-xs"
-                  placeholder='{"severity":"high","component":"billing"}'
-                ></textarea>
+                <h3 class="text-sm font-black text-slate-950 mb-1">Campos personalizados</h3>
+                <p class="mb-4 text-xs text-slate-500">Definí estos campos en la configuración del proyecto.</p>
+                <jt-custom-fields
+                  [projectId]="projectId()"
+                  [values]="customFieldsValues()"
+                  (valuesChange)="customFieldsValues.set($event)"
+                />
               </section>
             </p-tabpanel>
           </p-tabpanels>
@@ -441,8 +441,10 @@ export class CreateTaskComponent implements OnInit {
     releaseId: [''],
     assigneeUserIds: this.fb.nonNullable.control<string[]>([]),
     labelIds: this.fb.nonNullable.control<string[]>([]),
-    customFieldsJson: [''],
   });
+
+  /** Typed custom field values bound to the renderer (see jt-custom-fields). */
+  readonly customFieldsValues = signal<Record<string, unknown>>({});
 
   readonly defaultStatusId = computed<string | null>(() => {
     const preselected = this.preselectedStatusId();
@@ -501,13 +503,9 @@ export class CreateTaskComponent implements OnInit {
         releaseId,
         assigneeUserIds,
         labelIds,
-        customFieldsJson,
       } = this.form.getRawValue();
-      const customFields = this.parseCustomFields(customFieldsJson);
-      if (customFields === null) {
-        this.toast.error('Custom fields must be a valid JSON object');
-        return;
-      }
+      const customFieldsRaw = this.customFieldsValues();
+      const customFields = Object.keys(customFieldsRaw).length > 0 ? customFieldsRaw : undefined;
       const task = await this.api.create(projectId, {
         title: title!.trim(),
         statusId,
@@ -543,8 +541,8 @@ export class CreateTaskComponent implements OnInit {
         releaseId: '',
         assigneeUserIds: [],
         labelIds: [],
-        customFieldsJson: '',
       });
+      this.customFieldsValues.set({});
     } catch {
       this.toast.error('Failed to create task');
     } finally {
@@ -552,16 +550,4 @@ export class CreateTaskComponent implements OnInit {
     }
   }
 
-  private parseCustomFields(value: string | null | undefined): Record<string, unknown> | undefined | null {
-    const trimmed = value?.trim();
-    if (!trimmed) return undefined;
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : null;
-    } catch {
-      return null;
-    }
-  }
 }

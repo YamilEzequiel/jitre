@@ -81,8 +81,11 @@ export class UserController {
     const userId = reqWithUser.user?.id;
     if (!userId) throw new NotFoundException('USER_NOT_FOUND');
     const updated = await this.userService.updateProfile(userId, {
-      displayName: dto.displayName,
-      email: dto.email,
+      ...(dto.displayName !== undefined ? { displayName: dto.displayName } : {}),
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.emailMentions !== undefined ? { emailMentions: dto.emailMentions } : {}),
+      ...(dto.emailAssignments !== undefined ? { emailAssignments: dto.emailAssignments } : {}),
+      ...(dto.emailDueDates !== undefined ? { emailDueDates: dto.emailDueDates } : {}),
     });
     const { passwordHash: _, ...safeUser } = updated as unknown as Record<
       string,

@@ -61,7 +61,13 @@ export class UserService {
 
   async updateProfile(
     id: string,
-    patch: { displayName?: string; email?: string },
+    patch: {
+      displayName?: string;
+      email?: string;
+      emailMentions?: boolean;
+      emailAssignments?: boolean;
+      emailDueDates?: boolean;
+    },
   ): Promise<UserEntity> {
     try {
       await this.userRepo.update(id, patch);

@@ -32,6 +32,8 @@ import { TaskModule } from './task/task.module';
 // Fase 7 — Phase L wiring
 import { RealtimeModule } from './realtime/realtime.module';
 import { AiModule } from './ai/ai.module';
+import { AutomationModule } from './automation/automation.module';
+import { EmailModule } from './email/email.module';
 // Fase 8 — Analytics
 import { AnalyticsModule } from './analytics/analytics.module';
 // Fase 10 — Docs / Chat / Time Tracking
@@ -125,6 +127,8 @@ import { TimeTrackingModule } from './time-tracking/time-tracking.module';
     TaskModule,
     ScheduleModule.forRoot(),
     AiModule,
+    EmailModule,
+    AutomationModule,
     RealtimeModule,
     AnalyticsModule,
     DocumentModule,

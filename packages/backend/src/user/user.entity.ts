@@ -51,6 +51,16 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 200, name: 'emergency_contact', nullable: true })
   emergencyContact!: string | null;
 
+  // ── Email preferences (migration 1700000002000)
+  @Column({ type: 'boolean', name: 'email_mentions', default: true })
+  emailMentions!: boolean;
+
+  @Column({ type: 'boolean', name: 'email_assignments', default: true })
+  emailAssignments!: boolean;
+
+  @Column({ type: 'boolean', name: 'email_due_dates', default: true })
+  emailDueDates!: boolean;
+
   @OneToMany('WorkspaceMembershipEntity', 'user')
   memberships!: unknown[];
 

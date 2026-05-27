@@ -10,8 +10,9 @@ import { UserSettingsPanelComponent } from './panels/user-settings-panel.compone
 import { NotificationSettingsPanelComponent } from './panels/notification-settings-panel.component';
 import { WorkspaceSettingsPanelComponent } from './panels/workspace-settings-panel.component';
 import { AiSettingsPanelComponent } from './panels/ai-settings-panel.component';
+import { EmailPrefsPanelComponent } from './panels/email-prefs-panel.component';
 
-type SettingsTab = 'profile' | 'notifications' | 'workspace' | 'ai';
+type SettingsTab = 'profile' | 'notifications' | 'email' | 'workspace' | 'ai';
 
 interface TabDef {
   value: SettingsTab;
@@ -22,7 +23,7 @@ interface TabDef {
 @Component({
   selector: 'jt-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UserSettingsPanelComponent, NotificationSettingsPanelComponent, WorkspaceSettingsPanelComponent, AiSettingsPanelComponent],
+  imports: [UserSettingsPanelComponent, NotificationSettingsPanelComponent, EmailPrefsPanelComponent, WorkspaceSettingsPanelComponent, AiSettingsPanelComponent],
   template: `
     <div class="max-w-6xl space-y-6">
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 space-y-3">
@@ -86,6 +87,9 @@ interface TabDef {
             @case ('notifications') {
               <jt-notification-settings-panel />
             }
+            @case ('email') {
+              <jt-email-prefs-panel />
+            }
             @case ('workspace') {
               <jt-workspace-settings-panel />
             }
@@ -111,6 +115,7 @@ export class SettingsComponent {
   private readonly allTabs: TabDef[] = [
     { value: 'profile', label: 'Profile', adminOnly: false },
     { value: 'notifications', label: 'Notifications', adminOnly: false },
+    { value: 'email', label: 'Email', adminOnly: false },
     { value: 'workspace', label: 'Workspace', adminOnly: true },
     { value: 'ai', label: 'AI & Quota', adminOnly: true },
   ];

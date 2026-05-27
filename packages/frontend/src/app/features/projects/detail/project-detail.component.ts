@@ -38,6 +38,7 @@ import {
 import { KanbanBoardComponent } from '../board/kanban-board.component';
 import { ProjectMembersComponent } from '../members/project-members.component';
 import { WorkflowEditorComponent } from '../../workflow/workflow-editor.component';
+import { AutomationsEditorComponent } from '../../automations/automations-editor.component';
 import { AttachmentListComponent } from '../../tasks/attachments/attachment-list.component';
 import { ChartComponent } from '../../analytics/chart.component';
 import {
@@ -65,6 +66,7 @@ type TaskView = 'board' | 'list';
     FormsModule,
     SelectModule,
     WorkflowEditorComponent,
+    AutomationsEditorComponent,
   ],
   template: `
     <div class="flex min-w-0 flex-col max-w-none">
@@ -574,6 +576,11 @@ type TaskView = 'board' | 'list';
               <!-- Workflow transitions -->
               <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70">
                 <jt-workflow-editor [projectId]="projectId" />
+              </section>
+
+              <!-- Automations -->
+              <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70">
+                <jt-automations-editor [projectId]="projectId" />
               </section>
             }
           }
