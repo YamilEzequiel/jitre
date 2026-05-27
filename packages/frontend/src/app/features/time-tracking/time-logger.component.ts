@@ -8,12 +8,14 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { TimeEntryStore } from '../../stores/time-entry.store';
 import { TimeEntry } from '../../stores/time-entry-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
-import { parseDurationToMinutes, formatMinutes } from './duration.util';
+import { parseDurationToMinutes, formatMinutes, formatEntryDate } from './duration.util';
+import { CheckboxComponent } from '../../shared/checkbox/checkbox.component';
 
 function todayIso(): string {
   const d = new Date();
@@ -26,7 +28,7 @@ function todayIso(): string {
 @Component({
   selector: 'jt-time-logger',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CheckboxComponent],
   template: `
     <section
       [class]="
@@ -122,15 +124,24 @@ function todayIso(): string {
             <input
               type="text"
               formControlName="duration"
-              placeholder="1h 30m, 1.5h, 90m"
+              placeholder="1h 30min, 1.5h, 90m, 1:30…"
               aria-label="Duration"
-              class="rounded-lg bg-white border border-slate-200 px-3 py-2 text-sm text-slate-700
-                     placeholder:text-slate-400 outline-none transition
-                     focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
+              [attr.aria-describedby]="'duration-hint'"
+              class="rounded-lg bg-white border border-slate-300 px-3 py-2 text-sm text-slate-700
+                     placeholder:text-slate-400 outline-none transition hover:border-slate-400
+                     focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
             />
             @if (durationError()) {
               <span class="text-[11px] text-rose-600" role="alert">
                 {{ durationError() }}
+              </span>
+            } @else if (durationPreview(); as preview) {
+              <span id="duration-hint" class="text-[11px] font-semibold text-indigo-600" aria-live="polite">
+                = {{ preview }}
+              </span>
+            } @else {
+              <span id="duration-hint" class="text-[11px] text-slate-400">
+                Acepta 1h 30min, 1.5h, 90m, 1:30, "1 hora 30 mins"…
               </span>
             }
           </div>
@@ -151,15 +162,7 @@ function todayIso(): string {
                    focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
           />
           <div class="flex items-center gap-3">
-            <label class="inline-flex items-center gap-2 text-xs text-slate-600">
-              <input
-                type="checkbox"
-                formControlName="billable"
-                class="h-4 w-4 rounded border-slate-300 bg-white text-indigo-500
-                       focus:ring-indigo-500/40 focus:ring-offset-0 cursor-pointer"
-              />
-              Billable
-            </label>
+            <jt-checkbox formControlName="billable" label="Billable" />
             <button
               type="submit"
               [disabled]="logging()"
@@ -188,8 +191,8 @@ function todayIso(): string {
                 >
                   {{ userInitials(entry.userId) }}
                 </span>
-                <span class="text-xs text-slate-500 tabular-nums w-24 shrink-0">
-                  {{ entry.date }}
+                <span class="text-xs text-slate-500 tabular-nums w-28 shrink-0">
+                  {{ formatDate(entry.date) }}
                 </span>
                 <span
                   class="text-xs font-semibold text-violet-700 w-20 shrink-0 tabular-nums"
@@ -289,6 +292,19 @@ export class TimeLoggerComponent implements OnInit {
     billable: [true],
   });
 
+  private readonly durationValue = toSignal(this.form.controls.duration.valueChanges, {
+    initialValue: this.form.controls.duration.value,
+  });
+
+  /** Live human-readable preview of what the typed duration parses to. */
+  readonly durationPreview = computed<string | null>(() => {
+    const raw = this.durationValue();
+    if (!raw || !raw.trim()) return null;
+    const minutes = parseDurationToMinutes(raw);
+    if (minutes === null) return null;
+    return formatMinutes(minutes);
+  });
+
   readonly entries = computed(() => {
     const tid = this.taskId();
     return this.store
@@ -336,6 +352,10 @@ export class TimeLoggerComponent implements OnInit {
 
   formatDuration(min: number): string {
     return formatMinutes(min);
+  }
+
+  formatDate(value: string | null | undefined): string {
+    return formatEntryDate(value);
   }
 
   canEditEntry(entry: TimeEntry): boolean {

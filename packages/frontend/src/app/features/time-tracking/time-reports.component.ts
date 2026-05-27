@@ -22,7 +22,7 @@ import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { TaskStore } from '../../stores/task.store';
 import { TaskApiService } from '../../stores/task-api.service';
 import { ProjectStore } from '../../stores/project.store';
-import { formatMinutes } from './duration.util';
+import { formatMinutes, formatEntryDate } from './duration.util';
 
 interface SummaryCardData {
   totalMinutes: number;
@@ -329,8 +329,8 @@ function escapeCsv(value: string): string {
                     <li
                       class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
                     >
-                      <span class="text-slate-500 w-24 shrink-0">{{ e.date }}</span>
-                      <span class="text-violet-700 font-semibold w-20 shrink-0">
+                      <span class="text-slate-500 w-28 shrink-0 tabular-nums">{{ formatDate(e.date) }}</span>
+                      <span class="text-violet-700 font-semibold w-20 shrink-0 tabular-nums">
                         {{ formatRow(e.durationMinutes) }}
                       </span>
                       <span class="flex-1 text-slate-600 truncate">{{ e.description ?? '—' }}</span>
@@ -432,6 +432,10 @@ export class TimeReportsComponent implements OnInit {
 
   formatRow(min: number): string {
     return formatMinutes(min);
+  }
+
+  formatDate(value: string | null | undefined): string {
+    return formatEntryDate(value);
   }
 
   /**
