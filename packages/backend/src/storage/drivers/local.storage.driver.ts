@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 import { Readable, Transform } from 'node:stream';
+import * as mime from 'mime-types';
 import {
   BadRequestException,
   Injectable,
@@ -93,10 +94,12 @@ export class LocalStorageDriver implements IStorageDriver {
     }
 
     const stream = fs.createReadStream(absolutePath);
+    const contentType =
+      mime.lookup(absolutePath) || 'application/octet-stream';
     return {
       stream,
       sizeBytes: stat.size,
-      contentType: 'application/octet-stream',
+      contentType,
     };
   }
 

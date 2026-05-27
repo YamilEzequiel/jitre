@@ -904,8 +904,17 @@ async function seedChat(
     createdBy: UserEntity;
     members: UserEntity[];
   }): Promise<{ channel: ChatChannelEntity; created: boolean }> {
+    // Lookup strategy depends on what uniquely identifies the channel:
+    //  - project channels: (workspaceId, projectId) — DB constraint
+    //    `uq_chat_channels_project_channel` enforces 1 channel per project.
+    //    Looking up by name would miss channels created with a previous name
+    //    and cause an INSERT that crashes the unique constraint.
+    //  - all other channels: (workspaceId, name, type).
     let channel = await channelRepo.findOne({
-      where: { workspaceId: workspace.id, name: input.name, type: input.type },
+      where:
+        input.projectId != null
+          ? { workspaceId: workspace.id, projectId: input.projectId }
+          : { workspaceId: workspace.id, name: input.name, type: input.type },
     });
     const created = !channel;
     if (!channel) {
@@ -922,11 +931,20 @@ async function seedChat(
         }),
       );
     } else {
-      // Backfill kind/projectId for channels created before Fase 10 metadata.
-      const patch: { kind?: ChatChannelKind; projectId?: string | null } = {};
+      // Backfill metadata when an older row exists with stale name/kind/projectId.
+      const patch: {
+        kind?: ChatChannelKind;
+        projectId?: string | null;
+        name?: string;
+        description?: string | null;
+      } = {};
       if (channel.kind !== input.kind) patch.kind = input.kind;
       if ((channel.projectId ?? null) !== (input.projectId ?? null)) {
         patch.projectId = input.projectId ?? null;
+      }
+      if (channel.name !== input.name) patch.name = input.name;
+      if ((channel.description ?? null) !== (input.description ?? null)) {
+        patch.description = input.description ?? null;
       }
       if (Object.keys(patch).length > 0) {
         await channelRepo.update(channel.id, patch);

@@ -26,11 +26,19 @@ export function throttlerFactoryAsync() {
         keyPrefix: 'throttler:',
       };
 
+      // Defaults tuned for an interactive web app. A single screen mount
+      // (chat, kanban, doc tree) can fire 10–30 parallel requests; humans
+      // moving fast through the UI add bursts on top. Stay generous in
+      // dev/prod; lock down with env vars per environment if abuse appears.
+      const shortLimit = Number(cfg.get('THROTTLER_SHORT_LIMIT') ?? 60);
+      const mediumLimit = Number(cfg.get('THROTTLER_MEDIUM_LIMIT') ?? 500);
+      const longLimit = Number(cfg.get('THROTTLER_LONG_LIMIT') ?? 3000);
+
       return {
         throttlers: [
-          { name: 'short', ttl: 1_000, limit: 3 },
-          { name: 'medium', ttl: 10_000, limit: 20 },
-          { name: 'long', ttl: 60_000, limit: 100 },
+          { name: 'short', ttl: 1_000, limit: shortLimit },
+          { name: 'medium', ttl: 10_000, limit: mediumLimit },
+          { name: 'long', ttl: 60_000, limit: longLimit },
         ],
         storage: new ThrottlerStorageRedisService(redisOptions),
       };

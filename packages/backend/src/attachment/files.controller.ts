@@ -42,23 +42,26 @@ export class FilesController {
   @Public()
   @SkipTenancy()
   async serveFile(
-    @Param('storageKey') storageKey: string,
+    @Param('storageKey') storageKey: string | string[],
     @Query('token') token: string,
     @Query('exp') exp: string,
     @Res() res: Response,
   ): Promise<void> {
+    const key = Array.isArray(storageKey)
+      ? storageKey.join('/')
+      : storageKey;
     const expiresAt = parseInt(exp, 10);
 
     if (
       !token ||
       !exp ||
       isNaN(expiresAt) ||
-      !verifySignature(storageKey, token, expiresAt, this.signingSecret)
+      !verifySignature(key, token, expiresAt, this.signingSecret)
     ) {
       throw new ForbiddenException('INVALID_OR_EXPIRED_SIGNATURE');
     }
 
-    const file = await this.driver.get(storageKey);
+    const file = await this.driver.get(key);
 
     res.setHeader('Content-Type', file.contentType);
     res.setHeader('Content-Length', file.sizeBytes);
