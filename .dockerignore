@@ -1,0 +1,53 @@
+# Keep the Docker build context small + reproducible.
+# The Dockerfiles re-run `npm ci` from package.json/package-lock.json
+# so we never want host-installed node_modules to leak in.
+
+# Dependencies + build output
+**/node_modules
+**/dist
+**/build
+**/.angular
+**/.next
+**/coverage
+**/.nyc_output
+**/*.tsbuildinfo
+
+# Runtime data
+**/uploads
+**/.tmp
+**/.tmp-*
+
+# Local env files (the image gets vars from docker-compose, not from disk)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Editor / OS
+.git
+.gitignore
+**/.vscode
+**/.idea
+**/.DS_Store
+**/Thumbs.db
+**/desktop.ini
+**/*.swp
+
+# Logs
+**/logs
+**/*.log
+
+# Docs that don't need to ship in the image
+docs/screenshots
+**/.playwright-mcp
+
+# AI tooling — local-only
+.claude
+.agents
+.engram
+.atl
+skills-lock.json
+
+# Tests
+**/__tests__
+**/*.spec.ts
+**/test

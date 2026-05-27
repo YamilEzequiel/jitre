@@ -1,0 +1,121 @@
+# ============================================================
+#  Jitre — demo stack (all-in-one)
+# ============================================================
+# Boots the full product with a single command:
+#
+#   docker compose -f compose.demo.yml up
+#
+# The init container runs migrations + seed before the backend
+# accepts traffic, so you go from `git clone` to a working
+# demo at http://localhost:8080 with credentials:
+#
+#   admin@jitre.test  /  admin123
+#
+# Requires Docker 24+ (for healthcheck-based depends_on).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jitre-demo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jitre
+      POSTGRES_PASSWORD: jitre_demo
+      POSTGRES_DB: jitre
+    volumes:
+      - jitre_demo_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jitre -d jitre"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: jitre-demo-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - jitre_demo_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot container: applies pending migrations then seeds demo data.
+  # The backend service waits for this to exit successfully before starting.
+  migrate-and-seed:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    container_name: jitre-demo-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: jitre
+      POSTGRES_PASSWORD: jitre_demo
+      POSTGRES_DB: jitre
+    # `node` runs the compiled migration CLI then the seed script.
+    # `|| true` on seed makes the init idempotent when re-running.
+    command: >
+      sh -c "node packages/backend/dist/database/data-source.js && echo 'migrations applied' &&
+             node packages/backend/dist/database/seed.js || true"
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    container_name: jitre-demo-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate-and-seed:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: api
+      API_VERSION: "1"
+      CORS_ORIGINS: http://localhost:8080
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: jitre
+      POSTGRES_PASSWORD: jitre_demo
+      POSTGRES_DB: jitre
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: demo_access_secret_change_me_change_me
+      JWT_REFRESH_SECRET: demo_refresh_secret_change_me_change_me
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_ROOT: /app/uploads
+      STORAGE_PUBLIC_BASE_URL: http://localhost:8080/api/v1/files
+      LOG_LEVEL: info
+      LOG_PRETTY: "false"
+      DEMO_MODE: "true"
+    volumes:
+      - jitre_demo_uploads:/app/uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    container_name: jitre-demo-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${DEMO_PORT:-8080}:80"
+
+volumes:
+  jitre_demo_postgres:
+  jitre_demo_redis:
+  jitre_demo_uploads:

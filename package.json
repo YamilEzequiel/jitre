@@ -34,9 +34,12 @@
     "db:migration:run": "npm run migration:run -w @jitre/backend",
     "db:migration:revert": "npm run migration:revert -w @jitre/backend",
     "db:migration:show": "npm run migration:show -w @jitre/backend",
+    "setup": "node scripts/setup.mjs",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
+    "demo:up": "docker compose -f compose.demo.yml up",
+    "demo:down": "docker compose -f compose.demo.yml down",
     "clean": "npm run clean --workspaces --if-present"
   },
   "devDependencies": {

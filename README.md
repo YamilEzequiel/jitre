@@ -10,13 +10,35 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io)
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![License](https://img.shields.io/badge/license-PolyForm%20Internal%20Use-blue.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](./LICENSE)
 
 [Demo](#capturas) · [Quick start](#quick-start) · [Arquitectura](#arquitectura) · [Contribuir](#contribuciones) · [Autor](#autor)
 
 > Si te resulta útil, **dejá tu ⭐ al repo** — me ayuda muchísimo a que más gente lo descubra y a seguir invirtiéndole tiempo.
 
 </div>
+
+---
+
+## Probar en 60 segundos
+
+Cero dependencias locales — solo Docker. Levantás el stack completo con datos de demo precargados:
+
+```bash
+git clone https://github.com/YamilEzequiel/jitre.git
+cd jitre
+docker compose -f compose.demo.yml up
+```
+
+Abrí <http://localhost:8080> y entrá con:
+
+| Email | Password | Rol |
+|---|---|---|
+| `admin@jitre.test` | `admin123` | Owner |
+| `pm@jitre.test` | `pm123` | Admin |
+| `dev1@jitre.test` | `dev123` | Member |
+
+> Si querés hackear el código (no solo probarlo), saltá al [Dev setup](#quick-start) abajo.
 
 ---
 
@@ -130,29 +152,32 @@ Las herramientas existentes están **infladas**: 30 menús para hacer 5 cosas. J
 ### Levantarlo
 
 ```bash
-# 1. Clonar
+# 1. Clonar e instalar
 git clone https://github.com/YamilEzequiel/jitre.git
 cd jitre
-
-# 2. Instalar dependencias (npm workspaces instala los 3 packages)
 npm install
 
-# 3. Variables de entorno
-cp .env.example .env
-# editar .env si querés cambiar puertos, secrets, API keys de IA, etc.
+# 2. Setup automatizado (copia .env, levanta Postgres + Redis,
+#    corre migraciones y siembra datos de demo)
+npm run setup
 
-# 4. Levantar Postgres + Redis
-npm run docker:up
-
-# 5. Correr migraciones
-npm run db:migration:run
-
-# 6. Arrancar backend y frontend (en dos terminales)
+# 3. Arrancar backend y frontend (en dos terminales)
 npm run dev:backend    # http://localhost:3000/api/v1/docs (Swagger)
 npm run dev:frontend   # http://localhost:4200
 ```
 
 El frontend proxea automáticamente `/api/v1/*` al backend en `:3000`.
+
+Si preferís el camino sin instalación local de Node, mirá la sección [Probar en 60 segundos](#probar-en-60-segundos) que usa `docker compose` para todo.
+
+### Credenciales del seed
+
+| Email | Password | Rol |
+|---|---|---|
+| `admin@jitre.test` | `admin123` | Owner |
+| `pm@jitre.test` | `pm123` | Admin |
+| `dev1@jitre.test` | `dev123` | Member (tiene un timer activo) |
+| `dev2@jitre.test` | `dev123` | Member |
 
 ---
 
@@ -224,10 +249,17 @@ npm run db:migration:run       # aplicar migraciones pendientes
 npm run db:migration:revert    # revertir la última
 npm run db:migration:show      # ver estado
 
-# Docker
+# Setup
+npm run setup                 # one-shot: .env + docker + migrate + seed
+
+# Docker (dev)
 npm run docker:up             # levantar Postgres + Redis
 npm run docker:down           # bajarlos
 npm run docker:logs           # logs en vivo
+
+# Demo stack (todo el producto en Docker)
+npm run demo:up               # postgres + redis + backend + frontend + seed
+npm run demo:down             # bajar el stack demo
 
 # Testing
 npm run test                  # tests de todos los workspaces
@@ -278,14 +310,16 @@ Si querés contactarme por consultorías, mentorías de arquitectura o licenciam
 
 Copyright © Yamil Lazzari. Todos los derechos reservados.
 
-Jitre se distribuye bajo la **[PolyForm Internal Use License 1.0.0](./LICENSE)** — una licencia *source-available* (no es OSS según OSI). En una línea: podés usarlo, modificarlo y estudiarlo libremente para **uso interno de empresa o personal**; no podés revenderlo, sublicenciarlo ni ofrecerlo como SaaS de terceros.
+Jitre se distribuye bajo la **[PolyForm Noncommercial License 1.0.0](./LICENSE)** — una licencia *source-available* (no es OSS según OSI). En una línea: podés usarlo, modificarlo y estudiarlo libremente para **uso no comercial**; no podés revenderlo, sublicenciarlo, ofrecerlo como SaaS de terceros ni integrarlo en un producto comercial.
 
 ### Permitido
-- **Uso interno en empresas:** desplegarlo y operarlo para tus propios proyectos, equipos y tiempos.
-- **Uso personal:** correrlo para uso personal, estudio, hobby, experimentación.
-- **Fork y modificación:** podés tocar el código para adaptarlo a tu uso interno o personal.
+- **Uso personal:** correrlo para hobby, estudio, experimentación.
+- **Investigación y educación:** universidades, papers, cursos.
+- **Organizaciones sin fines de lucro:** ONGs, caridad, gobierno.
+- **Fork y modificación:** tocar el código para adaptarlo a usos no comerciales.
 
 ### No permitido
+- **Uso interno en empresas con fines comerciales:** desplegarlo dentro de una empresa como herramienta operacional para producir valor comercial.
 - **Reventa / SaaS de terceros:** vender Jitre (modificado o no), ofrecerlo como servicio gestionado, sublicenciarlo o redistribuirlo como producto comercial propio.
 - **Re-branding:** comercializarlo bajo otra marca o quitar los avisos de copyright.
 
