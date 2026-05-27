@@ -3,45 +3,17 @@
 @import 'quill/dist/quill.snow.css';
 
 @theme {
-  --color-blurple: #5865F2;
-  --color-blurple-hover: #4752C4;
-  --color-blurple-active: #3C45A5;
-
-  --color-bg-primary: #313338;
-  --color-bg-secondary: #2B2D31;
-  --color-bg-tertiary: #1E1F22;
-  --color-bg-floating: #2B2D31;
-
-  --color-text-normal: #DBDEE1;
-  --color-text-muted: #949BA4;
-  --color-text-link: #00A8FC;
-  --color-text-bright: #FFFFFF;
-
-  --color-interactive-normal: #B5BAC1;
-  --color-interactive-hover: #DBDEE1;
-  --color-interactive-active: #FFFFFF;
-
-  --color-status-online: #23A55A;
-  --color-status-idle: #F0B232;
-  --color-status-dnd: #F23F43;
-  --color-status-offline: #80848E;
-
-  --color-border-subtle: #3F4147;
-  --color-border-strong: #4E5058;
-  --color-channel-default: #80848E;
-  --color-channel-hover: #35373C;
-
-  --shadow-low: 0 1px 0 rgba(4, 4, 5, 0.2);
-  --shadow-high: 0 8px 16px rgba(0, 0, 0, 0.24);
-  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.4);
-
   --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  /* Brand gradient stops (Rapilist-inspired) */
-  --color-brand-from: #4F46E5; /* indigo-600 */
-  --color-brand-to: #7C3AED;   /* violet-600 */
+  /* Brand gradient stops — used across the app for accents and CTAs. */
+  --color-brand-from: #4F46E5;   /* indigo-600 */
+  --color-brand-to: #7C3AED;     /* violet-600 */
   --color-brand-accent: #D946EF; /* fuchsia-500 */
+
+  /* App canvas — light theme. */
+  --color-app-bg: #f7f8fc;
+  --color-app-text: #0f172a; /* slate-900 */
 }
 
 html {
@@ -51,8 +23,8 @@ html {
 html, body {
   margin: 0;
   padding: 0;
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-normal);
+  background-color: var(--color-app-bg);
+  color: var(--color-app-text);
   font-family: var(--font-sans);
   font-feature-settings: 'cv11', 'ss03';
   -webkit-font-smoothing: antialiased;
@@ -60,7 +32,7 @@ html, body {
 }
 
 *:focus-visible {
-  outline: 2px solid var(--color-blurple);
+  outline: 2px solid var(--color-brand-from);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -402,4 +374,307 @@ html, body {
 .p-select.p-select-sm .p-select-label {
   padding: 0.35rem 0.6rem !important;
   font-size: 0.75rem !important;
+}
+
+/* ============================================================
+ * PrimeNG p-tabs — force the light theme app-wide.
+ * Aura's default tokens render p-tabpanels with a dark/gray bg
+ * via CSS-in-JS that styles.css can only override with !important.
+ * ============================================================ */
+.p-tabs {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.p-tablist {
+  background: transparent !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.p-tab {
+  background: transparent !important;
+  color: #64748b !important; /* slate-500 */
+  font-weight: 600 !important;
+  transition: color 120ms ease, border-color 120ms ease !important;
+}
+
+.p-tab:not(.p-tab-active):hover {
+  color: #4c1d95 !important; /* violet-900 */
+}
+
+.p-tab-active {
+  color: #6d28d9 !important; /* violet-700 */
+  border-color: #7c3aed !important; /* violet-500 */
+}
+
+.p-tablist-active-bar {
+  background: #7c3aed !important;
+}
+
+.p-tabpanels {
+  background: transparent !important;
+  color: #0f172a !important;
+  padding: 1rem 0 !important;
+}
+
+.p-tabpanel {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
+ * PrimeNG p-multiselect — mirrors p-select for visual consistency.
+ * Aura defaults lean dark/blackish; we force the same clean light
+ * surface with violet focus and violet chips to match the brand.
+ * ============================================================ */
+.p-multiselect {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important; /* slate-200 */
+  color: #0f172a !important;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease !important;
+}
+.p-multiselect:not(.p-disabled):hover {
+  background: #f8fafc !important;
+  border-color: #c4b5fd !important; /* violet-300 */
+}
+.p-multiselect:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled):focus-within {
+  background: #ffffff !important;
+  border-color: #8b5cf6 !important; /* violet-500 */
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12) !important;
+  outline: none !important;
+}
+.p-multiselect.p-disabled {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}
+.p-multiselect .p-multiselect-label {
+  color: #0f172a !important;
+  padding: 0.5rem 0.75rem !important;
+}
+.p-multiselect .p-multiselect-label.p-placeholder {
+  color: #94a3b8 !important;
+}
+.p-multiselect .p-multiselect-dropdown {
+  color: #64748b !important;
+}
+
+/* Chips rendered in display="chip" mode */
+.p-multiselect-chip-item,
+.p-multiselect-token {
+  background: #ede9fe !important; /* violet-100 */
+  color: #6d28d9 !important;      /* violet-700 */
+  border: 1px solid #ddd6fe !important; /* violet-200 */
+  border-radius: 9999px !important;
+  padding: 0.15rem 0.6rem !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  margin: 2px 4px 2px 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+}
+.p-multiselect-chip-item .p-multiselect-chip-item-icon,
+.p-multiselect-token .p-multiselect-token-icon {
+  color: #7c3aed !important;
+  cursor: pointer !important;
+  transition: color 80ms ease !important;
+}
+.p-multiselect-chip-item .p-multiselect-chip-item-icon:hover,
+.p-multiselect-token .p-multiselect-token-icon:hover {
+  color: #4c1d95 !important;
+}
+
+/* Dropdown panel — same surface as p-select */
+.p-multiselect-overlay,
+.p-multiselect-panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12) !important;
+  border-radius: 0.75rem !important;
+  color: #0f172a !important;
+}
+.p-multiselect-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 0.55rem 0.75rem !important;
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+}
+.p-multiselect-filter-container,
+.p-multiselect-filter {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  border-radius: 0.5rem !important;
+}
+.p-multiselect-filter:focus {
+  border-color: #8b5cf6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12) !important;
+}
+.p-multiselect-list {
+  padding: 0.25rem !important;
+}
+.p-multiselect-option {
+  color: #334155 !important;
+  padding: 0.55rem 0.9rem !important;
+  border-radius: 0.5rem !important;
+  transition: background-color 80ms ease, color 80ms ease !important;
+}
+.p-multiselect-option:not(.p-disabled):not(.p-multiselect-option-selected):hover,
+.p-multiselect-option-focus:not(.p-multiselect-option-selected) {
+  background: #f5f3ff !important;
+  color: #4c1d95 !important;
+}
+.p-multiselect-option-selected {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+  font-weight: 600 !important;
+}
+.p-multiselect-option-selected:hover {
+  background: #ddd6fe !important;
+}
+.p-multiselect-option .p-checkbox-box {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+  border-radius: 4px !important;
+}
+.p-multiselect-option-selected .p-checkbox-box,
+.p-multiselect-option .p-checkbox-checked .p-checkbox-box {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+}
+.p-multiselect-option .p-checkbox-icon {
+  color: #ffffff !important;
+}
+.p-multiselect-empty-message {
+  color: #94a3b8 !important;
+  padding: 0.75rem !important;
+  text-align: center !important;
+}
+.p-multiselect-header .p-checkbox-box {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+}
+.p-multiselect-header .p-checkbox-checked .p-checkbox-box {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+}
+
+/* Aggressive overrides for any chip / token / pill rendered inside the
+ * label area — Aura ships several class variants across versions and we want
+ * the violet treatment regardless of which one is in use. */
+.p-multiselect .p-multiselect-label-container,
+.p-multiselect .p-multiselect-label {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+.p-multiselect .p-multiselect-label > *:not(.p-multiselect-token):not(.p-multiselect-chip-item):not(.p-placeholder) {
+  color: inherit !important;
+}
+.p-multiselect .p-multiselect-label .p-multiselect-token,
+.p-multiselect .p-multiselect-label .p-multiselect-chip-item,
+.p-multiselect .p-multiselect-label .p-chip,
+.p-multiselect .p-multiselect-label [class*="chip"],
+.p-multiselect .p-multiselect-label [class*="token"] {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+  border: 1px solid #ddd6fe !important;
+  border-radius: 9999px !important;
+  padding: 0.15rem 0.6rem !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  margin: 2px 4px 2px 0 !important;
+}
+.p-multiselect .p-multiselect-label .p-multiselect-token *,
+.p-multiselect .p-multiselect-label .p-multiselect-chip-item *,
+.p-multiselect .p-multiselect-label [class*="chip"] *,
+.p-multiselect .p-multiselect-label [class*="token"] * {
+  color: inherit !important;
+}
+
+/* ============================================================
+ * Global checkbox styling — unify look across the app.
+ * The auth screens use a custom appearance-none + violet gradient on check.
+ * Many feature panels still rely on the browser default which renders
+ * darkish on Windows / Linux. This override forces ALL native checkboxes
+ * (NOT primeng's <p-checkbox>) to the same clean white-with-violet pattern.
+ *
+ * NOTE: scoped to the app shell so we don't touch checkboxes inside
+ * 3rd-party widgets that already render their own (like quill).
+ * ============================================================ */
+input[type='checkbox']:not(.p-checkbox-input):not(.allow-native) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  border-radius: 4px !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  min-width: 1rem !important;
+  min-height: 1rem !important;
+  cursor: pointer !important;
+  position: relative !important;
+  margin: 0 !important;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+input[type='checkbox']:not(.p-checkbox-input):not(.allow-native):hover {
+  border-color: #94a3b8 !important; /* slate-400 */
+}
+
+input[type='checkbox']:not(.p-checkbox-input):not(.allow-native):focus-visible {
+  outline: 2px solid #6366f1 !important;
+  outline-offset: 2px !important;
+}
+
+/* Checked state — SVG checkmark embedded as background-image because
+ * `<input>` is a void element and ::before/::after don't render in it.
+ * Using URL-encoded special chars (`%3C`, `%3E`, `%23`) for maximum
+ * compatibility, and `fill` (solid shape) rather than `stroke` so the mark
+ * is bold and always visible regardless of rendering hints. */
+input[type='checkbox']:not(.p-checkbox-input):not(.allow-native):checked {
+  background-color: #7c3aed !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3E%3Cpath d='M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z'/%3E%3C/svg%3E") !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-size: 80% 80% !important;
+  border-color: #7c3aed !important;
+  box-shadow: 0 1px 2px rgba(124, 58, 237, 0.25) !important;
+}
+
+input[type='checkbox']:not(.p-checkbox-input):not(.allow-native):disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Indeterminate state — horizontal dash. */
+input[type='checkbox']:not(.p-checkbox-input):not(.allow-native):indeterminate {
+  background-color: #7c3aed !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3E%3Crect x='3' y='7' width='10' height='2' rx='1'/%3E%3C/svg%3E") !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-size: 80% 80% !important;
+  border-color: #7c3aed !important;
+}
+
+/* ============================================================
+ * Auth inputs — defeat browser autofill background.
+ * Chrome / Edge override input bg with a yellowish-gray when the
+ * field is autofilled, ignoring any Tailwind utility. The shadow
+ * inset trick paints over that with our actual color.
+ * ============================================================ */
+jt-auth-layout input:-webkit-autofill,
+jt-auth-layout input:-webkit-autofill:hover,
+jt-auth-layout input:-webkit-autofill:focus,
+jt-auth-layout input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+  border-color: #cbd5e1 !important;
 }
