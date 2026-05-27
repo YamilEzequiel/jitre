@@ -317,3 +317,89 @@ html, body {
   background: transparent;
   padding: 0;
 }
+
+/* ============================================================
+ * PrimeNG p-select — unified light theme for the whole app.
+ * Aura defaults are darkish-leaning; force a clean light look
+ * with violet focus to match the brand. !important is needed
+ * because Aura ships strong selectors via CSS-in-JS.
+ * ============================================================ */
+.p-select {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important; /* slate-200 */
+  color: #0f172a !important; /* slate-900 */
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease !important;
+}
+.p-select:not(.p-disabled):hover {
+  background: #f8fafc !important; /* slate-50 — subtle hint */
+  border-color: #c4b5fd !important; /* violet-300 */
+}
+.p-select:not(.p-disabled).p-focus,
+.p-select:not(.p-disabled):focus-within {
+  background: #ffffff !important;
+  border-color: #8b5cf6 !important; /* violet-500 */
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12) !important;
+  outline: none !important;
+}
+.p-select.p-disabled {
+  background: #f1f5f9 !important; /* slate-100 */
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}
+.p-select .p-select-label {
+  color: #0f172a !important;
+  padding: 0.5rem 0.75rem !important;
+}
+.p-select .p-select-label.p-placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+}
+.p-select .p-select-dropdown {
+  color: #64748b !important; /* slate-500 */
+}
+
+/* Dropdown panel — light surface with violet accents */
+.p-select-overlay {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12) !important;
+  border-radius: 0.75rem !important;
+}
+.p-select-option {
+  color: #334155 !important; /* slate-700 */
+  padding: 0.55rem 0.9rem !important;
+  transition: background-color 80ms ease, color 80ms ease !important;
+}
+.p-select-option:not(.p-disabled):not(.p-select-option-selected):hover,
+.p-select-option-focus:not(.p-select-option-selected) {
+  background: #f5f3ff !important; /* violet-50 */
+  color: #4c1d95 !important; /* violet-900 */
+}
+.p-select-option-selected {
+  background: #ede9fe !important; /* violet-100 */
+  color: #6d28d9 !important; /* violet-700 */
+  font-weight: 600 !important;
+}
+.p-select-option-selected:hover {
+  background: #ddd6fe !important; /* violet-200 */
+}
+.p-select-filter {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  padding: 0.45rem 0.7rem !important;
+}
+.p-select-filter:focus {
+  border-color: #8b5cf6 !important;
+  outline: none !important;
+}
+.p-select-empty-message {
+  color: #94a3b8 !important;
+  padding: 0.75rem !important;
+  text-align: center !important;
+}
+
+/* When the select sits in size=small (e.g. inline cell editors) */
+.p-select.p-select-sm .p-select-label {
+  padding: 0.35rem 0.6rem !important;
+  font-size: 0.75rem !important;
+}

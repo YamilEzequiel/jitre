@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { TaskStore } from '../../stores/task.store';
@@ -37,7 +38,7 @@ const PRIORITY_OPTS: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 @Component({
   selector: 'jt-tickets-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SkeletonComponent],
+  imports: [ReactiveFormsModule, SelectModule, SkeletonComponent],
   template: `
     <div class="flex flex-col h-full max-w-7xl">
       <!-- Header -->
@@ -66,57 +67,53 @@ const PRIORITY_OPTS: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
       <!-- Filter bar -->
       <div class="flex items-center gap-3 flex-wrap mb-4">
-        <select
+        <p-select
           [formControl]="typeControl"
-          class="text-sm rounded-lg bg-white border border-slate-200 backdrop-blur-sm
-                 px-3 py-2 text-slate-700 outline-none transition capitalize
-                 focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
+          [options]="typeSelectOptions"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
           aria-label="Filter by ticket type"
-        >
-          <option value="all" class="bg-white text-slate-700">All problems</option>
-          <option value="bug" class="bg-white text-slate-700">Bugs</option>
-          <option value="incident" class="bg-white text-slate-700">Incidents</option>
-        </select>
+        />
 
-        <select
+        <p-select
           [formControl]="projectControl"
-          class="text-sm rounded-lg bg-white border border-slate-200 backdrop-blur-sm
-                 px-3 py-2 text-slate-700 outline-none transition
-                 focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30 max-w-[12rem]"
+          [options]="projectSelectOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="All projects"
+          [showClear]="true"
+          [filter]="true"
+          appendTo="body"
+          styleClass="max-w-[12rem]"
           aria-label="Filter by project"
-        >
-          <option [value]="null" class="bg-white text-slate-700">All projects</option>
-          @for (p of projectOptions(); track p.id) {
-            <option [value]="p.id" class="bg-white text-slate-700">{{ p.name }}</option>
-          }
-        </select>
+        />
 
-        <select
+        <p-select
           [formControl]="priorityControl"
-          class="text-sm rounded-lg bg-white border border-slate-200 backdrop-blur-sm
-                 px-3 py-2 text-slate-700 outline-none transition capitalize
-                 focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
+          [options]="prioritySelectOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="All priorities"
+          [showClear]="true"
+          appendTo="body"
+          styleClass="capitalize"
           aria-label="Filter by priority"
-        >
-          <option [value]="null" class="bg-white text-slate-700">All priorities</option>
-          @for (p of priorityOpts; track p) {
-            <option [value]="p" class="bg-slate-900 text-white capitalize">{{ p }}</option>
-          }
-        </select>
+        />
 
         @if (assigneeOptions().length > 0) {
-          <select
+          <p-select
             [formControl]="assigneeControl"
-            class="text-sm rounded-lg bg-white border border-slate-200 backdrop-blur-sm
-                   px-3 py-2 text-slate-700 outline-none transition max-w-[10rem]
-                   focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
+            [options]="assigneeSelectOptions()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All assignees"
+            [showClear]="true"
+            [filter]="true"
+            appendTo="body"
+            styleClass="max-w-[10rem]"
             aria-label="Filter by assignee"
-          >
-            <option [value]="null" class="bg-white text-slate-700">All assignees</option>
-            @for (a of assigneeOptions(); track a) {
-              <option [value]="a" class="bg-white text-slate-700">{{ a }}</option>
-            }
-          </select>
+          />
         }
 
         <div class="relative flex-1 min-w-[12rem] max-w-sm">
@@ -252,6 +249,18 @@ export class TicketsListComponent implements OnInit {
 
   readonly projectOptions = computed(() => this.projectStore.items());
 
+  readonly projectSelectOptions = computed(() =>
+    this.projectOptions().map(p => ({ label: p.name, value: p.id })),
+  );
+
+  readonly typeSelectOptions: { label: string; value: ProblemType }[] = [
+    { label: 'All problems', value: 'all' },
+    { label: 'Bugs', value: 'bug' },
+    { label: 'Incidents', value: 'incident' },
+  ];
+
+  readonly prioritySelectOptions = PRIORITY_OPTS.map(p => ({ label: p, value: p }));
+
   /**
    * Tickets = tasks across the workspace whose type is 'bug' or 'incident'.
    * This excludes 'task' and 'feature' on purpose — the Tickets view is for problem tracking.
@@ -267,6 +276,10 @@ export class TicketsListComponent implements OnInit {
     }
     return [...set].sort();
   });
+
+  readonly assigneeSelectOptions = computed(() =>
+    this.assigneeOptions().map(a => ({ label: a, value: a })),
+  );
 
   readonly filteredTickets = computed<Task[]>(() => {
     const typeFilter = this.typeSignal();

@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { SelectModule } from 'primeng/select';
 import { TaskPriority } from '@jitre/shared';
 import type {
   AiDocDraft,
@@ -23,17 +24,43 @@ import { AiCreateService } from './ai-create.service';
 
 type DialogMode = 'idle' | 'loading' | 'preview' | 'committing';
 
-const PRIORITIES: { value: TaskPriority; label: string }[] = [
+interface SelectOption<T> {
+  label: string;
+  value: T;
+}
+
+const PRIORITIES: SelectOption<TaskPriority | null>[] = [
+  { value: null, label: '— Sin prioridad' },
   { value: TaskPriority.LOW, label: 'Low' },
   { value: TaskPriority.MEDIUM, label: 'Medium' },
   { value: TaskPriority.HIGH, label: 'High' },
   { value: TaskPriority.URGENT, label: 'Urgent' },
 ];
 
+const MAX_PROMPT_CHARS = 2000;
+const MIN_PROMPT_CHARS = 3;
+
 @Component({
   selector: 'jt-ai-create-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, SelectModule],
+  styles: [`
+    :host ::ng-deep .p-select {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 0.75rem;
+    }
+    :host ::ng-deep .p-select.p-select-sm {
+      font-size: 0.75rem;
+    }
+    :host ::ng-deep .p-select:not(.p-disabled):hover {
+      border-color: #c4b5fd; /* violet-300 */
+    }
+    :host ::ng-deep .p-select:not(.p-disabled).p-focus {
+      border-color: #8b5cf6; /* violet-500 */
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+    }
+  `],
   template: `
     @if (state.isOpen()) {
       <div
@@ -51,17 +78,17 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
             <div>
               <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-600">AI</p>
               <h2 id="ai-create-title" class="mt-1 text-xl font-black text-slate-950">
-                Create from a prompt
+                Crear con IA desde un prompt
               </h2>
               <p class="text-sm text-slate-500">
-                Describe what you need. The AI proposes a draft you can edit before saving.
+                Describí lo que necesitás. La IA propone un borrador que podés editar antes de guardar.
               </p>
             </div>
             <button
               type="button"
               (click)="close()"
               class="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-              aria-label="Close"
+              aria-label="Cerrar"
             >
               <i class="pi pi-times text-xs" aria-hidden="true"></i>
             </button>
@@ -69,67 +96,101 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
 
           @if (mode() === 'idle' || mode() === 'loading') {
             <label class="block">
-              <span class="sr-only">Prompt</span>
+              <span class="mb-1.5 flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                  Prompt <span class="text-rose-500">*</span>
+                </span>
+                <span
+                  class="text-[11px] font-mono tabular-nums"
+                  [class.text-slate-400]="!promptTooLong()"
+                  [class.text-rose-600]="promptTooLong()"
+                  [class.font-bold]="promptTooLong()"
+                >
+                  {{ promptLength() }}/{{ maxPromptChars }}
+                </span>
+              </span>
               <textarea
                 #promptInput
                 [(ngModel)]="prompt"
-                rows="4"
+                rows="5"
                 [disabled]="mode() === 'loading'"
-                placeholder="e.g. 'Plan the launch of the new pricing page with 5 substeps'"
-                class="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900
-                       placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:outline-none"
+                [maxlength]="maxPromptChars"
+                placeholder="ej: 'Planificar el lanzamiento de la nueva página de pricing con 5 sub-pasos'"
+                class="w-full resize-none rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900
+                       placeholder:text-slate-400 transition focus:bg-white focus:outline-none"
+                [class.border-slate-200]="!promptTooLong()"
+                [class.focus:border-violet-400]="!promptTooLong()"
+                [class.border-rose-300]="promptTooLong()"
+                [class.focus:border-rose-500]="promptTooLong()"
                 (keydown.meta.enter)="generate()"
                 (keydown.control.enter)="generate()"
               ></textarea>
             </label>
 
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <label class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                Project
+            <div class="mt-4">
+              <label for="ai-project-select" class="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                Proyecto <span class="text-rose-500">*</span>
               </label>
-              <select
-                [ngModel]="selectedProjectId()"
-                (ngModelChange)="selectedProjectId.set($event)"
+              <p-select
+                inputId="ai-project-select"
+                [options]="projectOptions()"
+                [(ngModel)]="selectedProjectId"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Elegí un proyecto…"
                 [disabled]="mode() === 'loading'"
-                class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700
-                       focus:border-violet-400 focus:outline-none"
-              >
-                <option [ngValue]="null">No project</option>
-                @for (project of projects(); track project.id) {
-                  <option [ngValue]="project.id">{{ project.name }}</option>
-                }
-              </select>
+                [showClear]="false"
+                appendTo="body"
+              />
+              <p class="mt-1.5 text-[11px] text-slate-500">
+                El proyecto da contexto a la IA: estados, miembros, planning. Es obligatorio.
+              </p>
             </div>
 
             @if (errorMessage()) {
-              <p class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {{ errorMessage() }}
-              </p>
+              <div class="mt-4 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
+                <p class="font-semibold">{{ errorMessage() }}</p>
+                @if (errorFields().length > 0) {
+                  <ul class="mt-1 list-disc pl-5 text-xs">
+                    @for (e of errorFields(); track e.field) {
+                      <li><strong class="font-mono">{{ e.field }}</strong>: {{ e.message }}</li>
+                    }
+                  </ul>
+                }
+              </div>
             }
 
-            <div class="mt-5 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                (click)="close()"
-                class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                (click)="generate()"
-                [disabled]="!canGenerate()"
-                class="inline-flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2 text-sm font-bold text-white
-                       transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                @if (mode() === 'loading') {
-                  <i class="pi pi-spin pi-spinner text-xs" aria-hidden="true"></i>
-                  Generating…
-                } @else {
-                  <i class="pi pi-sparkles text-xs" aria-hidden="true"></i>
-                  Generate draft
+            <div class="mt-5 flex items-center justify-between gap-3">
+              <p class="text-[11px] text-slate-400 min-h-[1rem]">
+                @if (disabledReason(); as reason) {
+                  <i class="pi pi-info-circle text-[10px] mr-1" aria-hidden="true"></i>{{ reason }}
                 }
-              </button>
+              </p>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="close()"
+                  class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  (click)="generate()"
+                  [disabled]="!canGenerate()"
+                  [attr.title]="disabledReason()"
+                  class="inline-flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2 text-sm font-bold text-white
+                         transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  @if (mode() === 'loading') {
+                    <i class="pi pi-spin pi-spinner text-xs" aria-hidden="true"></i>
+                    Generando…
+                  } @else {
+                    <i class="pi pi-sparkles text-xs" aria-hidden="true"></i>
+                    Generar borrador
+                  }
+                </button>
+              </div>
             </div>
           }
 
@@ -138,10 +199,10 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
               <section class="space-y-3" aria-label="Task draft">
                 <p class="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-violet-700">
                   <i class="pi pi-check-square text-[9px]" aria-hidden="true"></i>
-                  Task draft
+                  Borrador de tarea
                 </p>
                 <label class="block">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Title</span>
+                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Título</span>
                   <input
                     type="text"
                     [ngModel]="taskTitle()"
@@ -151,7 +212,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                   />
                 </label>
                 <label class="block">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Description</span>
+                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Descripción</span>
                   <textarea
                     rows="3"
                     [ngModel]="taskDescription()"
@@ -160,35 +221,32 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                            focus:border-violet-400 focus:outline-none"
                   ></textarea>
                 </label>
-                <div class="flex flex-wrap items-center gap-3">
-                  <label class="flex items-center gap-2 text-xs text-slate-600">
-                    Priority
-                    <select
+                <div class="flex flex-wrap items-end gap-3">
+                  <div class="flex-1 min-w-[10rem]">
+                    <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-1">Prioridad</span>
+                    <p-select
+                      [options]="priorities"
                       [ngModel]="taskPriority()"
                       (ngModelChange)="taskPriority.set($event)"
-                      class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700
-                             focus:border-violet-400 focus:outline-none"
-                    >
-                      <option [ngValue]="null">—</option>
-                      @for (option of priorities; track option.value) {
-                        <option [ngValue]="option.value">{{ option.label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label class="flex items-center gap-2 text-xs text-slate-600">
-                    Project
-                    <select
+                      optionLabel="label"
+                      optionValue="value"
+                      appendTo="body"
+                      size="small"
+                    />
+                  </div>
+                  <div class="flex-1 min-w-[12rem]">
+                    <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-1">Proyecto</span>
+                    <p-select
+                      [options]="projectOptions()"
                       [ngModel]="taskProjectId()"
                       (ngModelChange)="taskProjectId.set($event)"
-                      class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700
-                             focus:border-violet-400 focus:outline-none"
-                    >
-                      <option [ngValue]="null">No project</option>
-                      @for (project of projects(); track project.id) {
-                        <option [ngValue]="project.id">{{ project.name }}</option>
-                      }
-                    </select>
-                  </label>
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Sin proyecto"
+                      appendTo="body"
+                      size="small"
+                    />
+                  </div>
                 </div>
               </section>
             }
@@ -197,10 +255,10 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
               <section class="space-y-3" aria-label="Task with subtasks draft">
                 <p class="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-violet-700">
                   <i class="pi pi-sitemap text-[9px]" aria-hidden="true"></i>
-                  Task + subtasks draft
+                  Borrador: tarea + sub-tareas
                 </p>
                 <label class="block">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Parent title</span>
+                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Título principal</span>
                   <input
                     type="text"
                     [ngModel]="parentTitle()"
@@ -210,7 +268,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                   />
                 </label>
                 <label class="block">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Parent description</span>
+                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Descripción principal</span>
                   <textarea
                     rows="2"
                     [ngModel]="parentDescription()"
@@ -219,40 +277,37 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                            focus:border-violet-400 focus:outline-none"
                   ></textarea>
                 </label>
-                <div class="flex flex-wrap items-center gap-3">
-                  <label class="flex items-center gap-2 text-xs text-slate-600">
-                    Priority
-                    <select
+                <div class="flex flex-wrap items-end gap-3">
+                  <div class="flex-1 min-w-[10rem]">
+                    <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-1">Prioridad</span>
+                    <p-select
+                      [options]="priorities"
                       [ngModel]="parentPriority()"
                       (ngModelChange)="parentPriority.set($event)"
-                      class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700
-                             focus:border-violet-400 focus:outline-none"
-                    >
-                      <option [ngValue]="null">—</option>
-                      @for (option of priorities; track option.value) {
-                        <option [ngValue]="option.value">{{ option.label }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label class="flex items-center gap-2 text-xs text-slate-600">
-                    Project
-                    <select
+                      optionLabel="label"
+                      optionValue="value"
+                      appendTo="body"
+                      size="small"
+                    />
+                  </div>
+                  <div class="flex-1 min-w-[12rem]">
+                    <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-1">Proyecto</span>
+                    <p-select
+                      [options]="projectOptions()"
                       [ngModel]="parentProjectId()"
                       (ngModelChange)="parentProjectId.set($event)"
-                      class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700
-                             focus:border-violet-400 focus:outline-none"
-                    >
-                      <option [ngValue]="null">No project</option>
-                      @for (project of projects(); track project.id) {
-                        <option [ngValue]="project.id">{{ project.name }}</option>
-                      }
-                    </select>
-                  </label>
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Sin proyecto"
+                      appendTo="body"
+                      size="small"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
-                    Subtasks ({{ subtasks().length }})
+                    Sub-tareas ({{ subtasks().length }})
                   </p>
                   <ul class="space-y-2">
                     @for (subtask of subtasks(); track $index) {
@@ -268,7 +323,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                           type="button"
                           (click)="removeSubtask($index)"
                           class="rounded-full p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                          [attr.aria-label]="'Remove subtask ' + ($index + 1)"
+                          [attr.aria-label]="'Quitar sub-tarea ' + ($index + 1)"
                         >
                           <i class="pi pi-trash text-xs" aria-hidden="true"></i>
                         </button>
@@ -283,7 +338,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
               <section class="space-y-3" aria-label="Doc draft">
                 <p class="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-violet-700">
                   <i class="pi pi-file text-[9px]" aria-hidden="true"></i>
-                  Doc draft
+                  Borrador de documento
                 </p>
                 <div class="flex items-center gap-2">
                   <input
@@ -294,19 +349,19 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                     placeholder="📄"
                     class="w-12 rounded-xl border border-slate-200 bg-white px-2 py-2 text-center text-lg
                            focus:border-violet-400 focus:outline-none"
-                    aria-label="Doc icon"
+                    aria-label="Icono del documento"
                   />
                   <input
                     type="text"
                     [ngModel]="docTitle()"
                     (ngModelChange)="docTitle.set($event)"
-                    placeholder="Page title"
+                    placeholder="Título de la página"
                     class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900
                            focus:border-violet-400 focus:outline-none"
                   />
                 </div>
                 <label class="block">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Body</span>
+                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Contenido</span>
                   <textarea
                     rows="5"
                     [ngModel]="docBody()"
@@ -315,20 +370,19 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                            focus:border-violet-400 focus:outline-none"
                   ></textarea>
                 </label>
-                <label class="flex items-center gap-2 text-xs text-slate-600">
-                  Project
-                  <select
+                <div>
+                  <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-1">Proyecto</span>
+                  <p-select
+                    [options]="projectOptionsWithWorkspace()"
                     [ngModel]="docProjectId()"
                     (ngModelChange)="docProjectId.set($event)"
-                    class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700
-                           focus:border-violet-400 focus:outline-none"
-                  >
-                    <option [ngValue]="null">Workspace (no project)</option>
-                    @for (project of projects(); track project.id) {
-                      <option [ngValue]="project.id">{{ project.name }}</option>
-                    }
-                  </select>
-                </label>
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Workspace (sin proyecto)"
+                    appendTo="body"
+                    size="small"
+                  />
+                </div>
               </section>
             }
 
@@ -336,7 +390,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
               <section class="space-y-3" aria-label="Project draft">
                 <p class="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-violet-700">
                   <i class="pi pi-briefcase text-[9px]" aria-hidden="true"></i>
-                  Project draft
+                  Borrador de proyecto
                 </p>
                 <div class="flex items-center gap-2">
                   <input
@@ -347,20 +401,20 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                     placeholder="🚀"
                     class="w-12 rounded-xl border border-slate-200 bg-white px-2 py-2 text-center text-lg
                            focus:border-violet-400 focus:outline-none"
-                    aria-label="Project icon"
+                    aria-label="Icono del proyecto"
                   />
                   <input
                     type="text"
                     [ngModel]="projectName()"
                     (ngModelChange)="projectName.set($event)"
-                    placeholder="Project name"
+                    placeholder="Nombre del proyecto"
                     class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900
                            focus:border-violet-400 focus:outline-none"
                   />
                 </div>
                 <div class="flex items-center gap-3">
                   <label class="flex items-center gap-2 text-xs text-slate-600">
-                    Key
+                    Clave
                     <input
                       type="text"
                       [ngModel]="projectKey()"
@@ -381,7 +435,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                   </label>
                 </div>
                 <label class="block">
-                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Description</span>
+                  <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Descripción</span>
                   <textarea
                     rows="3"
                     [ngModel]="projectDescription()"
@@ -394,9 +448,16 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
             }
 
             @if (errorMessage()) {
-              <p class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {{ errorMessage() }}
-              </p>
+              <div class="mt-4 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
+                <p class="font-semibold">{{ errorMessage() }}</p>
+                @if (errorFields().length > 0) {
+                  <ul class="mt-1 list-disc pl-5 text-xs">
+                    @for (e of errorFields(); track e.field) {
+                      <li><strong class="font-mono">{{ e.field }}</strong>: {{ e.message }}</li>
+                    }
+                  </ul>
+                }
+              </div>
             }
 
             <div class="mt-5 flex items-center justify-between gap-2">
@@ -407,7 +468,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                 class="rounded-full px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50"
               >
                 <i class="pi pi-refresh text-[10px] mr-1" aria-hidden="true"></i>
-                Re-generate
+                Volver a generar
               </button>
               <div class="flex items-center gap-2">
                 <button
@@ -416,7 +477,7 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                   [disabled]="mode() === 'committing'"
                   class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
                 >
-                  Discard
+                  Descartar
                 </button>
                 <button
                   type="button"
@@ -427,10 +488,10 @@ const PRIORITIES: { value: TaskPriority; label: string }[] = [
                 >
                   @if (mode() === 'committing') {
                     <i class="pi pi-spin pi-spinner text-xs" aria-hidden="true"></i>
-                    Creating…
+                    Creando…
                   } @else {
                     <i class="pi pi-check text-xs" aria-hidden="true"></i>
-                    Create
+                    Crear
                   }
                 </button>
               </div>
@@ -451,10 +512,24 @@ export class AiCreateDialogComponent {
   protected readonly mode = signal<DialogMode>('idle');
   protected readonly prompt = signal('');
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly errorFields = signal<Array<{ field: string; message: string }>>([]);
   protected readonly selectedProjectId = signal<string | null>(null);
 
   protected readonly priorities = PRIORITIES;
+  protected readonly maxPromptChars = MAX_PROMPT_CHARS;
   protected readonly projects = computed(() => this.projectStore.items());
+
+  protected readonly projectOptions = computed<SelectOption<string | null>[]>(() =>
+    this.projects().map((p) => ({ label: p.name, value: p.id })),
+  );
+
+  protected readonly projectOptionsWithWorkspace = computed<SelectOption<string | null>[]>(() => [
+    { label: 'Workspace (sin proyecto)', value: null },
+    ...this.projects().map((p) => ({ label: p.name, value: p.id })),
+  ]);
+
+  protected readonly promptLength = computed(() => this.prompt().length);
+  protected readonly promptTooLong = computed(() => this.prompt().length > MAX_PROMPT_CHARS);
 
   // ── task draft fields
   private readonly _draftKind = signal<AiGeneratorDraft['kind'] | null>(null);
@@ -485,8 +560,25 @@ export class AiCreateDialogComponent {
   protected readonly projectIcon = signal<string | null>(null);
   protected readonly projectColor = signal<string | null>(null);
 
+  /**
+   * Single source of truth for what's blocking the user from generating.
+   * Returns null when everything is OK, otherwise a human message explaining
+   * why the button is disabled — surfaced inline AND as the `title` tooltip.
+   */
+  protected readonly disabledReason = computed<string | null>(() => {
+    if (this.mode() === 'loading') return null;
+    const len = this.prompt().trim().length;
+    if (len === 0) return 'Escribí un prompt para continuar.';
+    if (len < MIN_PROMPT_CHARS) return `El prompt necesita al menos ${MIN_PROMPT_CHARS} caracteres.`;
+    if (this.prompt().length > MAX_PROMPT_CHARS) {
+      return `El prompt no puede superar ${MAX_PROMPT_CHARS} caracteres.`;
+    }
+    if (!this.selectedProjectId()) return 'Elegí un proyecto para dar contexto a la IA.';
+    return null;
+  });
+
   protected readonly canGenerate = computed(
-    () => this.mode() === 'idle' && this.prompt().trim().length >= 3,
+    () => this.mode() === 'idle' && this.disabledReason() === null,
   );
 
   protected readonly canCommit = computed(() => {
@@ -520,7 +612,7 @@ export class AiCreateDialogComponent {
   protected async generate(): Promise<void> {
     if (!this.canGenerate()) return;
     this.mode.set('loading');
-    this.errorMessage.set(null);
+    this.clearError();
     try {
       const response = await this.api.draft({
         prompt: this.prompt(),
@@ -528,12 +620,12 @@ export class AiCreateDialogComponent {
       });
       const draft = response.drafts[0];
       if (!draft) {
-        throw new Error('Empty draft list');
+        throw new Error('La IA no devolvió ningún borrador.');
       }
       this.applyDraft(draft);
       this.mode.set('preview');
     } catch (err) {
-      this.errorMessage.set(this.formatError(err, 'Could not generate a draft.'));
+      this.surfaceError(err, 'No pudimos generar el borrador.');
       this.mode.set('idle');
     }
   }
@@ -541,15 +633,15 @@ export class AiCreateDialogComponent {
   protected async commit(): Promise<void> {
     if (!this.canCommit()) return;
     this.mode.set('committing');
-    this.errorMessage.set(null);
+    this.clearError();
     try {
       const draft = this.composeDraft();
       const result = await this.api.commit(draft);
-      this.toast.success('Created with AI');
+      this.toast.success('Creado con IA');
       this.state.close();
       void this.router.navigate(this.targetRouteFor(result.kind, result.id));
     } catch (err) {
-      this.errorMessage.set(this.formatError(err, 'Could not create from this draft.'));
+      this.surfaceError(err, 'No pudimos crear desde este borrador.');
       this.mode.set('preview');
     }
   }
@@ -562,7 +654,7 @@ export class AiCreateDialogComponent {
 
   protected restart(): void {
     this._draftKind.set(null);
-    this.errorMessage.set(null);
+    this.clearError();
     this.mode.set('idle');
   }
 
@@ -671,7 +763,7 @@ export class AiCreateDialogComponent {
   private resetState(): void {
     this.mode.set('idle');
     this.prompt.set('');
-    this.errorMessage.set(null);
+    this.clearError();
     this.selectedProjectId.set(null);
     this._draftKind.set(null);
     this.taskTitle.set('');
@@ -694,12 +786,52 @@ export class AiCreateDialogComponent {
     this.projectColor.set(null);
   }
 
-  private formatError(err: unknown, fallback: string): string {
-    if (typeof err === 'object' && err !== null && 'error' in err) {
-      const inner = (err as { error?: { message?: string } }).error;
-      if (inner?.message) return inner.message;
-    }
+  private clearError(): void {
+    this.errorMessage.set(null);
+    this.errorFields.set([]);
+  }
+
+  /**
+   * Extract a user-friendly message from an HTTP error.
+   *
+   * Backend uses RFC 9457 Problem Details: `{ status, title, detail, errors? }`.
+   * `detail` is the human sentence; `errors` is a `{ field: string[] }` map of
+   * field-level violations. We surface both: the headline message + a bullet
+   * list of field issues. Also pipes the message to the toast so it's visible
+   * even if the dialog scrolled.
+   */
+  private surfaceError(err: unknown, fallback: string): void {
+    const problem = this.extractProblemDetails(err);
+    const message = problem?.detail ?? problem?.title ?? this.extractGenericMessage(err) ?? fallback;
+    const fields = problem?.errors
+      ? Object.entries(problem.errors).flatMap(([field, msgs]) =>
+          (msgs as string[]).map((m) => ({ field, message: m })),
+        )
+      : [];
+    this.errorMessage.set(message);
+    this.errorFields.set(fields);
+    this.toast.error(message);
+  }
+
+  private extractProblemDetails(err: unknown): {
+    status?: number;
+    title?: string;
+    detail?: string;
+    errors?: Record<string, string[]>;
+  } | null {
+    if (typeof err !== 'object' || err === null) return null;
+    const candidate = (err as { error?: unknown }).error;
+    if (typeof candidate !== 'object' || candidate === null) return null;
+    return candidate as {
+      status?: number;
+      title?: string;
+      detail?: string;
+      errors?: Record<string, string[]>;
+    };
+  }
+
+  private extractGenericMessage(err: unknown): string | null {
     if (err instanceof Error && err.message) return err.message;
-    return fallback;
+    return null;
   }
 }

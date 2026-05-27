@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../core/toast/toast.service';
@@ -19,7 +20,7 @@ interface AiUsagePoint {
 @Component({
   selector: 'jt-ai-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, SelectModule],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
@@ -57,15 +58,15 @@ interface AiUsagePoint {
           >
             Provider
           </label>
-          <select
-            id="ai-provider"
+          <p-select
+            inputId="ai-provider"
             formControlName="provider"
-            class="w-full rounded-lg bg-white border border-slate-200
-                   px-3 py-2.5 text-sm text-slate-700 outline-none transition
-                   focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
-          >
-            <option value="GEMINI" class="bg-white text-slate-700">Gemini</option>
-          </select>
+            [options]="providerOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            styleClass="w-full"
+          />
           <p class="mt-2 text-xs text-slate-500">
             Gemini is currently the available provider.
           </p>
@@ -131,6 +132,8 @@ export class AiSettingsPanelComponent implements OnInit {
 
   readonly saving = signal(false);
   readonly spentUsd = signal<string | null>(null);
+
+  readonly providerOptions = [{ label: 'Gemini', value: 'GEMINI' }];
 
   readonly form = this.fb.group({
     provider: ['GEMINI', Validators.required],

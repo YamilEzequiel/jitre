@@ -233,7 +233,13 @@ interface NavItem {
             <a routerLink="/notifications" [attr.aria-label]="'nav.notifications' | translate" class="text-slate-400 transition hover:text-indigo-600">
               <i class="pi pi-bell text-sm" aria-hidden="true"></i>
             </a>
-            <button type="button" [attr.aria-label]="'nav.help' | translate" class="text-slate-400 transition hover:text-indigo-600">
+            <button
+              type="button"
+              [attr.aria-label]="'nav.help' | translate"
+              [attr.title]="('nav.help' | translate) + ' (⌘K)'"
+              (click)="openCommandPalette()"
+              class="text-slate-400 transition hover:text-indigo-600"
+            >
               <i class="pi pi-question-circle text-sm" aria-hidden="true"></i>
             </button>
 

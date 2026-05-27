@@ -7,7 +7,8 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { TaskStore } from '../../../stores/task.store';
 import { TaskApiService, Task, TaskPriority, TaskType } from '../../../stores/task-api.service';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
@@ -39,6 +40,8 @@ interface DisplayComment {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
+    SelectModule,
     SkeletonComponent,
     MarkdownPipe,
     RouterLink,
@@ -147,18 +150,17 @@ interface DisplayComment {
 
           <label class="inline-flex items-center gap-2" data-testid="task-type-selector">
             <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Type</span>
-            <select
-              [value]="task()!.type"
-              (change)="onTypeChange($event)"
-              class="text-xs rounded-lg bg-white border border-slate-200 backdrop-blur-sm
-                     px-2.5 py-1.5 text-slate-800 capitalize outline-none transition
-                     focus:border-indigo-400 focus:bg-slate-100 focus:ring-2 focus:ring-indigo-500/30"
+            <p-select
+              [options]="typeSelectOptions"
+              [ngModel]="task()!.type"
+              (ngModelChange)="changeType($event)"
+              optionLabel="label"
+              optionValue="value"
+              size="small"
+              appendTo="body"
+              styleClass="capitalize"
               aria-label="Change task type"
-            >
-              @for (t of typeOptions; track t) {
-                <option [value]="t" class="capitalize">{{ t }}</option>
-              }
-            </select>
+            />
           </label>
 
           <button
@@ -442,6 +444,7 @@ export class TaskDetailComponent implements OnInit {
   readonly aiDescribeLoading = computed(() => this.ai.loading.describe());
 
   readonly typeOptions: TaskType[] = ['task', 'bug', 'incident', 'feature'];
+  readonly typeSelectOptions = this.typeOptions.map(t => ({ label: t, value: t }));
   readonly priorityOptions: TaskPriority[] = ['none', 'low', 'medium', 'high', 'urgent'];
   readonly statusOptions = computed(() => this.statusStore?.byProject(this.task()?.projectId ?? '')() ?? []);
 
@@ -528,11 +531,6 @@ export class TaskDetailComponent implements OnInit {
       apiCall: () => this.taskApi.update(original.projectId, original.id, { title: newTitle }),
     });
     this.editing.set(false);
-  }
-
-  onTypeChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as TaskType;
-    this.changeType(value);
   }
 
   async changeType(type: TaskType): Promise<void> {

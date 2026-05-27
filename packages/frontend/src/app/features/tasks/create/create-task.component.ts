@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TabsModule } from 'primeng/tabs';
+import { SelectModule } from 'primeng/select';
 import { TaskApiService, Task, TaskType } from '../../../stores/task-api.service';
 import { TaskStore } from '../../../stores/task.store';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
@@ -22,7 +23,7 @@ import { ToastService } from '../../../core/toast/toast.service';
   selector: 'jt-create-task',
   host: { class: 'block h-full w-full' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TabsModule],
+  imports: [ReactiveFormsModule, TabsModule, SelectModule],
   styles: [`
     /* Form controls — consistent hover/focus across selects, inputs, dates, textareas. */
     .jt-input,
@@ -207,36 +208,19 @@ import { ToastService } from '../../../core/toast/toast.service';
                   <div class="grid gap-4 p-5 sm:grid-cols-2">
                     <div>
                       <label for="task-type" class="mb-2 block text-xs font-semibold text-slate-600">Tipo</label>
-                      <select id="task-type" formControlName="type" class="jt-select">
-                        @for (t of typeOptions; track t) {
-                          <option [value]="t">{{ t }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-type" formControlName="type" [options]="typeSelectOptions" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
                     </div>
                     <div>
                       <label for="task-status" class="mb-2 block text-xs font-semibold text-slate-600">Estado</label>
-                      <select id="task-status" formControlName="statusId" class="jt-select">
-                        @for (status of statusOptions(); track status.id) {
-                          <option [value]="status.id">{{ status.name }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-status" formControlName="statusId" [options]="statusSelectOptions()" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
                     </div>
                     <div>
                       <label for="task-priority" class="mb-2 block text-xs font-semibold text-slate-600">Prioridad</label>
-                      <select id="task-priority" formControlName="priority" class="jt-select">
-                        @for (p of priorityOptions; track p) {
-                          <option [value]="p">{{ p }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-priority" formControlName="priority" [options]="prioritySelectOptions" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full" />
                     </div>
                     <div>
                       <label for="task-parent" class="mb-2 block text-xs font-semibold text-slate-600">Parent</label>
-                      <select id="task-parent" formControlName="parentTaskId" class="jt-select">
-                        <option value="">Sin parent</option>
-                        @for (parent of parentTaskOptions(); track parent.id) {
-                          <option [value]="parent.id">{{ parent.title }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-parent" formControlName="parentTaskId" [options]="parentTaskSelectOptions()" optionLabel="label" optionValue="value" placeholder="Sin parent" [showClear]="true" appendTo="body" styleClass="w-full" />
                     </div>
                   </div>
                 </section>
@@ -295,30 +279,15 @@ import { ToastService } from '../../../core/toast/toast.service';
                   <div class="space-y-4 p-5">
                     <div>
                       <label for="task-epic" class="mb-2 block text-xs font-semibold text-slate-600">Épica</label>
-                      <select id="task-epic" formControlName="epicId" class="jt-select">
-                        <option value="">Sin épica</option>
-                        @for (epic of epics(); track epic.id) {
-                          <option [value]="epic.id">{{ epic.name }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-epic" formControlName="epicId" [options]="epicSelectOptions()" optionLabel="label" optionValue="value" placeholder="Sin épica" [showClear]="true" appendTo="body" styleClass="w-full" />
                     </div>
                     <div>
                       <label for="task-sprint" class="mb-2 block text-xs font-semibold text-slate-600">Sprint</label>
-                      <select id="task-sprint" formControlName="sprintId" class="jt-select">
-                        <option value="">Backlog</option>
-                        @for (sprint of sprints(); track sprint.id) {
-                          <option [value]="sprint.id">{{ sprint.name }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-sprint" formControlName="sprintId" [options]="sprintSelectOptions()" optionLabel="label" optionValue="value" placeholder="Backlog" [showClear]="true" appendTo="body" styleClass="w-full" />
                     </div>
                     <div>
                       <label for="task-release" class="mb-2 block text-xs font-semibold text-slate-600">Release</label>
-                      <select id="task-release" formControlName="releaseId" class="jt-select">
-                        <option value="">Sin release</option>
-                        @for (release of releases(); track release.id) {
-                          <option [value]="release.id">{{ release.name }}</option>
-                        }
-                      </select>
+                      <p-select inputId="task-release" formControlName="releaseId" [options]="releaseSelectOptions()" optionLabel="label" optionValue="value" placeholder="Sin release" [showClear]="true" appendTo="body" styleClass="w-full" />
                     </div>
                   </div>
                 </section>
@@ -444,6 +413,18 @@ export class CreateTaskComponent implements OnInit {
   readonly epics = computed(() => this.planningItems().filter(item => item.type === 'epic'));
   readonly sprints = computed(() => this.planningItems().filter(item => item.type === 'sprint'));
   readonly releases = computed(() => this.planningItems().filter(item => item.type === 'release'));
+
+  readonly typeSelectOptions = this.typeOptions.map(t => ({ label: t, value: t }));
+  readonly prioritySelectOptions = this.priorityOptions.map(p => ({ label: p, value: p }));
+  readonly statusSelectOptions = computed(() =>
+    this.statusOptions().map(s => ({ label: s.name, value: s.id })),
+  );
+  readonly parentTaskSelectOptions = computed(() =>
+    this.parentTaskOptions().map(t => ({ label: t.title, value: t.id })),
+  );
+  readonly epicSelectOptions = computed(() => this.epics().map(e => ({ label: e.name, value: e.id })));
+  readonly sprintSelectOptions = computed(() => this.sprints().map(s => ({ label: s.name, value: s.id })));
+  readonly releaseSelectOptions = computed(() => this.releases().map(r => ({ label: r.name, value: r.id })));
 
   readonly form = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(1)]],

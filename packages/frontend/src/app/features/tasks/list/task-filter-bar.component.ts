@@ -3,11 +3,13 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  computed,
   inject,
   input,
   output,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { TaskPriority, TaskType } from '../../../stores/task-api.service';
@@ -42,7 +44,7 @@ const TYPE_OPTS: TaskType[] = ['task', 'bug', 'incident', 'feature'];
 @Component({
   selector: 'jt-task-filter-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, SelectModule],
   template: `
     <div class="rounded-xl border border-slate-200 bg-white p-2 shadow-sm shadow-slate-200/70">
       <div class="flex items-center gap-2 flex-wrap">
@@ -72,73 +74,69 @@ const TYPE_OPTS: TaskType[] = ['task', 'bug', 'incident', 'feature'];
           />
         </div>
 
-        <select
+        <p-select
           [formControl]="statusControl"
-          class="text-sm rounded-xl bg-slate-50 border border-slate-200
-                 px-3 py-2 text-slate-800 outline-none transition
-                 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+          [options]="statusSelectOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los estados"
+          [showClear]="true"
+          appendTo="body"
           aria-label="Filter by status"
-        >
-          <option [value]="null">Todos los estados</option>
-          @for (opt of statusOptions(); track opt.id) {
-            <option [value]="opt.id">{{ opt.name }}</option>
-          }
-        </select>
+        />
 
-        <select
+        <p-select
           [formControl]="typeControl"
-          class="text-sm rounded-xl bg-slate-50 border border-slate-200
-                 px-3 py-2 text-slate-800 outline-none transition capitalize
-                 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+          [options]="typeSelectOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los tipos"
+          [showClear]="true"
+          appendTo="body"
+          styleClass="capitalize"
           aria-label="Filter by type"
-        >
-          <option [value]="null">Todos los tipos</option>
-          @for (t of typeOpts; track t) {
-            <option [value]="t" class="capitalize">{{ t }}</option>
-          }
-        </select>
+        />
 
-        <select
+        <p-select
           [formControl]="priorityControl"
-          class="text-sm rounded-xl bg-slate-50 border border-slate-200
-                 px-3 py-2 text-slate-800 outline-none transition capitalize
-                 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+          [options]="prioritySelectOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todas las prioridades"
+          [showClear]="true"
+          appendTo="body"
+          styleClass="capitalize"
           aria-label="Filter by priority"
-        >
-          <option [value]="null">Todas las prioridades</option>
-          @for (p of priorityOpts; track p) {
-            <option [value]="p" class="capitalize">{{ p }}</option>
-          }
-        </select>
+        />
 
         @if (assigneeOptions().length > 0) {
-          <select
+          <p-select
             [formControl]="assigneeControl"
-            class="text-sm rounded-xl bg-slate-50 border border-slate-200
-                   px-3 py-2 text-slate-800 outline-none transition max-w-[11rem]
-                   focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+            [options]="assigneeSelectOptions()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todos los responsables"
+            [showClear]="true"
+            [filter]="true"
+            appendTo="body"
+            styleClass="max-w-[11rem]"
             aria-label="Filter by assignee"
-          >
-            <option [value]="null">Todos los responsables</option>
-            @for (a of assigneeOptions(); track a.userId) {
-              <option [value]="a.userId">{{ a.label ?? a.userId }}</option>
-            }
-          </select>
+          />
         }
 
         @if (labelOptions().length > 0) {
-          <select
+          <p-select
             [formControl]="labelControl"
-            class="text-sm rounded-xl bg-slate-50 border border-slate-200
-                   px-3 py-2 text-slate-800 outline-none transition max-w-[11rem]
-                   focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+            [options]="labelSelectOptions()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todas las etiquetas"
+            [showClear]="true"
+            [filter]="true"
+            appendTo="body"
+            styleClass="max-w-[11rem]"
             aria-label="Filter by label"
-          >
-            <option [value]="null">Todas las etiquetas</option>
-            @for (l of labelOptions(); track l.id) {
-              <option [value]="l.id">{{ l.name }}</option>
-            }
-          </select>
+          />
         }
 
         <button
@@ -175,6 +173,18 @@ export class TaskFilterBarComponent implements OnInit, OnDestroy {
 
   readonly priorityOpts = PRIORITY_OPTS;
   readonly typeOpts = TYPE_OPTS;
+
+  readonly statusSelectOptions = computed(() =>
+    this.statusOptions().map(s => ({ label: s.name, value: s.id })),
+  );
+  readonly assigneeSelectOptions = computed(() =>
+    this.assigneeOptions().map(a => ({ label: a.label ?? a.userId, value: a.userId })),
+  );
+  readonly labelSelectOptions = computed(() =>
+    this.labelOptions().map(l => ({ label: l.name, value: l.id })),
+  );
+  readonly typeSelectOptions = TYPE_OPTS.map(t => ({ label: t, value: t }));
+  readonly prioritySelectOptions = PRIORITY_OPTS.map(p => ({ label: p, value: p }));
 
   ngOnInit(): void {
     const immediate = [

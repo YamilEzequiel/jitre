@@ -8,6 +8,8 @@ import {
   signal,
 } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/toast/toast.service';
 
@@ -32,6 +34,7 @@ interface WorkspaceContact {
 @Component({
   selector: 'jt-project-members',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, SelectModule],
   template: `
     <div>
       <div class="mb-5 flex items-center justify-between">
@@ -68,16 +71,16 @@ interface WorkspaceContact {
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <select
-                [value]="member.role"
-                (change)="changeRole(member, $any($event.target).value)"
+              <p-select
+                [options]="roleOptions"
+                [ngModel]="member.role"
+                (ngModelChange)="changeRole(member, $event)"
+                optionLabel="label"
+                optionValue="value"
+                size="small"
+                appendTo="body"
                 [attr.aria-label]="'Role for ' + displayName(member)"
-                class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-950 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
-              >
-                <option value="admin">Admin</option>
-                <option value="contributor">Contributor</option>
-                <option value="viewer">Viewer</option>
-              </select>
+              />
               <button
                 type="button"
                 (click)="removeMember(member)"
@@ -103,18 +106,28 @@ interface WorkspaceContact {
               <button type="button" (click)="showInvite.set(false)" aria-label="Close" class="text-slate-500 hover:text-slate-900">✕</button>
             </div>
             <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" for="member-user">Person</label>
-            <select id="member-user" [value]="inviteUserId()" (change)="inviteUserId.set($any($event.target).value)" class="mb-4 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-950">
-              <option value="">Select a workspace member</option>
-              @for (contact of availableContacts(); track contact.userId) {
-                <option [value]="contact.userId">{{ contact.displayName }} · {{ contact.email }}</option>
-              }
-            </select>
+            <p-select
+              inputId="member-user"
+              [options]="contactOptions()"
+              [ngModel]="inviteUserId()"
+              (ngModelChange)="inviteUserId.set($event)"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select a workspace member"
+              appendTo="body"
+              styleClass="mb-4 w-full"
+            />
             <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" for="member-role">Project role</label>
-            <select id="member-role" [value]="inviteRole()" (change)="inviteRole.set($any($event.target).value)" class="mb-5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-950">
-              <option value="contributor">Contributor</option>
-              <option value="viewer">Viewer</option>
-              <option value="admin">Admin</option>
-            </select>
+            <p-select
+              inputId="member-role"
+              [options]="inviteRoleOptions"
+              [ngModel]="inviteRole()"
+              (ngModelChange)="inviteRole.set($event)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+              styleClass="mb-5 w-full"
+            />
             <div class="flex justify-end gap-2">
               <button type="button" (click)="showInvite.set(false)" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
               <button type="button" [disabled]="!inviteUserId() || saving()" (click)="addMember()" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Add</button>
@@ -142,6 +155,25 @@ export class ProjectMembersComponent implements OnInit {
     const memberIds = new Set(this.members().map(member => member.userId));
     return this.contacts().filter(contact => !memberIds.has(contact.userId));
   });
+
+  readonly contactOptions = computed(() =>
+    this.availableContacts().map(c => ({
+      label: `${c.displayName} · ${c.email}`,
+      value: c.userId,
+    })),
+  );
+
+  readonly roleOptions: { label: string; value: ProjectRole }[] = [
+    { label: 'Admin', value: 'admin' },
+    { label: 'Contributor', value: 'contributor' },
+    { label: 'Viewer', value: 'viewer' },
+  ];
+
+  readonly inviteRoleOptions: { label: string; value: ProjectRole }[] = [
+    { label: 'Contributor', value: 'contributor' },
+    { label: 'Viewer', value: 'viewer' },
+    { label: 'Admin', value: 'admin' },
+  ];
 
   ngOnInit(): void {
     this.loadMembers();

@@ -1,9 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  ElementRef,
+  effect,
   inject,
   signal,
   computed,
+  viewChild,
 } from '@angular/core';
 import { CommandPaletteService } from './command-palette.service';
 import type { CommandResult } from './recent-items.helper';
@@ -82,7 +86,12 @@ import type { CommandResult } from './recent-items.helper';
               </li>
             } @empty {
               <li class="px-4 py-6 text-center text-sm text-gray-500">
-                Type to search…
+                @if (searching()) {
+                  <i class="pi pi-spin pi-spinner text-xs mr-1.5" aria-hidden="true"></i>
+                  Buscando…
+                } @else {
+                  Escribí para buscar…
+                }
               </li>
             }
           </ul>
@@ -116,6 +125,7 @@ import type { CommandResult } from './recent-items.helper';
 })
 export class CommandPaletteComponent {
   readonly paletteService = inject(CommandPaletteService);
+  private readonly queryInput = viewChild<ElementRef<HTMLInputElement>>('queryInput');
 
   private readonly _results = signal<CommandResult[]>([]);
   readonly results = this._results.asReadonly();
@@ -123,12 +133,55 @@ export class CommandPaletteComponent {
   private readonly _activeIndex = signal<number>(0);
   readonly activeIndex = this._activeIndex.asReadonly();
 
+  private readonly _searching = signal(false);
+  readonly searching = this._searching.asReadonly();
+
   private readonly _maxIndex = computed(() => Math.max(0, this.results().length - 1));
+  private searchToken = 0;
+
+  constructor() {
+    // Auto-focus the input every time the palette opens. Without this, an
+    // open triggered by cmd+k leaves focus on whatever the user had selected
+    // before, so subsequent Escape / arrow / text input never reach us.
+    effect(() => {
+      if (this.paletteService.isOpen()) {
+        queueMicrotask(() => this.queryInput()?.nativeElement.focus());
+      } else {
+        this._results.set([]);
+        this._activeIndex.set(0);
+        this._searching.set(false);
+      }
+    });
+
+    // Global Escape — closes the palette even if focus drifted to a child
+    // (e.g. clicked outside the input). The local (keydown) handler is kept
+    // for keyboard navigation while focus is in the input.
+    const destroyRef = inject(DestroyRef);
+    const onDocKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && this.paletteService.isOpen()) {
+        e.preventDefault();
+        this.paletteService.close();
+      }
+    };
+    document.addEventListener('keydown', onDocKey);
+    destroyRef.onDestroy(() => document.removeEventListener('keydown', onDocKey));
+  }
 
   onInput(event: Event): void {
     const query = (event.target as HTMLInputElement).value;
     this._activeIndex.set(0);
-    this.paletteService.search(query).then(r => this._results.set(r));
+    this._searching.set(true);
+    const token = ++this.searchToken;
+    this.paletteService.search(query).then(r => {
+      // Guard against out-of-order responses — only the latest query wins.
+      if (token !== this.searchToken) return;
+      this._results.set(r);
+      this._searching.set(false);
+    }).catch(() => {
+      if (token !== this.searchToken) return;
+      this._results.set([]);
+      this._searching.set(false);
+    });
   }
 
   onKeydown(event: KeyboardEvent): void {

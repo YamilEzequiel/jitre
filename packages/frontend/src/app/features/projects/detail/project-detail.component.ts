@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { SelectModule } from 'primeng/select';
 import { ProjectStore } from '../../../stores/project.store';
 import { TaskStore } from '../../../stores/task.store';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
@@ -61,6 +62,7 @@ type TaskView = 'board' | 'list';
     ChartComponent,
     RouterLink,
     FormsModule,
+    SelectModule,
   ],
   template: `
     <div class="flex min-w-0 flex-col max-w-none">
@@ -320,29 +322,29 @@ type TaskView = 'board' | 'list';
                     <div class="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-end">
                       <label class="flex min-w-0 items-center gap-2">
                         <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-purple-700">Épica</span>
-                        <select
+                        <p-select
                           [ngModel]="task.epicId ?? ''"
                           (ngModelChange)="assignPlanning(task, 'epicId', $event)"
-                          class="min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 hover:border-purple-300 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 sm:w-44 sm:flex-none"
-                        >
-                          <option value="">Sin épica</option>
-                          @for (epic of epics(); track epic.id) {
-                            <option [value]="epic.id">{{ epic.name }}</option>
-                          }
-                        </select>
+                          [options]="epicSelectOptions()"
+                          optionLabel="label"
+                          optionValue="value"
+                          size="small"
+                          appendTo="body"
+                          styleClass="min-w-0 flex-1 sm:w-44 sm:flex-none"
+                        />
                       </label>
                       <label class="flex min-w-0 items-center gap-2">
                         <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider text-blue-700">Sprint</span>
-                        <select
+                        <p-select
                           [ngModel]="task.sprintId ?? ''"
                           (ngModelChange)="assignPlanning(task, 'sprintId', $event)"
-                          class="min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 hover:border-blue-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:w-44 sm:flex-none"
-                        >
-                          <option value="">Backlog</option>
-                          @for (sprint of sprints(); track sprint.id) {
-                            <option [value]="sprint.id">{{ sprint.name }}</option>
-                          }
-                        </select>
+                          [options]="sprintSelectOptions()"
+                          optionLabel="label"
+                          optionValue="value"
+                          size="small"
+                          appendTo="body"
+                          styleClass="min-w-0 flex-1 sm:w-44 sm:flex-none"
+                        />
                       </label>
                     </div>
                   </div>
@@ -385,12 +387,15 @@ type TaskView = 'board' | 'list';
                     <p class="text-xs font-black uppercase tracking-[0.14em] text-blue-700">{{ task.issueKey || 'ISSUE' }}</p>
                     <p class="truncate text-sm font-bold text-slate-950">{{ task.title }}</p>
                     <p class="text-xs font-semibold text-slate-600">{{ task.startDate || 'Sin inicio' }} → {{ task.dueDate || 'Sin fecha' }}</p>
-                    <select [ngModel]="task.releaseId ?? ''" (ngModelChange)="assignPlanning(task, 'releaseId', $event)" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-700">
-                      <option value="">Sin release</option>
-                      @for (release of releases(); track release.id) {
-                        <option [value]="release.id">{{ release.name }}</option>
-                      }
-                    </select>
+                    <p-select
+                      [ngModel]="task.releaseId ?? ''"
+                      (ngModelChange)="assignPlanning(task, 'releaseId', $event)"
+                      [options]="releaseSelectOptions()"
+                      optionLabel="label"
+                      optionValue="value"
+                      size="small"
+                      appendTo="body"
+                    />
                   </div>
                 } @empty {
                   <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
@@ -494,11 +499,13 @@ type TaskView = 'board' | 'list';
                       @if (editingStatusId() === status.id) {
                         <div class="grid gap-2 sm:grid-cols-[1fr_11rem_auto]">
                           <input [(ngModel)]="editStatusName" type="text" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950" />
-                          <select [(ngModel)]="editStatusCategory" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950">
-                            <option value="todo">To do</option>
-                            <option value="in_progress">In progress</option>
-                            <option value="done">Done</option>
-                          </select>
+                          <p-select
+                            [(ngModel)]="editStatusCategory"
+                            [options]="statusCategoryOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            appendTo="body"
+                          />
                           <div class="flex gap-2">
                             <button type="button" (click)="saveStatus(status)" class="rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white">Guardar</button>
                             <button type="button" (click)="editingStatusId.set(null)" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Cancelar</button>
@@ -520,18 +527,16 @@ type TaskView = 'board' | 'list';
                         @if (workflowStatuses().length > 1) {
                           <div class="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-3">
                             <label class="text-xs font-semibold text-slate-500">Mover tareas a</label>
-                            <select
+                            <p-select
                               [ngModel]="deleteReplacementByStatus[status.id] ?? ''"
                               (ngModelChange)="deleteReplacementByStatus[status.id] = $event"
-                              class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700"
-                            >
-                              <option value="">Elegir reemplazo</option>
-                              @for (replacement of workflowStatuses(); track replacement.id) {
-                                @if (replacement.id !== status.id) {
-                                  <option [value]="replacement.id">{{ replacement.name }}</option>
-                                }
-                              }
-                            </select>
+                              [options]="replacementOptionsFor(status.id)"
+                              optionLabel="label"
+                              optionValue="value"
+                              placeholder="Elegir reemplazo"
+                              size="small"
+                              appendTo="body"
+                            />
                             <button
                               type="button"
                               (click)="deleteStatus(status)"
@@ -551,11 +556,13 @@ type TaskView = 'board' | 'list';
                 }
                 <div class="grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-[1fr_12rem_auto]">
                   <input [(ngModel)]="newStatusName" type="text" placeholder="Ej. QA Review" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-950 outline-none focus:border-blue-500" />
-                  <select [(ngModel)]="newStatusCategory" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-blue-500">
-                    <option value="todo">To do</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="done">Done</option>
-                  </select>
+                  <p-select
+                    [(ngModel)]="newStatusCategory"
+                    [options]="statusCategoryOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    appendTo="body"
+                  />
                   <button type="button" (click)="createStatus()" [disabled]="!newStatusName.trim() || savingWorkflow()" class="rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
                     Agregar estado
                   </button>
@@ -704,6 +711,31 @@ export class ProjectDetailComponent implements OnInit {
   readonly epics = computed(() => this.planningItems().filter(item => item.type === 'epic'));
   readonly sprints = computed(() => this.planningItems().filter(item => item.type === 'sprint'));
   readonly releases = computed(() => this.planningItems().filter(item => item.type === 'release'));
+
+  readonly epicSelectOptions = computed(() => [
+    { label: 'Sin épica', value: '' },
+    ...this.epics().map(e => ({ label: e.name, value: e.id })),
+  ]);
+  readonly sprintSelectOptions = computed(() => [
+    { label: 'Backlog', value: '' },
+    ...this.sprints().map(s => ({ label: s.name, value: s.id })),
+  ]);
+  readonly releaseSelectOptions = computed(() => [
+    { label: 'Sin release', value: '' },
+    ...this.releases().map(r => ({ label: r.name, value: r.id })),
+  ]);
+
+  readonly statusCategoryOptions = [
+    { label: 'To do', value: 'todo' },
+    { label: 'In progress', value: 'in_progress' },
+    { label: 'Done', value: 'done' },
+  ];
+
+  replacementOptionsFor(excludeId: string): { label: string; value: string }[] {
+    return this.workflowStatuses()
+      .filter(s => s.id !== excludeId)
+      .map(s => ({ label: s.name, value: s.id }));
+  }
 
   // ---- Analytics chart data ----
 
