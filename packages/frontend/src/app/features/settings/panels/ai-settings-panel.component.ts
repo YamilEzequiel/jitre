@@ -305,8 +305,8 @@ export class AiSettingsPanelComponent implements OnInit {
 
     // Per-day cost trend over the last 30 days.
     void firstValueFrom(
-      this.http.get<AiUsagePointResponse[]>('/api/v1/analytics/ai-usage', {
-        params: { from: range.from, to: range.to, granularity: 'day' },
+      this.http.get<AiUsagePointResponse[]>('/api/v1/analytics/workspace/ai-usage', {
+        params: { from: range.from, to: range.to, period: 'day' },
       }),
     )
       .then(points => {
@@ -318,7 +318,7 @@ export class AiSettingsPanelComponent implements OnInit {
 
     // Per-operation breakdown.
     void firstValueFrom(
-      this.http.get<AiUsageByOperationResponse[]>('/api/v1/analytics/ai-usage/by-operation', {
+      this.http.get<AiUsageByOperationResponse[]>('/api/v1/analytics/workspace/ai-usage/by-operation', {
         params: { from: range.from, to: range.to },
       }),
     )
@@ -332,7 +332,7 @@ export class AiSettingsPanelComponent implements OnInit {
     // Per-user breakdown (admin-gated server-side; the call simply 403s
     // for non-admins and we render the empty state).
     void firstValueFrom(
-      this.http.get<AiUsageByUserResponse[]>('/api/v1/analytics/ai-usage/by-user', {
+      this.http.get<AiUsageByUserResponse[]>('/api/v1/analytics/workspace/ai-usage/by-user', {
         params: { from: range.from, to: range.to },
       }),
     )
@@ -350,8 +350,8 @@ export class AiSettingsPanelComponent implements OnInit {
     const todayIso = today.toISOString();
     const tomorrowIso = new Date(today.getTime() + 24 * 3600 * 1000).toISOString();
     void firstValueFrom(
-      this.http.get<AiUsagePointResponse[]>('/api/v1/analytics/ai-usage', {
-        params: { from: todayIso, to: tomorrowIso, granularity: 'day' },
+      this.http.get<AiUsagePointResponse[]>('/api/v1/analytics/workspace/ai-usage', {
+        params: { from: todayIso, to: tomorrowIso, period: 'day' },
       }),
     )
       .then(points => {

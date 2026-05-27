@@ -361,7 +361,7 @@ interface NavItem {
         </header>
 
         <main
-          class="relative flex-1 overflow-auto bg-[#f8faff] p-4 text-slate-950 sm:p-5 lg:p-6"
+          class="relative flex-1 min-h-0 overflow-auto bg-[#f8faff] p-4 text-slate-950 sm:p-5 lg:p-6"
           id="main-content"
         >
           <router-outlet></router-outlet>
