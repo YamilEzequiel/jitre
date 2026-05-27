@@ -43,6 +43,8 @@ import { ChatMessageEntity } from '../chat/chat-message.entity';
 import { TimeEntryEntity } from '../time-tracking/time-entry.entity';
 import { Notification } from '../notification/notification.entity';
 import { PlanningItemEntity, PlanningItemType } from '../project/planning/planning-item.entity';
+import { AiPromptTemplateEntity } from '../ai/prompt-template/ai-prompt-template.entity';
+import { BUILTIN_PROMPT_TEMPLATES } from '../ai/prompt-template/builtin-templates';
 
 import {
   WorkspaceRole,
@@ -1471,6 +1473,37 @@ async function main(): Promise<void> {
       allTasks,
     );
 
+    // ────────────────────────────────────────────────────────────
+    // AI prompt templates — built-in library
+    // ────────────────────────────────────────────────────────────
+    const promptTemplateRepo = AppDataSource.getRepository(AiPromptTemplateEntity);
+    let templatesInserted = 0;
+    for (const tpl of BUILTIN_PROMPT_TEMPLATES) {
+      const exists = await promptTemplateRepo.findOne({
+        where: {
+          workspaceId: workspace.id,
+          operation: tpl.operation,
+          name: tpl.name,
+        },
+      });
+      if (exists) continue;
+      await promptTemplateRepo.save(
+        promptTemplateRepo.create({
+          workspaceId: workspace.id,
+          operation: tpl.operation,
+          name: tpl.name,
+          description: tpl.description,
+          systemPrompt: tpl.systemPrompt,
+          userTemplate: tpl.userTemplate,
+          variables: tpl.variables,
+          isDefault: tpl.isInitialDefault,
+          isBuiltin: true,
+          createdByUserId: null,
+        }),
+      );
+      templatesInserted++;
+    }
+
     // Final counts (read after the fact so re-runs print accurate totals)
     const totalStatuses =
       (statuses.byProject.get(projects.platform.id)?.length ?? 0) +
@@ -1507,6 +1540,7 @@ async function main(): Promise<void> {
     console.log(`  • ${chatRes.messages} new chat messages this run`);
     console.log(`  • ${timeCount} new time entries this run (1 active timer)`);
     console.log(`  • ${notifCount} new notifications this run`);
+    console.log(`  • ${templatesInserted} AI prompt templates inserted (built-in library)`);
     console.log(`  • ${commentCount} new comments this run`);
     console.log('─'.repeat(45));
   } finally {

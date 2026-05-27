@@ -29,6 +29,7 @@ import {
   parseSubtasksResponse,
 } from './prompts/suggest-subtasks.prompt';
 import { buildSummaryPrompt } from './prompts/summary.prompt';
+import { AiPromptTemplateService } from './prompt-template/ai-prompt-template.service';
 
 @ApiTags('ai')
 @ApiBearerAuth('access-token')
@@ -39,6 +40,7 @@ export class AiController {
     private readonly aiService: AiService,
     private readonly settings: SettingsService,
     private readonly requestContext: RequestContextService,
+    private readonly templates: AiPromptTemplateService,
     @Inject('TaskService')
     private readonly taskService: {
       getById(id: string, projectId?: string, workspaceId?: string): Promise<{
@@ -103,12 +105,20 @@ export class AiController {
     // Load task
     const task = await this.taskService.getById(taskId, undefined, workspaceId);
 
-    // Build prompt
-    const { systemPrompt, userPrompt } = buildDescribeTaskPrompt({
-      taskTitle: task.title,
-      currentDescription: task.description,
-      tone: dto.tone ?? 'technical',
-    });
+    // Resolve which template to use — DTO override, else workspace default, else null (= fallback)
+    const template = dto.templateId
+      ? await this.templates.getById(workspaceId, dto.templateId)
+      : await this.templates.getDefaultFor(workspaceId, 'describe');
+
+    // Build prompt (template if available, hard-coded fallback otherwise)
+    const { systemPrompt, userPrompt } = buildDescribeTaskPrompt(
+      {
+        taskTitle: task.title,
+        currentDescription: task.description,
+        tone: dto.tone ?? 'technical',
+      },
+      template,
+    );
 
     // Call AI
     const response = await this.aiService.generateCompletion({
@@ -172,12 +182,20 @@ export class AiController {
     // Load task
     const task = await this.taskService.getById(taskId, undefined, workspaceId);
 
+    // Resolve which template to use
+    const template = dto.templateId
+      ? await this.templates.getById(workspaceId, dto.templateId)
+      : await this.templates.getDefaultFor(workspaceId, 'suggest_subtasks');
+
     // Build prompt (JSON mode)
-    const { systemPrompt, userPrompt } = buildSuggestSubtasksPrompt({
-      taskTitle: task.title,
-      taskDescription: task.description,
-      maxSuggestions,
-    });
+    const { systemPrompt, userPrompt } = buildSuggestSubtasksPrompt(
+      {
+        taskTitle: task.title,
+        taskDescription: task.description,
+        maxSuggestions,
+      },
+      template,
+    );
 
     // Call AI
     const response = await this.aiService.generateCompletion({

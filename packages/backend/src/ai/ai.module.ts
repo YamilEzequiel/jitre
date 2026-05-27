@@ -19,6 +19,7 @@ import { ProjectModule } from '../project/project.module';
 import { DocumentModule } from '../document/document.module';
 import { SettingsModule } from '../settings/settings.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
+import { AiPromptTemplateModule } from './prompt-template/ai-prompt-template.module';
 import { TaskService } from '../task/task.service';
 import { CommentService } from '../comment/comment.service';
 import { CaslAbilityFactory } from '../auth/casl/ability.factory';
@@ -35,6 +36,7 @@ import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.ent
     DocumentModule,
     SettingsModule,
     WorkspaceModule,
+    AiPromptTemplateModule,
   ],
   providers: [
     {

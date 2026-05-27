@@ -32,6 +32,7 @@ import { TaskModule } from './task/task.module';
 // Fase 7 — Phase L wiring
 import { RealtimeModule } from './realtime/realtime.module';
 import { AiModule } from './ai/ai.module';
+import { AiPromptTemplateModule } from './ai/prompt-template/ai-prompt-template.module';
 import { AutomationModule } from './automation/automation.module';
 import { EmailModule } from './email/email.module';
 // Fase 8 — Analytics
@@ -129,6 +130,7 @@ import { AreaModule } from './area/area.module';
     TaskModule,
     ScheduleModule.forRoot(),
     AiModule,
+    AiPromptTemplateModule,
     EmailModule,
     AutomationModule,
     RealtimeModule,
