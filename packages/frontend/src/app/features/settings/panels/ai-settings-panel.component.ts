@@ -151,7 +151,10 @@ const GEMINI_MODEL_OPTIONS = [
             styleClass="w-full"
           />
           <p class="mt-2 text-xs text-slate-500">
-            Gemini es el único proveedor activo. Anthropic / OpenAI están preparados pero todavía como stubs.
+            Los 3 proveedores est&aacute;n activos. Cada uno requiere su API key configurada como variable de entorno
+            (<code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">GEMINI_API_KEY</code> /
+            <code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">ANTHROPIC_API_KEY</code> /
+            <code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">OPENAI_API_KEY</code>).
           </p>
         </div>
 

@@ -48,19 +48,45 @@ export const AI_RATE_CARD: readonly RateCardEntry[] = [
     pricePerMillionCompletionTokens: 0.0,
     pricePerMillionEmbedTokens: 0.025,
   },
-  // Anthropic stubs (rates for billing estimation; provider throws NotImplementedException)
+  // Anthropic (2025 rates)
+  {
+    provider: AiProvider.ANTHROPIC,
+    model: 'claude-3-5-sonnet-20241022',
+    pricePerMillionPromptTokens: 3.0,
+    pricePerMillionCompletionTokens: 15.0,
+  },
+  {
+    provider: AiProvider.ANTHROPIC,
+    model: 'claude-3-5-haiku-20241022',
+    pricePerMillionPromptTokens: 0.8,
+    pricePerMillionCompletionTokens: 4.0,
+  },
+  // Kept for historical ai_usage rows
   {
     provider: AiProvider.ANTHROPIC,
     model: 'claude-3-5-sonnet',
     pricePerMillionPromptTokens: 3.0,
     pricePerMillionCompletionTokens: 15.0,
   },
-  // OpenAI stubs
+  // OpenAI (2025 rates)
   {
     provider: AiProvider.OPENAI,
     model: 'gpt-4o-mini',
     pricePerMillionPromptTokens: 0.15,
     pricePerMillionCompletionTokens: 0.6,
+  },
+  {
+    provider: AiProvider.OPENAI,
+    model: 'gpt-4o',
+    pricePerMillionPromptTokens: 2.5,
+    pricePerMillionCompletionTokens: 10.0,
+  },
+  {
+    provider: AiProvider.OPENAI,
+    model: 'text-embedding-3-small',
+    pricePerMillionPromptTokens: 0.0,
+    pricePerMillionCompletionTokens: 0.0,
+    pricePerMillionEmbedTokens: 0.02,
   },
 ];
 

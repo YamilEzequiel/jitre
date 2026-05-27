@@ -61,7 +61,12 @@ export const envValidationSchema = Joi.object({
     .valid('GEMINI', 'ANTHROPIC', 'OPENAI', 'gemini', 'anthropic', 'openai')
     .default('GEMINI'),
   GEMINI_API_KEY: Joi.string().allow('').default(''),
-  GEMINI_MODEL: Joi.string().default('gemini-2.0-flash'),
+  GEMINI_MODEL: Joi.string().default('gemini-2.5-flash'),
+  ANTHROPIC_API_KEY: Joi.string().allow('').default(''),
+  ANTHROPIC_MODEL: Joi.string().default('claude-3-5-sonnet-20241022'),
+  OPENAI_API_KEY: Joi.string().allow('').default(''),
+  OPENAI_MODEL: Joi.string().default('gpt-4o-mini'),
+  OPENAI_EMBED_MODEL: Joi.string().default('text-embedding-3-small'),
   AI_MONTHLY_BUDGET_USD: Joi.number().default(50),
   AI_MAX_REQUESTS_PER_DAY: Joi.number().integer().min(1).default(1000),
   AI_MAX_REQUESTS_PER_USER_PER_DAY: Joi.number().integer().min(1).default(100),

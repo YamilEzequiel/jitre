@@ -45,11 +45,34 @@ import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.ent
           config.get<string>('GEMINI_API_KEY') ?? process.env.GEMINI_API_KEY ?? '',
           config.get<string>('GEMINI_MODEL') ??
             process.env.GEMINI_MODEL ??
-            'gemini-2.0-flash',
+            'gemini-2.5-flash',
         ),
     },
-    AnthropicProvider,
-    OpenAiProvider,
+    {
+      provide: AnthropicProvider,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new AnthropicProvider(
+          config.get<string>('ANTHROPIC_API_KEY') ?? process.env.ANTHROPIC_API_KEY ?? '',
+          config.get<string>('ANTHROPIC_MODEL') ??
+            process.env.ANTHROPIC_MODEL ??
+            'claude-3-5-sonnet-20241022',
+        ),
+    },
+    {
+      provide: OpenAiProvider,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new OpenAiProvider(
+          config.get<string>('OPENAI_API_KEY') ?? process.env.OPENAI_API_KEY ?? '',
+          config.get<string>('OPENAI_MODEL') ??
+            process.env.OPENAI_MODEL ??
+            'gpt-4o-mini',
+          config.get<string>('OPENAI_EMBED_MODEL') ??
+            process.env.OPENAI_EMBED_MODEL ??
+            'text-embedding-3-small',
+        ),
+    },
     {
       provide: AI_PROVIDERS,
       useFactory: (
