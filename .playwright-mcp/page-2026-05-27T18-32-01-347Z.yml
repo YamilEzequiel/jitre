@@ -1,0 +1,251 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - navigation "Tablero" [ref=e5]:
+      - link "Jitre Planificá y entregá" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - generic [ref=e12]: Jitre
+          - generic [ref=e13]: Planificá y entregá
+      - button "Jitre Demo Co ● Workspace activo" [ref=e15]:
+        - generic [ref=e17]: 
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: Jitre Demo Co
+          - paragraph [ref=e20]: ● Workspace activo
+        - generic [ref=e21]: 
+      - list [ref=e22]:
+        - listitem [ref=e23]:
+          - link "Tablero" [ref=e24] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e25]: 
+            - generic [ref=e26]: Tablero
+        - listitem [ref=e27]:
+          - link "Proyectos" [ref=e28] [cursor=pointer]:
+            - /url: /projects
+            - generic [ref=e29]: 
+            - generic [ref=e30]: Proyectos
+        - listitem [ref=e31]:
+          - link "IA Insights" [ref=e32] [cursor=pointer]:
+            - /url: /analytics
+            - generic [ref=e33]: 
+            - generic [ref=e34]: IA Insights
+        - listitem [ref=e35]:
+          - link "Automatizaciones" [ref=e36] [cursor=pointer]:
+            - /url: /my-time
+            - generic [ref=e37]: 
+            - generic [ref=e38]: Automatizaciones
+        - listitem [ref=e39]:
+          - link "Tickets" [ref=e40] [cursor=pointer]:
+            - /url: /tickets
+            - generic [ref=e41]: 
+            - generic [ref=e42]: Tickets
+        - listitem [ref=e43]:
+          - link "Documentos" [ref=e44] [cursor=pointer]:
+            - /url: /docs
+            - generic [ref=e45]: 
+            - generic [ref=e46]: Documentos
+        - listitem [ref=e47]:
+          - link "Chat" [ref=e48] [cursor=pointer]:
+            - /url: /chat
+            - generic [ref=e49]: 
+            - generic [ref=e50]: Chat
+        - listitem [ref=e51]:
+          - link "Reportes de tiempo" [ref=e52] [cursor=pointer]:
+            - /url: /time-reports
+            - generic [ref=e53]: 
+            - generic [ref=e54]: Reportes de tiempo
+        - listitem [ref=e55]:
+          - link "Empleados" [ref=e56] [cursor=pointer]:
+            - /url: /employees
+            - generic [ref=e57]: 
+            - generic [ref=e58]: Empleados
+        - listitem [ref=e59]:
+          - link "Auditoría" [ref=e60] [cursor=pointer]:
+            - /url: /audit
+            - generic [ref=e61]: 
+            - generic [ref=e62]: Auditoría
+      - generic [ref=e63]:
+        - link "Configuración" [ref=e64] [cursor=pointer]:
+          - /url: /settings
+          - generic [ref=e65]: 
+          - text: Configuración
+        - link "Soporte" [ref=e66] [cursor=pointer]:
+          - /url: /docs
+          - generic [ref=e67]: 
+          - text: Soporte
+    - generic [ref=e68]:
+      - banner [ref=e69]:
+        - button "Abrir paleta de comandos" [ref=e70]:
+          - img [ref=e71]
+          - text: Buscar comandos…
+          - generic [ref=e74]: ⌘K
+        - generic [ref=e75]:
+          - button "Open AI create dialog" [active] [ref=e76]:
+            - generic [ref=e77]: 
+            - text: AI create
+            - generic [ref=e78]: ⌘I
+          - link "Notificaciones" [ref=e79] [cursor=pointer]:
+            - /url: /notifications
+            - generic [ref=e80]: 
+          - button "Ayuda" [ref=e81]:
+            - generic [ref=e82]: 
+          - button "Abrir menú de cuenta" [ref=e84]: AA
+      - main [ref=e85]:
+        - generic [ref=e590]:
+          - generic [ref=e591]:
+            - generic [ref=e593]: Task
+            - button "Click to edit title" [ref=e594] [cursor=pointer]:
+              - generic [ref=e595]: Build kanban board UI
+              - img [ref=e596]
+          - generic [ref=e599]:
+            - generic [ref=e600]: "Status: 17737e"
+            - generic [ref=e601]:
+              - generic [ref=e602]: Type
+              - generic "Change task type" [ref=e603] [cursor=pointer]:
+                - combobox "task" [ref=e604]
+                - button "dropdown trigger" [ref=e605]:
+                  - img [ref=e606]
+            - button "AI Describe" [ref=e608]:
+              - img [ref=e609]
+              - text: AI Describe
+          - generic [ref=e611]:
+            - generic [ref=e612]:
+              - paragraph [ref=e613]: Prioridad
+              - paragraph [ref=e614]: high
+            - generic [ref=e615]:
+              - paragraph [ref=e616]: Planning
+              - paragraph [ref=e617]: Sin inicio → 2026-06-07
+            - generic [ref=e618]:
+              - paragraph [ref=e619]: Estimación
+              - paragraph [ref=e620]: 16 h
+            - generic [ref=e621]:
+              - paragraph [ref=e622]: Equipo
+              - paragraph [ref=e623]: 1 responsables · 2 labels
+          - region "Time tracking" [ref=e626]:
+            - generic [ref=e627]:
+              - generic [ref=e628]:
+                - generic [ref=e629]: 
+                - generic [ref=e630]: Time
+              - generic [ref=e632]: "Logged: 15m"
+            - button "Start timer" [ref=e634]:
+              - generic [ref=e635]: 
+              - text: Start timer
+            - form "Log time" [ref=e636]:
+              - textbox "Duration" [ref=e638]:
+                - /placeholder: 1h 30m, 1.5h, 90m
+              - textbox "Date" [ref=e639]: 2026-05-27
+              - textbox "Description" [ref=e640]:
+                - /placeholder: What did you work on? (optional)
+              - generic [ref=e641]:
+                - generic [ref=e642]:
+                  - checkbox "Billable" [checked] [ref=e643] [cursor=pointer]
+                  - text: Billable
+                - button "Log" [ref=e644]
+            - list "Time entries" [ref=e645]:
+              - listitem [ref=e646]:
+                - generic "Dani Developer" [ref=e647]: DD
+                - generic [ref=e648]: 2026-05-17
+                - generic [ref=e649]: 15m
+                - generic [ref=e650]: —
+                - button "Delete entry 4b9e5dae-de19-4805-a8d1-df8cf011032e" [ref=e651]:
+                  - generic [ref=e652]: 
+          - generic [ref=e655]:
+            - generic [ref=e656]:
+              - heading "Issues vinculados (0)" [level=3] [ref=e657]:
+                - generic [ref=e658]: 
+                - text: Issues vinculados (0)
+              - button "Vincular" [ref=e659]:
+                - generic [ref=e660]: 
+                - text: Vincular
+            - paragraph [ref=e661]: Sin vínculos.
+          - generic [ref=e664]:
+            - generic [ref=e665]:
+              - heading "Attachments (0)" [level=3] [ref=e666]:
+                - generic [ref=e667]: 
+                - text: Attachments
+                - generic [ref=e668]: (0)
+              - generic [ref=e669] [cursor=pointer]:
+                - generic [ref=e670]: 
+                - text: Add files
+                - button "Upload attachments" [ref=e671]
+            - generic [ref=e672] [cursor=pointer]:
+              - button "Upload attachments" [ref=e673]
+              - generic [ref=e674]: 
+              - paragraph [ref=e675]: Drop files here or click to upload
+              - paragraph [ref=e676]: Images, PDFs, text — up to 25 MB each
+          - generic [ref=e677]:
+            - heading "Subtasks" [level=2] [ref=e678]
+            - list [ref=e679]:
+              - listitem [ref=e680]:
+                - checkbox "Toggle done for Drag-and-drop reordering" [ref=e681] [cursor=pointer]
+                - link "Drag-and-drop reordering" [ref=e682] [cursor=pointer]:
+                  - /url: /tasks/c8eaa696-1d3b-4281-9fc9-b8efeb3adc76?projectId=2005149a-fd55-4651-a82c-098e33a2e57b
+              - listitem [ref=e683]:
+                - checkbox "Toggle done for Optimistic UI updates" [ref=e684] [cursor=pointer]
+                - link "Optimistic UI updates" [ref=e685] [cursor=pointer]:
+                  - /url: /tasks/04184810-f536-4ebf-a6ed-6e99d497150f?projectId=2005149a-fd55-4651-a82c-098e33a2e57b
+            - generic [ref=e686]:
+              - textbox "New subtask title" [ref=e687]:
+                - /placeholder: Add subtask…
+              - button "Add subtask" [disabled] [ref=e688]
+          - generic [ref=e689]:
+            - heading "Comments" [level=2] [ref=e690]
+            - generic [ref=e691]:
+              - generic [ref=e692]:
+                - generic [ref=e693]:
+                  - generic [ref=e694]:
+                    - generic [ref=e695]: PM
+                    - generic [ref=e696]: Pat Manager
+                  - generic [ref=e697]: May 27, 10:32 AM
+                - paragraph [ref=e699]: Let's match the wireframes in Figma exactly for v1.
+              - generic [ref=e700]:
+                - generic [ref=e701]:
+                  - generic [ref=e702]:
+                    - generic [ref=e703]: SE
+                    - generic [ref=e704]: Sam Engineer
+                  - generic [ref=e705]: May 27, 10:32 AM
+                - paragraph [ref=e707]: Pushed a first pass to the branch.
+              - generic [ref=e708]:
+                - generic [ref=e709]:
+                  - generic [ref=e710]:
+                    - generic [ref=e711]: AA
+                    - generic [ref=e712]: Alex Admin
+                  - generic [ref=e713]: May 27, 10:32 AM
+                - paragraph [ref=e715]: Looks great!
+            - generic [ref=e716]:
+              - textbox "New comment" [ref=e719]:
+                - /placeholder: Write a comment… type @ to mention
+              - generic [ref=e720]:
+                - paragraph [ref=e721]: "Tip: @ to mention · Ctrl+Enter to submit"
+                - button "Comment" [disabled] [ref=e722]
+  - dialog "Crear con IA desde un prompt" [ref=e723]:
+    - generic [ref=e725]:
+      - generic [ref=e726]:
+        - generic [ref=e727]:
+          - paragraph [ref=e728]: AI
+          - heading "Crear con IA desde un prompt" [level=2] [ref=e729]
+          - paragraph [ref=e730]: Describí lo que necesitás. La IA propone un borrador que podés editar antes de guardar.
+        - button "Cerrar" [ref=e731]:
+          - generic [ref=e732]: 
+      - generic [ref=e733]:
+        - generic [ref=e734]:
+          - generic [ref=e735]: Prompt *
+          - generic [ref=e736]: 0/2000
+        - textbox "Prompt * 0/2000" [ref=e737]:
+          - /placeholder: "ej: 'Planificar el lanzamiento de la nueva página de pricing con 5 sub-pasos'"
+      - generic [ref=e738]:
+        - generic [ref=e739]: Proyecto *
+        - generic [ref=e740] [cursor=pointer]:
+          - combobox "Elegí un proyecto…" [ref=e741]
+          - button "dropdown trigger" [ref=e742]:
+            - img [ref=e743]
+        - paragraph [ref=e745]: "El proyecto da contexto a la IA: estados, miembros, planning. Es obligatorio."
+      - generic [ref=e746]:
+        - paragraph [ref=e747]:
+          - generic [ref=e748]: 
+          - text: Escribí un prompt para continuar.
+        - generic [ref=e749]:
+          - button "Cancelar" [ref=e750]
+          - button "Generar borrador" [disabled] [ref=e751]:
+            - generic [ref=e752]: 
+            - text: Generar borrador

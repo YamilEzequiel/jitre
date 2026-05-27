@@ -38,9 +38,9 @@ const PRIORITY_CLASSES: Record<TaskPriority, string> = {
 };
 
 const CATEGORY_DOT_FALLBACK: Record<string, string> = {
-  todo: 'bg-gray-400',
-  in_progress: 'bg-indigo-400',
-  done: 'bg-emerald-400',
+  todo: 'bg-slate-300',
+  in_progress: 'bg-indigo-300',
+  done: 'bg-emerald-300',
 };
 
 const PRIORITY_OPTIONS: TaskPriority[] = ['none', 'low', 'medium', 'high', 'urgent'];
@@ -147,8 +147,9 @@ function hashHue(input: string): number {
               <div class="flex -space-x-1.5">
                 @for (avatar of avatars(); track avatar.userId) {
                   <span
-                    class="inline-flex items-center justify-center h-5 w-5 rounded-full text-[9px] font-bold text-white ring-1 ring-white"
+                    class="inline-flex items-center justify-center h-5 w-5 rounded-full text-[9px] font-bold ring-1 ring-white"
                     [style.background]="avatar.bg"
+                    [style.color]="avatar.fg"
                     [attr.aria-label]="'Assignee ' + avatar.label"
                     [attr.title]="avatar.label"
                   >{{ avatar.initials }}</span>
@@ -275,8 +276,9 @@ function hashHue(input: string): number {
         @if (avatars().length > 0) {
           <div class="flex -space-x-1.5">
             @for (avatar of avatars(); track avatar.userId) {
-              <span class="inline-flex items-center justify-center h-5 w-5 rounded-full text-[9px] font-bold text-white ring-1 ring-white"
+              <span class="inline-flex items-center justify-center h-5 w-5 rounded-full text-[9px] font-bold ring-1 ring-white"
                 [style.background]="avatar.bg"
+                [style.color]="avatar.fg"
                 [attr.aria-label]="'Assignee ' + avatar.label"
                 [attr.title]="avatar.label">{{ avatar.initials }}</span>
             }
@@ -467,17 +469,22 @@ export class TaskCardComponent {
   readonly avatars = computed(() => {
     const ids = (this.task().assigneeUserIds ?? []).slice(0, 3);
     const members = this.memberOptions();
-    return ids.map(userId => ({
-      userId,
-      label: this.memberLabel(members.find(member => member.userId === userId) ?? { userId }),
-      initials: this.memberLabel(members.find(member => member.userId === userId) ?? { userId })
-        .split(/\s+/)
-        .slice(0, 2)
-        .map(part => part.charAt(0))
-        .join('')
-        .toUpperCase(),
-      bg: `hsl(${hashHue(userId)}, 65%, 45%)`,
-    }));
+    return ids.map(userId => {
+      const hue = hashHue(userId);
+      return {
+        userId,
+        label: this.memberLabel(members.find(member => member.userId === userId) ?? { userId }),
+        initials: this.memberLabel(members.find(member => member.userId === userId) ?? { userId })
+          .split(/\s+/)
+          .slice(0, 2)
+          .map(part => part.charAt(0))
+          .join('')
+          .toUpperCase(),
+        // Pastel pair — light fill + deeper-tone text on top.
+        bg: `hsl(${hue}, 55%, 88%)`,
+        fg: `hsl(${hue}, 35%, 35%)`,
+      };
+    });
   });
 
   readonly extraAssignees = computed(() => {

@@ -1,0 +1,429 @@
+- generic [ref=e4]:
+  - navigation "Tablero" [ref=e5]:
+    - link "Jitre Planificá y entregá" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - img [ref=e8]
+      - generic [ref=e11]:
+        - generic [ref=e12]: Jitre
+        - generic [ref=e13]: Planificá y entregá
+    - button "Jitre Demo Co ● Workspace activo" [ref=e15]:
+      - generic [ref=e17]: 
+      - generic [ref=e18]:
+        - paragraph [ref=e19]: Jitre Demo Co
+        - paragraph [ref=e20]: ● Workspace activo
+      - generic [ref=e21]: 
+    - list [ref=e22]:
+      - listitem [ref=e23]:
+        - link "Tablero" [ref=e24] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e25]: 
+          - generic [ref=e26]: Tablero
+      - listitem [ref=e27]:
+        - link "Proyectos" [ref=e28] [cursor=pointer]:
+          - /url: /projects
+          - generic [ref=e29]: 
+          - generic [ref=e30]: Proyectos
+      - listitem [ref=e31]:
+        - link "IA Insights" [ref=e32] [cursor=pointer]:
+          - /url: /analytics
+          - generic [ref=e33]: 
+          - generic [ref=e34]: IA Insights
+      - listitem [ref=e35]:
+        - link "Automatizaciones" [ref=e36] [cursor=pointer]:
+          - /url: /my-time
+          - generic [ref=e37]: 
+          - generic [ref=e38]: Automatizaciones
+      - listitem [ref=e39]:
+        - link "Tickets" [ref=e40] [cursor=pointer]:
+          - /url: /tickets
+          - generic [ref=e41]: 
+          - generic [ref=e42]: Tickets
+      - listitem [ref=e43]:
+        - link "Documentos" [ref=e44] [cursor=pointer]:
+          - /url: /docs
+          - generic [ref=e45]: 
+          - generic [ref=e46]: Documentos
+      - listitem [ref=e47]:
+        - link "Chat" [ref=e48] [cursor=pointer]:
+          - /url: /chat
+          - generic [ref=e49]: 
+          - generic [ref=e50]: Chat
+      - listitem [ref=e51]:
+        - link "Reportes de tiempo" [ref=e52] [cursor=pointer]:
+          - /url: /time-reports
+          - generic [ref=e53]: 
+          - generic [ref=e54]: Reportes de tiempo
+      - listitem [ref=e55]:
+        - link "Empleados" [ref=e56] [cursor=pointer]:
+          - /url: /employees
+          - generic [ref=e57]: 
+          - generic [ref=e58]: Empleados
+      - listitem [ref=e59]:
+        - link "Auditoría" [ref=e60] [cursor=pointer]:
+          - /url: /audit
+          - generic [ref=e61]: 
+          - generic [ref=e62]: Auditoría
+    - generic [ref=e63]:
+      - link "Configuración" [ref=e64] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e65]: 
+        - text: Configuración
+      - link "Soporte" [ref=e66] [cursor=pointer]:
+        - /url: /docs
+        - generic [ref=e67]: 
+        - text: Soporte
+  - generic [ref=e68]:
+    - banner [ref=e69]:
+      - button "Abrir paleta de comandos" [ref=e70]:
+        - img [ref=e71]
+        - text: Buscar comandos…
+        - generic [ref=e74]: ⌘K
+      - generic [ref=e75]:
+        - button "Open AI create dialog" [ref=e76]:
+          - generic [ref=e77]: 
+          - text: AI create
+          - generic [ref=e78]: ⌘I
+        - link "Notificaciones" [ref=e79] [cursor=pointer]:
+          - /url: /notifications
+          - generic [ref=e80]: 
+        - button "Ayuda" [ref=e81]:
+          - generic [ref=e82]: 
+        - button "Abrir menú de cuenta" [ref=e84]: AA
+    - main [ref=e85]:
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - generic [ref=e124]:
+            - generic [ref=e126]: JIT
+            - heading "Jitre Platform" [level=1] [ref=e127]
+            - paragraph [ref=e128]: Core platform engineering project.
+          - generic [ref=e129]:
+            - button "Abrir chat" [ref=e130]:
+              - generic [ref=e131]: 
+              - text: Abrir chat
+            - button "New Task" [ref=e132]:
+              - img [ref=e133]
+              - text: New Task
+        - tablist [ref=e134]:
+          - tab "Tasks" [selected] [ref=e135]
+          - tab "Backlog" [ref=e136]
+          - tab "Roadmap" [ref=e137]
+          - tab "Members" [ref=e138]
+          - tab "Docs" [ref=e139]
+          - tab "Files" [ref=e140]
+          - tab "Analytics" [ref=e141]
+          - tab "Settings" [ref=e142]
+        - tabpanel [ref=e143]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - generic [ref=e146]:
+                - paragraph [ref=e147]: Timeline
+                - paragraph [ref=e148]: 2026-03-25 → 2026-08-22
+              - generic [ref=e149]:
+                - paragraph [ref=e150]: Tasks
+                - paragraph [ref=e151]: "27"
+              - generic [ref=e152]:
+                - paragraph [ref=e153]: Members
+                - paragraph [ref=e154]: "4"
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - img
+                - searchbox "Search tasks" [ref=e159]
+              - generic "Filter by status" [ref=e160] [cursor=pointer]:
+                - combobox "Todos los estados" [ref=e161]
+                - button "dropdown trigger" [ref=e162]:
+                  - img [ref=e163]
+              - generic "Filter by type" [ref=e165] [cursor=pointer]:
+                - combobox "Todos los tipos" [ref=e166]
+                - button "dropdown trigger" [ref=e167]:
+                  - img [ref=e168]
+              - generic "Filter by priority" [ref=e170] [cursor=pointer]:
+                - combobox "Todas las prioridades" [ref=e171]
+                - button "dropdown trigger" [ref=e172]:
+                  - img [ref=e173]
+              - generic "Filter by assignee" [ref=e175] [cursor=pointer]:
+                - combobox "Todos los responsables" [ref=e176]
+                - button "dropdown trigger" [ref=e177]:
+                  - img [ref=e178]
+              - generic "Filter by label" [ref=e180] [cursor=pointer]:
+                - combobox "Todas las etiquetas" [ref=e181]
+                - button "dropdown trigger" [ref=e182]:
+                  - img [ref=e183]
+              - button "Limpiar" [ref=e185]
+            - generic [ref=e186]:
+              - button "Board" [pressed] [ref=e187]
+              - button "List" [ref=e188]
+            - region "Kanban board" [ref=e190]:
+              - generic [ref=e192]:
+                - generic [ref=e193]:
+                  - paragraph [ref=e194]: Board
+                  - heading "Planificación y ejecución" [level=2] [ref=e195]
+                - generic [ref=e196]:
+                  - generic [ref=e197]: 17 tareas
+                  - generic [ref=e198]: 2 done
+                  - generic [ref=e199]: 4 vencidas
+              - generic [ref=e200]:
+                - list "Status Backlog" [ref=e201]:
+                  - generic [ref=e203]:
+                    - heading "Backlog" [level=3] [ref=e205]
+                    - generic [ref=e206]: "8"
+                  - generic [ref=e207]:
+                    - 'listitem "Task: Audit log retention policy (draggable)" [ref=e210]':
+                      - generic [ref=e211]:
+                        - 'generic "Type: Task" [ref=e212]': 
+                        - generic [ref=e213]:
+                          - paragraph [ref=e214]: JIT-6
+                          - generic [ref=e215]: Audit log retention policy
+                        - button "Task actions" [ref=e216]:
+                          - img [ref=e217]
+                      - generic [ref=e222]: low
+                      - generic [ref=e224]:
+                        - generic [ref=e225]: backend
+                        - generic [ref=e226]: tech-debt
+                    - 'listitem "Task: Replace TODO comments with issues (draggable)" [ref=e229]':
+                      - generic [ref=e230]:
+                        - 'generic "Type: Task" [ref=e231]': 
+                        - generic [ref=e232]:
+                          - paragraph [ref=e233]: JIT-7
+                          - generic [ref=e234]: Replace TODO comments with issues
+                        - button "Task actions" [ref=e235]:
+                          - img [ref=e236]
+                      - generic [ref=e241]: low
+                      - generic [ref=e244]: tech-debt
+                    - 'listitem "Task: Migrate to TypeORM 0.3 query builder (draggable)" [ref=e247]':
+                      - generic [ref=e248]:
+                        - 'generic "Type: Task" [ref=e249]': 
+                        - generic [ref=e250]:
+                          - paragraph [ref=e251]: JIT-10
+                          - generic [ref=e252]: Migrate to TypeORM 0.3 query builder
+                        - button "Task actions" [ref=e253]:
+                          - img [ref=e254]
+                      - generic [ref=e259]: medium
+                      - generic [ref=e261]:
+                        - generic "Assignee Dani Developer" [ref=e263]: DD
+                        - generic [ref=e264]: backend
+                        - generic [ref=e265]: tech-debt
+                    - 'listitem "Feature: Add dark mode toggle (draggable)" [ref=e268]':
+                      - generic [ref=e269]:
+                        - 'generic "Type: Feature" [ref=e270]': 
+                        - generic [ref=e271]:
+                          - paragraph [ref=e272]: JIT-11
+                          - generic [ref=e273]: Add dark mode toggle
+                        - button "Task actions" [ref=e274]:
+                          - img [ref=e275]
+                      - generic [ref=e280]: low
+                      - generic [ref=e282]:
+                        - generic "Assignee Sam Engineer" [ref=e284]: SE
+                        - generic [ref=e285]: frontend
+                    - 'listitem "Task: Document API rate limits (draggable)" [ref=e288]':
+                      - generic [ref=e289]:
+                        - 'generic "Type: Task" [ref=e290]': 
+                        - generic [ref=e291]:
+                          - paragraph [ref=e292]: JIT-14
+                          - generic [ref=e293]: Document API rate limits
+                        - button "Task actions" [ref=e294]:
+                          - img [ref=e295]
+                      - generic [ref=e300]: low
+                      - generic [ref=e302]:
+                        - generic "Assignee Pat Manager" [ref=e304]: PM
+                        - generic [ref=e305]: backend
+                    - 'listitem "Task: Migrate PREMO to SGVE and consolidate health systems (draggable)" [ref=e308]':
+                      - generic [ref=e309]:
+                        - 'generic "Type: Task" [ref=e310]': 
+                        - generic [ref=e311]:
+                          - paragraph [ref=e312]: JIT-21
+                          - generic [ref=e313]: Migrate PREMO to SGVE and consolidate health systems
+                        - button "Task actions" [ref=e314]:
+                          - img [ref=e315]
+                      - generic [ref=e320]: medium
+                    - 'listitem "Task: Investigate Forbidden Error (draggable)" [ref=e323]':
+                      - generic [ref=e324]:
+                        - 'generic "Type: Task" [ref=e325]': 
+                        - generic [ref=e326]:
+                          - paragraph [ref=e327]: JIT-20
+                          - generic [ref=e328]: Investigate Forbidden Error
+                        - button "Task actions" [ref=e329]:
+                          - img [ref=e330]
+                    - 'listitem "Task: Empty state illustrations (draggable)" [ref=e336]':
+                      - generic [ref=e337]:
+                        - 'generic "Type: Task" [ref=e338]': 
+                        - generic [ref=e339]:
+                          - paragraph [ref=e340]: JIT-15
+                          - generic [ref=e341]: Empty state illustrations
+                        - button "Task actions" [ref=e342]:
+                          - img [ref=e343]
+                      - generic [ref=e349]: frontend
+                  - button "Crear tarea" [ref=e350]:
+                    - img [ref=e351]
+                    - text: Crear tarea
+                - list "Status In Progress" [ref=e352]:
+                  - generic [ref=e354]:
+                    - heading "In Progress" [level=3] [ref=e356]
+                    - generic [ref=e357]: "3"
+                  - generic [ref=e358]:
+                    - 'listitem "Bug: Fix N+1 in task list endpoint (draggable)" [ref=e361]':
+                      - generic [ref=e362]:
+                        - 'generic "Type: Bug"'
+                        - generic [ref=e363]:
+                          - paragraph [ref=e364]: JIT-3
+                          - generic [ref=e365]: Fix N+1 in task list endpoint
+                        - button "Task actions" [ref=e366]:
+                          - img [ref=e367]
+                      - generic [ref=e371]:
+                        - generic [ref=e372]: urgent
+                        - generic [ref=e373]:
+                          - img [ref=e374]
+                          - text: May 25
+                      - generic [ref=e377]:
+                        - generic [ref=e378]:
+                          - generic "Assignee Sam Engineer" [ref=e379]: SE
+                          - generic "Assignee Dani Developer" [ref=e380]: DD
+                        - generic [ref=e381]: backend
+                        - generic [ref=e382]: bug
+                    - 'listitem "Task: Build kanban board UI (draggable)" [ref=e385]':
+                      - generic [ref=e386]:
+                        - 'generic "Type: Task" [ref=e387]': 
+                        - generic [ref=e388]:
+                          - paragraph [ref=e389]: JIT-4
+                          - generic [ref=e390]: Build kanban board UI
+                        - button "Task actions" [ref=e391]:
+                          - img [ref=e392]
+                      - generic [ref=e396]:
+                        - generic [ref=e397]: high
+                        - generic [ref=e398]: Jun 6
+                      - generic [ref=e400]:
+                        - generic "Assignee Sam Engineer" [ref=e402]: SE
+                        - generic [ref=e403]: feature
+                        - generic [ref=e404]: frontend
+                    - 'listitem "Bug: Login form double-submit bug (draggable)" [ref=e407]':
+                      - generic [ref=e408]:
+                        - 'generic "Type: Bug"'
+                        - generic [ref=e409]:
+                          - paragraph [ref=e410]: JIT-12
+                          - generic [ref=e411]: Login form double-submit bug
+                        - button "Task actions" [ref=e412]:
+                          - img [ref=e413]
+                      - generic [ref=e417]:
+                        - generic [ref=e418]: medium
+                        - generic [ref=e419]:
+                          - img [ref=e420]
+                          - text: May 20
+                      - generic [ref=e423]:
+                        - generic "Assignee Sam Engineer" [ref=e425]: SE
+                        - generic [ref=e426]: frontend
+                        - generic [ref=e427]: bug
+                  - button "Crear tarea" [ref=e428]:
+                    - img [ref=e429]
+                    - text: Crear tarea
+                - list "Status In Review" [ref=e430]:
+                  - generic [ref=e432]:
+                    - heading "In Review" [level=3] [ref=e434]
+                    - generic [ref=e435]: "4"
+                  - generic [ref=e436]:
+                    - 'listitem "Task: Implement JWT refresh rotation (draggable)" [ref=e439]':
+                      - generic [ref=e440]:
+                        - 'generic "Type: Task" [ref=e441]': 
+                        - generic [ref=e442]:
+                          - paragraph [ref=e443]: JIT-2
+                          - generic [ref=e444]: Implement JWT refresh rotation
+                        - button "Task actions" [ref=e445]:
+                          - img [ref=e446]
+                      - generic [ref=e450]:
+                        - generic [ref=e451]: high
+                        - generic [ref=e452]: May 30
+                      - generic [ref=e454]:
+                        - generic "Assignee Dani Developer" [ref=e456]: DD
+                        - generic [ref=e457]: feature
+                        - generic [ref=e458]: backend
+                    - 'listitem "Feature: Wire socket.io presence (draggable)" [ref=e461]':
+                      - generic [ref=e462]:
+                        - 'generic "Type: Feature" [ref=e463]': 
+                        - generic [ref=e464]:
+                          - paragraph [ref=e465]: JIT-5
+                          - generic [ref=e466]: Wire socket.io presence
+                        - button "Task actions" [ref=e467]:
+                          - img [ref=e468]
+                      - generic [ref=e472]:
+                        - generic [ref=e473]: medium
+                        - generic [ref=e474]:
+                          - img [ref=e475]
+                          - text: May 22
+                      - generic [ref=e478]:
+                        - generic "Assignee Dani Developer" [ref=e480]: DD
+                        - generic [ref=e481]: frontend
+                        - generic [ref=e482]: backend
+                    - 'listitem "Bug: Crash on attachment upload over 10MB (draggable)" [ref=e485]':
+                      - generic [ref=e486]:
+                        - 'generic "Type: Bug"'
+                        - generic [ref=e487]:
+                          - paragraph [ref=e488]: JIT-8
+                          - generic [ref=e489]: Crash on attachment upload over 10MB
+                        - button "Task actions" [ref=e490]:
+                          - img [ref=e491]
+                      - generic [ref=e495]:
+                        - generic [ref=e496]: high
+                        - generic [ref=e497]:
+                          - img [ref=e498]
+                          - text: May 26
+                      - generic [ref=e501]:
+                        - generic "Assignee Dani Developer" [ref=e503]: DD
+                        - generic [ref=e504]: bug
+                        - generic [ref=e505]: backend
+                    - 'listitem "Task: Webhook delivery retry queue (draggable)" [ref=e508]':
+                      - generic [ref=e509]:
+                        - 'generic "Type: Task" [ref=e510]': 
+                        - generic [ref=e511]:
+                          - paragraph [ref=e512]: JIT-13
+                          - generic [ref=e513]: Webhook delivery retry queue
+                        - button "Task actions" [ref=e514]:
+                          - img [ref=e515]
+                      - generic [ref=e519]:
+                        - generic [ref=e520]: medium
+                        - generic [ref=e521]: Jun 2
+                      - generic [ref=e523]:
+                        - generic "Assignee Dani Developer" [ref=e525]: DD
+                        - generic [ref=e526]: backend
+                  - button "Crear tarea" [ref=e527]:
+                    - img [ref=e528]
+                    - text: Crear tarea
+                - list "Status Done" [ref=e529]:
+                  - generic [ref=e531]:
+                    - heading "Done" [level=3] [ref=e533]
+                    - generic [ref=e534]: "2"
+                  - generic [ref=e535]:
+                    - 'listitem "Task: Set up CI pipeline (draggable)" [ref=e538]':
+                      - generic [ref=e539]:
+                        - 'generic "Type: Task" [ref=e540]': 
+                        - generic [ref=e541]:
+                          - paragraph [ref=e542]: JIT-1
+                          - generic [ref=e543]: Set up CI pipeline
+                        - button "Task actions" [ref=e544]:
+                          - img [ref=e545]
+                      - generic [ref=e550]: high
+                      - generic [ref=e552]:
+                        - generic "Assignee Alex Admin" [ref=e554]: AA
+                        - generic [ref=e555]: backend
+                    - 'listitem "Incident: Production outage 2026-04-12 (draggable)" [ref=e558]':
+                      - generic [ref=e559]:
+                        - 'generic "Type: Incident" [ref=e560]': 
+                        - generic [ref=e561]:
+                          - paragraph [ref=e562]: JIT-9
+                          - generic [ref=e563]: Production outage 2026-04-12
+                        - button "Task actions" [ref=e564]:
+                          - img [ref=e565]
+                      - generic [ref=e570]: urgent
+                      - generic [ref=e572]:
+                        - generic [ref=e573]:
+                          - generic "Assignee Dani Developer" [ref=e574]: DD
+                          - generic "Assignee Alex Admin" [ref=e575]: AA
+                        - generic [ref=e576]: backend
+                  - button "Crear tarea" [ref=e577]:
+                    - img [ref=e578]
+                    - text: Crear tarea
+                - list "Status Cancelled" [ref=e579]:
+                  - generic [ref=e581]:
+                    - heading "Cancelled" [level=3] [ref=e583]
+                    - generic [ref=e584]: "0"
+                  - generic [ref=e586]: Soltá tareas acá o creá una nueva.
+                  - button "Crear tarea" [ref=e587]:
+                    - img [ref=e588]
+                    - text: Crear tarea

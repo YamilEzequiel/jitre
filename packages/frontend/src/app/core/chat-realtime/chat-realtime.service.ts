@@ -43,8 +43,10 @@ export class ChatRealtimeService implements OnDestroy {
       this._socket.disconnect();
     }
     const token = this.auth.getAccessToken();
+    const workspaceId = this.auth.currentWorkspace()?.id;
     this._socket = io(CHAT_NAMESPACE, {
-      auth: { token },
+      path: '/ws',
+      auth: { token, workspaceId },
       transports: ['websocket'],
       autoConnect: true,
     });

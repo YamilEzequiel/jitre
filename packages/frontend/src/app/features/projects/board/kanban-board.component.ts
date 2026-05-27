@@ -27,9 +27,9 @@ import { CreateTaskComponent } from '../../tasks/create/create-task.component';
 import { TaskFilters } from '../../tasks/list/task-filter-bar.component';
 
 const CATEGORY_DOT_FALLBACK: Record<string, string> = {
-  todo: 'bg-gray-400',
-  in_progress: 'bg-indigo-400',
-  done: 'bg-emerald-400',
+  todo: 'bg-slate-300',
+  in_progress: 'bg-indigo-300',
+  done: 'bg-emerald-300',
 };
 
 interface DropZone {

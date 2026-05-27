@@ -120,8 +120,9 @@ interface RenderedMessage {
             <div class="w-9 shrink-0">
               @if (rm.showHeader) {
                 <span
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
                   [style.background]="avatarBg(rm.message.authorId)"
+                  [style.color]="avatarFg(rm.message.authorId)"
                   [attr.aria-label]="'Author ' + name(rm.message.authorId)"
                 >
                   {{ initials(rm.message.authorId) }}
@@ -561,6 +562,10 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
 
   avatarBg(userId: string): string {
     return this.memberStore.avatarColorFor(userId);
+  }
+
+  avatarFg(userId: string): string {
+    return this.memberStore.avatarForegroundFor(userId);
   }
 
   initials(userId: string): string {

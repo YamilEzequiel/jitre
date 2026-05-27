@@ -324,8 +324,9 @@ interface DisplayComment {
                   <div class="flex items-center justify-between gap-2 mb-2">
                     <div class="flex items-center gap-2">
                       <span
-                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold"
                         [style.background]="avatarColor(comment.authorId)"
+                        [style.color]="avatarFg(comment.authorId)"
                       >{{ initialsOf(comment.authorName) }}</span>
                       <span class="text-xs font-semibold text-slate-700">{{ comment.authorName }}</span>
                     </div>
@@ -642,7 +643,14 @@ export class TaskDetailComponent implements OnInit {
   avatarColor(userId: string): string {
     let h = 0;
     for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
-    return `hsl(${h % 360}, 65%, 45%)`;
+    // Pastel — paired with avatarFg for the initials/icon color.
+    return `hsl(${h % 360}, 55%, 88%)`;
+  }
+
+  avatarFg(userId: string): string {
+    let h = 0;
+    for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
+    return `hsl(${h % 360}, 35%, 35%)`;
   }
 
   isSubtaskDone(sub: Task): boolean {

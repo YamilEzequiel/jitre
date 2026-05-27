@@ -142,16 +142,16 @@ type StatusFilter = 'all' | 'active' | 'archived';
                 </div>
                 <span
                   [class]="
-                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] border backdrop-blur-sm ' +
+                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] border ' +
                     (project.status === 'active'
-                      ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
-                      : 'text-slate-500 bg-white border-slate-200')
+                      ? 'text-emerald-700 bg-emerald-50 border-emerald-100'
+                      : 'text-slate-500 bg-slate-50 border-slate-200')
                   "
                 >
                   <span
                     [class]="
                       'h-1.5 w-1.5 rounded-full ' +
-                      (project.status === 'active' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500')
+                      (project.status === 'active' ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300')
                     "
                     aria-hidden="true"
                   ></span>

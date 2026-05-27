@@ -37,6 +37,7 @@ export interface ChatRoomDto {
 @Injectable()
 @WebSocketGateway({
   namespace: '/chat',
+  path: '/ws',
   cors: { origin: '*', credentials: true },
   transports: ['websocket'],
 })

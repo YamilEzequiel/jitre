@@ -26,8 +26,10 @@ export class RealtimeService implements OnDestroy {
     }
 
     const token = this.auth.getAccessToken();
+    const workspaceId = this.auth.currentWorkspace()?.id;
     this._socket = io(SOCKET_URL, {
-      auth: { token },
+      path: '/ws',
+      auth: { token, workspaceId },
       transports: ['websocket'],
       autoConnect: true,
     });

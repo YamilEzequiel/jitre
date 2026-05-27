@@ -1,0 +1,158 @@
+- generic [ref=e87]:
+  - navigation "Tablero" [ref=e88]:
+    - link "Jitre Planificá y entregá" [ref=e89] [cursor=pointer]:
+      - /url: /
+      - img [ref=e91]
+      - generic [ref=e94]:
+        - generic [ref=e95]: Jitre
+        - generic [ref=e96]: Planificá y entregá
+    - button "Jitre Demo Co ● Workspace activo" [ref=e98]:
+      - generic [ref=e100]: 
+      - generic [ref=e101]:
+        - paragraph [ref=e102]: Jitre Demo Co
+        - paragraph [ref=e103]: ● Workspace activo
+      - generic [ref=e104]: 
+    - list [ref=e105]:
+      - listitem [ref=e106]:
+        - link "Tablero" [ref=e107] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e108]: 
+          - generic [ref=e109]: Tablero
+      - listitem [ref=e110]:
+        - link "Proyectos" [ref=e111] [cursor=pointer]:
+          - /url: /projects
+          - generic [ref=e112]: 
+          - generic [ref=e113]: Proyectos
+      - listitem [ref=e114]:
+        - link "IA Insights" [ref=e115] [cursor=pointer]:
+          - /url: /analytics
+          - generic [ref=e116]: 
+          - generic [ref=e117]: IA Insights
+      - listitem [ref=e118]:
+        - link "Automatizaciones" [ref=e119] [cursor=pointer]:
+          - /url: /my-time
+          - generic [ref=e120]: 
+          - generic [ref=e121]: Automatizaciones
+      - listitem [ref=e122]:
+        - link "Tickets" [ref=e123] [cursor=pointer]:
+          - /url: /tickets
+          - generic [ref=e124]: 
+          - generic [ref=e125]: Tickets
+      - listitem [ref=e126]:
+        - link "Documentos" [ref=e127] [cursor=pointer]:
+          - /url: /docs
+          - generic [ref=e128]: 
+          - generic [ref=e129]: Documentos
+      - listitem [ref=e130]:
+        - link "Chat" [ref=e131] [cursor=pointer]:
+          - /url: /chat
+          - generic [ref=e132]: 
+          - generic [ref=e133]: Chat
+      - listitem [ref=e134]:
+        - link "Reportes de tiempo" [ref=e135] [cursor=pointer]:
+          - /url: /time-reports
+          - generic [ref=e136]: 
+          - generic [ref=e137]: Reportes de tiempo
+      - listitem [ref=e138]:
+        - link "Empleados" [ref=e139] [cursor=pointer]:
+          - /url: /employees
+          - generic [ref=e140]: 
+          - generic [ref=e141]: Empleados
+      - listitem [ref=e142]:
+        - link "Auditoría" [ref=e143] [cursor=pointer]:
+          - /url: /audit
+          - generic [ref=e144]: 
+          - generic [ref=e145]: Auditoría
+    - generic [ref=e146]:
+      - link "Configuración" [ref=e147] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e148]: 
+        - text: Configuración
+      - link "Soporte" [ref=e149] [cursor=pointer]:
+        - /url: /docs
+        - generic [ref=e150]: 
+        - text: Soporte
+  - generic [ref=e151]:
+    - banner [ref=e152]:
+      - button "Abrir paleta de comandos" [ref=e153]:
+        - img [ref=e154]
+        - text: Buscar comandos…
+        - generic [ref=e157]: ⌘K
+      - generic [ref=e158]:
+        - button "Open AI create dialog" [ref=e159]:
+          - generic [ref=e160]: 
+          - text: AI create
+          - generic [ref=e161]: ⌘I
+        - link "Notificaciones" [ref=e162] [cursor=pointer]:
+          - /url: /notifications
+          - generic [ref=e163]: 
+        - button "Ayuda" [ref=e164]:
+          - generic [ref=e165]: 
+        - button "Abrir menú de cuenta" [ref=e167]: AA
+    - main [ref=e168]:
+      - generic [ref=e170]:
+        - generic [ref=e172]:
+          - generic [ref=e175]: Live workspace
+          - heading "Welcome back to your command center." [level=1] [ref=e176]:
+            - generic [ref=e177]: Welcome back to your
+            - generic [ref=e178]: command center.
+          - paragraph [ref=e179]:
+            - text: Tasks, projects and analytics — at a glance. Press
+            - generic [ref=e180]: ⌘K
+            - text: to jump anywhere.
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - paragraph [ref=e184]: Total Tasks
+              - img [ref=e186]
+            - paragraph [ref=e189]: "34"
+          - generic [ref=e190]:
+            - generic [ref=e191]:
+              - paragraph [ref=e192]: Completed
+              - img [ref=e194]
+            - paragraph [ref=e196]: "3"
+          - generic [ref=e197]:
+            - generic [ref=e198]:
+              - paragraph [ref=e199]: Open Projects
+              - img [ref=e201]
+            - paragraph [ref=e203]: "2"
+          - generic [ref=e204]:
+            - generic [ref=e205]:
+              - paragraph [ref=e206]: Team Members
+              - img [ref=e208]
+            - paragraph [ref=e213]: "4"
+        - generic [ref=e214]:
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - heading "Recent Projects" [level=2] [ref=e217]
+              - link "View all" [ref=e218] [cursor=pointer]:
+                - /url: /projects
+            - list [ref=e219]:
+              - listitem [ref=e220]:
+                - link "Jitre Platform" [ref=e221] [cursor=pointer]:
+                  - /url: /projects/2005149a-fd55-4651-a82c-098e33a2e57b
+                  - generic [ref=e223]: Jitre Platform
+                  - generic [ref=e224]: 
+              - listitem [ref=e225]:
+                - link "Marketing Site" [ref=e226] [cursor=pointer]:
+                  - /url: /projects/212f37cc-840b-450c-998a-0046222856bd
+                  - generic [ref=e228]: Marketing Site
+                  - generic [ref=e229]: 
+          - generic [ref=e230]:
+            - heading "Recent Activity" [level=2] [ref=e232]
+            - generic [ref=e233]:
+              - generic [ref=e235]: 
+              - paragraph [ref=e236]: No recent activity
+              - paragraph [ref=e237]: Your actions and events will appear here once you start working.
+          - generic [ref=e238]:
+            - generic [ref=e239]:
+              - heading "Analytics Summary" [level=2] [ref=e240]
+              - generic [ref=e241]: 
+            - generic [ref=e242]:
+              - generic [ref=e243]:
+                - paragraph [ref=e244]: 3 of 34
+                - paragraph [ref=e245]: 9%
+              - paragraph [ref=e246]: Tasks completed
+              - generic [ref=e249]:
+                - paragraph [ref=e250]: ✧ Insight
+                - paragraph [ref=e251]: Complete one more task to keep momentum visible to your team.
