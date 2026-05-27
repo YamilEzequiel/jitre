@@ -17,6 +17,10 @@ import { ProjectMemberStore } from '../../../stores/project-member.store';
 import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
 import { CommentApiService, CommentDto } from '../../../stores/comment-api.service';
 import { AttachmentApiService } from '../../../stores/attachment-api.service';
+import {
+  AiPromptTemplate,
+  AiPromptTemplateApiService,
+} from '../../../stores/ai-prompt-template-api.service';
 import { OptimisticUpdateService } from '../../../core/optimistic/optimistic-update.service';
 import { AiService } from '../../../core/ai/ai.service';
 import { ToastService } from '../../../core/toast/toast.service';
@@ -229,33 +233,109 @@ interface DisplayComment {
             />
           </label>
 
-          <button
-            type="button"
-            (click)="aiDescribe()"
-            [disabled]="aiDescribeLoading()"
-            class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white
-                   bg-gradient-to-r from-fuchsia-600 to-violet-600
-                   shadow-md shadow-fuchsia-500/25
-                   hover:shadow-lg hover:shadow-fuchsia-500/40
-                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400/60
-                   focus-visible:ring-offset-2 focus-visible:ring-offset-white
-                   transition-shadow disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <svg
-              class="h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+          <!-- AI Describe split button: main click uses default template,
+               chevron opens a picker so the user can choose another. -->
+          <div class="relative inline-flex">
+            <button
+              type="button"
+              (click)="aiDescribe()"
+              [disabled]="aiDescribeLoading()"
+              class="inline-flex items-center gap-2 rounded-l-xl px-4 py-2 text-sm font-bold text-white
+                     bg-gradient-to-r from-fuchsia-600 to-violet-600
+                     shadow-md shadow-fuchsia-500/25
+                     hover:shadow-lg hover:shadow-fuchsia-500/40
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400/60
+                     focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                     transition-shadow disabled:cursor-not-allowed disabled:opacity-60"
+              [attr.aria-label]="'AI Describe — using ' + (activeTemplateName() ?? 'default template')"
             >
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
-            @if (aiDescribeLoading()) { Describing… } @else { AI Describe }
-          </button>
+              <svg
+                class="h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+              </svg>
+              @if (aiDescribeLoading()) {
+                Describing…
+              } @else {
+                AI Describe
+                @if (activeTemplateName(); as tn) {
+                  <span class="hidden text-[10px] font-semibold opacity-80 sm:inline">· {{ tn }}</span>
+                }
+              }
+            </button>
+            <button
+              type="button"
+              (click)="toggleTemplatePicker($event)"
+              [disabled]="aiDescribeLoading()"
+              class="inline-flex items-center justify-center rounded-r-xl border-l border-white/20 px-2 py-2 text-white
+                     bg-gradient-to-r from-fuchsia-600 to-violet-600
+                     shadow-md shadow-fuchsia-500/25
+                     hover:shadow-lg hover:shadow-fuchsia-500/40
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400/60
+                     focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                     transition-shadow disabled:cursor-not-allowed disabled:opacity-60"
+              [attr.aria-expanded]="templatePickerOpen()"
+              aria-label="Choose AI template"
+            >
+              <i class="pi pi-chevron-down text-[10px]" aria-hidden="true"></i>
+            </button>
+            @if (templatePickerOpen()) {
+              <button
+                type="button"
+                class="fixed inset-0 z-30 cursor-default bg-transparent"
+                aria-label="Close template picker"
+                (click)="closeTemplatePicker()"
+              ></button>
+              <div
+                role="listbox"
+                class="absolute right-0 top-full z-40 mt-2 w-72 rounded-xl border border-slate-200 bg-white py-1 shadow-2xl shadow-slate-200/80"
+              >
+                <p class="px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  Describe with template
+                </p>
+                @for (tpl of describeTemplates(); track tpl.id) {
+                  <button
+                    type="button"
+                    role="option"
+                    [attr.aria-selected]="selectedDescribeTemplateId() === tpl.id"
+                    (click)="pickTemplate(tpl.id)"
+                    class="flex w-full items-start gap-2 px-3 py-2 text-left text-xs transition hover:bg-violet-50"
+                  >
+                    <i
+                      [class]="
+                        'pi text-[10px] mt-0.5 ' +
+                        (selectedDescribeTemplateId() === tpl.id ? 'pi-check text-violet-700' : 'text-transparent')
+                      "
+                      aria-hidden="true"
+                    ></i>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate font-semibold text-slate-900">{{ tpl.name }}</span>
+                      @if (tpl.description) {
+                        <span class="block truncate text-[10px] text-slate-500">{{ tpl.description }}</span>
+                      }
+                    </span>
+                    @if (tpl.isDefault) {
+                      <span class="rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700">
+                        Default
+                      </span>
+                    }
+                  </button>
+                } @empty {
+                  <p class="px-3 py-2 text-xs italic text-slate-400">
+                    No hay templates configurados.
+                  </p>
+                }
+              </div>
+            }
+          </div>
         </div>
 
         <section class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -520,6 +600,7 @@ export class TaskDetailComponent implements OnInit {
   private readonly workspaceMemberStore = inject(WorkspaceMemberStore, { optional: true });
   private readonly commentApi = inject(CommentApiService);
   private readonly attachmentApi = inject(AttachmentApiService);
+  private readonly templateApi = inject(AiPromptTemplateApiService);
   private readonly optimistic = inject(OptimisticUpdateService);
   private readonly ai = inject(AiService);
   private readonly toast = inject(ToastService);
@@ -602,6 +683,39 @@ export class TaskDetailComponent implements OnInit {
 
   readonly aiDescribeLoading = computed(() => this.ai.loading.describe());
 
+  readonly describeTemplates = signal<AiPromptTemplate[]>([]);
+  readonly templatePickerOpen = signal(false);
+  readonly selectedDescribeTemplateId = signal<string | null>(null);
+
+  readonly activeTemplateName = computed<string | null>(() => {
+    const id = this.selectedDescribeTemplateId();
+    const list = this.describeTemplates();
+    if (id) return list.find((t) => t.id === id)?.name ?? null;
+    return list.find((t) => t.isDefault)?.name ?? null;
+  });
+
+  toggleTemplatePicker(event: MouseEvent): void {
+    event.stopPropagation();
+    this.templatePickerOpen.update((v) => !v);
+  }
+
+  closeTemplatePicker(): void {
+    this.templatePickerOpen.set(false);
+  }
+
+  pickTemplate(id: string): void {
+    this.selectedDescribeTemplateId.set(id);
+    this.templatePickerOpen.set(false);
+  }
+
+  private async loadDescribeTemplates(): Promise<void> {
+    try {
+      this.describeTemplates.set(await this.templateApi.list('describe'));
+    } catch {
+      this.describeTemplates.set([]);
+    }
+  }
+
   readonly typeOptions: TaskType[] = ['task', 'bug', 'incident', 'feature'];
   readonly typeSelectOptions = this.typeOptions.map(t => ({ label: t, value: t }));
   readonly priorityOptions: TaskPriority[] = ['none', 'low', 'medium', 'high', 'urgent'];
@@ -610,6 +724,7 @@ export class TaskDetailComponent implements OnInit {
   ngOnInit(): void {
     this.taskId = this.route.snapshot.paramMap.get('id') ?? '';
     void this.initializeTask();
+    void this.loadDescribeTemplates();
   }
 
   private async initializeTask(): Promise<void> {
@@ -784,7 +899,8 @@ export class TaskDetailComponent implements OnInit {
     const t = this.task();
     if (!t) return;
     try {
-      const result = (await this.ai.describeTask(t.id)) as {
+      const templateId = this.selectedDescribeTemplateId() ?? undefined;
+      const result = (await this.ai.describeTask(t.id, { templateId })) as {
         description?: string;
         applied?: boolean;
       } | null;

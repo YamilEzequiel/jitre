@@ -10,9 +10,10 @@ import { UserSettingsPanelComponent } from './panels/user-settings-panel.compone
 import { NotificationSettingsPanelComponent } from './panels/notification-settings-panel.component';
 import { WorkspaceSettingsPanelComponent } from './panels/workspace-settings-panel.component';
 import { AiSettingsPanelComponent } from './panels/ai-settings-panel.component';
+import { AiPromptTemplatesPanelComponent } from './panels/ai-prompt-templates-panel.component';
 import { EmailPrefsPanelComponent } from './panels/email-prefs-panel.component';
 
-type SettingsTab = 'profile' | 'notifications' | 'email' | 'workspace' | 'ai';
+type SettingsTab = 'profile' | 'notifications' | 'email' | 'workspace' | 'ai' | 'ai-templates';
 
 interface TabDef {
   value: SettingsTab;
@@ -23,7 +24,7 @@ interface TabDef {
 @Component({
   selector: 'jt-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UserSettingsPanelComponent, NotificationSettingsPanelComponent, EmailPrefsPanelComponent, WorkspaceSettingsPanelComponent, AiSettingsPanelComponent],
+  imports: [UserSettingsPanelComponent, NotificationSettingsPanelComponent, EmailPrefsPanelComponent, WorkspaceSettingsPanelComponent, AiSettingsPanelComponent, AiPromptTemplatesPanelComponent],
   template: `
     <div class="max-w-6xl space-y-6">
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 space-y-3">
@@ -96,6 +97,9 @@ interface TabDef {
             @case ('ai') {
               <jt-ai-settings-panel />
             }
+            @case ('ai-templates') {
+              <jt-ai-prompt-templates-panel />
+            }
           }
         </div>
       </div>
@@ -118,6 +122,7 @@ export class SettingsComponent {
     { value: 'email', label: 'Email', adminOnly: false },
     { value: 'workspace', label: 'Workspace', adminOnly: true },
     { value: 'ai', label: 'AI & Quota', adminOnly: true },
+    { value: 'ai-templates', label: 'AI Prompts', adminOnly: true },
   ];
 
   readonly visibleTabs = computed<TabDef[]>(() =>

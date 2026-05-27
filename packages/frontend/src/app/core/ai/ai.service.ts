@@ -12,11 +12,17 @@ export class AiService {
     summary: signal(false),
   };
 
-  async describeTask(taskId: string): Promise<unknown> {
+  async describeTask(
+    taskId: string,
+    options: { templateId?: string; tone?: 'formal' | 'casual' | 'technical' } = {},
+  ): Promise<unknown> {
     this.loading.describe.set(true);
     try {
+      const body: Record<string, unknown> = {};
+      if (options.templateId) body['templateId'] = options.templateId;
+      if (options.tone) body['tone'] = options.tone;
       return await firstValueFrom(
-        this.http.post(`/api/v1/ai/tasks/${taskId}/describe`, {}),
+        this.http.post(`/api/v1/ai/tasks/${taskId}/describe`, body),
       );
     } finally {
       this.loading.describe.set(false);
