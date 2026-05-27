@@ -11,6 +11,7 @@ import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
 import { DocumentStore } from '../../stores/document.store';
 import { Document } from '../../stores/document-api.service';
 import { ProjectStore } from '../../stores/project.store';
+import { Project } from '../../stores/project-api.service';
 import { ToastService } from '../../core/toast/toast.service';
 import {
   DocsDropEvent,
@@ -155,7 +156,7 @@ const SEARCH_DEBOUNCE_MS = 300;
           } @else {
             @if (store.loading()) {
               <p class="px-3 py-4 text-center text-xs text-slate-400">Loading...</p>
-            } @else {
+            } @else if (projectId()) {
               <ul class="space-y-0.5">
                 @for (root of store.tree(); track root.id) {
                   <li>
@@ -172,6 +173,88 @@ const SEARCH_DEBOUNCE_MS = 300;
                   </li>
                 }
               </ul>
+            } @else {
+              <!-- Grouped view: workspace-level docs + one section per project -->
+              <section class="space-y-3" aria-label="Documents grouped by project">
+                <div>
+                  <header class="flex items-center gap-2 px-2 py-1.5">
+                    <i class="pi pi-globe text-[10px] text-blue-700" aria-hidden="true"></i>
+                    <h3 class="flex-1 truncate text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                      Workspace
+                    </h3>
+                  </header>
+                  <ul class="space-y-0.5">
+                    @for (root of groupedTree().workspaceDocs; track root.id) {
+                      <li>
+                        <jt-docs-tree-node
+                          [doc]="root"
+                          [selectedId]="selectedId()"
+                          (action)="onTreeAction($event)"
+                          (dropped)="onDropped($event)"
+                        />
+                      </li>
+                    } @empty {
+                      <li class="px-3 py-2 text-[11px] text-slate-400 italic">
+                        No workspace-level pages.
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                @for (group of groupedTree().projectGroups; track group.project.id) {
+                  <div>
+                    <header class="flex items-center gap-1 px-2 py-1.5">
+                      <button
+                        type="button"
+                        class="inline-flex h-5 w-5 items-center justify-center rounded text-slate-500
+                               hover:bg-slate-100 hover:text-slate-900
+                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                        (click)="toggleProject(group.project.id)"
+                        [attr.aria-expanded]="!isProjectCollapsed(group.project.id)"
+                        [attr.aria-label]="(isProjectCollapsed(group.project.id) ? 'Expand ' : 'Collapse ') + group.project.name"
+                      >
+                        <i
+                          class="pi text-[9px]"
+                          [class.pi-chevron-right]="isProjectCollapsed(group.project.id)"
+                          [class.pi-chevron-down]="!isProjectCollapsed(group.project.id)"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="flex flex-1 min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left
+                               hover:bg-slate-100
+                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                        (click)="enterProjectScope(group.project.id)"
+                      >
+                        <i class="pi pi-briefcase text-[10px] text-violet-700" aria-hidden="true"></i>
+                        <span class="flex-1 truncate text-[11px] font-bold uppercase tracking-[0.14em] text-slate-600">
+                          {{ group.project.name }}
+                        </span>
+                        <span class="text-[10px] text-slate-400 tabular-nums">{{ group.docs.length }}</span>
+                      </button>
+                    </header>
+                    @if (!isProjectCollapsed(group.project.id)) {
+                      <ul class="space-y-0.5 pl-2">
+                        @for (root of group.docs; track root.id) {
+                          <li>
+                            <jt-docs-tree-node
+                              [doc]="root"
+                              [selectedId]="selectedId()"
+                              (action)="onTreeAction($event)"
+                              (dropped)="onDropped($event)"
+                            />
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+
+                @if (groupedTree().workspaceDocs.length === 0 && groupedTree().projectGroups.length === 0) {
+                  <p class="px-3 py-6 text-center text-xs text-slate-400">No pages yet.</p>
+                }
+              </section>
             }
           }
         </div>
@@ -237,6 +320,7 @@ export class DocsComponent implements OnInit, OnDestroy {
   protected readonly searchResults = signal<Document[]>([]);
   protected readonly mobileNavOpen = signal(false);
   protected readonly projectId = signal<string | null>(null);
+  protected readonly collapsedProjects = signal<Set<string>>(new Set());
   private readonly _selectedId = signal<string | null>(null);
   protected readonly selectedId = this._selectedId.asReadonly();
 
@@ -254,8 +338,62 @@ export class DocsComponent implements OnInit, OnDestroy {
     return project ? `${project.name} docs` : 'Project docs';
   });
 
+  /**
+   * Splits the loaded tree into workspace-level docs (no projectId) and a
+   * section per project. If a doc references a projectId that is not yet
+   * hydrated in `ProjectStore`, we still render a placeholder group so the
+   * doc never disappears silently — `reloadTree()` will lazy-load the missing
+   * project and the placeholder is replaced once it arrives.
+   *
+   * Only used in the unfiltered root view (`projectId() === null`).
+   */
+  protected readonly groupedTree = computed<{
+    workspaceDocs: Document[];
+    projectGroups: { project: Project; docs: Document[] }[];
+  }>(() => {
+    const roots = this.store.tree();
+    const workspaceDocs: Document[] = [];
+    const byProject = new Map<string, Document[]>();
+    for (const doc of roots) {
+      if (!doc.projectId) {
+        workspaceDocs.push(doc);
+      } else {
+        const list = byProject.get(doc.projectId) ?? [];
+        list.push(doc);
+        byProject.set(doc.projectId, list);
+      }
+    }
+    const projectMap = this.projectStore.byId();
+    const projectGroups: { project: Project; docs: Document[] }[] = [];
+    for (const [projectId, docs] of byProject) {
+      const project = projectMap[projectId] ?? this.placeholderProject(projectId);
+      projectGroups.push({ project, docs });
+    }
+    projectGroups.sort((a, b) => a.project.name.localeCompare(b.project.name));
+    return { workspaceDocs, projectGroups };
+  });
+
+  private placeholderProject(projectId: string): Project {
+    return {
+      id: projectId,
+      name: 'Project',
+      key: '',
+      status: 'active',
+      workspaceId: '',
+    };
+  }
+
   ngOnInit(): void {
-    // React to ?projectId= changes (scope switching from sidebar / project page).
+    // Force the initial load unconditionally. The subscribe below handles
+    // *subsequent* query-param changes (scope switching from the project page,
+    // back/forward, etc). Doing both ensures the tree is always fetched even
+    // when ActivatedRoute's first emit is suppressed or coincides with the
+    // signal's default value.
+    const snapshotRaw = this.route.snapshot.queryParamMap?.get('projectId') ?? null;
+    const initialPid = snapshotRaw && snapshotRaw.length > 0 ? snapshotRaw : null;
+    this.projectId.set(initialPid);
+    this.reloadTree();
+
     this.querySub = this.route.queryParamMap.subscribe(params => {
       const raw = params.get('projectId');
       const next = raw && raw.length > 0 ? raw : null;
@@ -292,13 +430,53 @@ export class DocsComponent implements OnInit, OnDestroy {
 
   private reloadTree(): void {
     const pid = this.projectId();
-    this.store.loadTree(pid ?? undefined).catch(() => {
-      this.toast.error('Failed to load documents');
-    });
+    this.store
+      .loadTree(pid ?? undefined)
+      .then(() => this.hydrateMissingProjects())
+      .catch(() => this.toast.error('Failed to load documents'));
+  }
+
+  /**
+   * Ensures every projectId referenced by the loaded tree exists in
+   * `ProjectStore`. Without this, docs whose project wasn't part of the
+   * initial workspace hydrate would be grouped under a placeholder forever.
+   */
+  private hydrateMissingProjects(): void {
+    const known = this.projectStore.byId();
+    const missing = new Set<string>();
+    const walk = (nodes: Document[]): void => {
+      for (const n of nodes) {
+        if (n.projectId && !known[n.projectId]) missing.add(n.projectId);
+        if (n.children?.length) walk(n.children);
+      }
+    };
+    walk(this.store.tree());
+    for (const id of missing) {
+      this.projectStore.loadById(id).catch(() => {
+        // Swallow — the placeholder in groupedTree keeps the doc visible.
+      });
+    }
   }
 
   protected clearProjectScope(): void {
     void this.router.navigate(['/docs']);
+  }
+
+  protected isProjectCollapsed(projectId: string): boolean {
+    return this.collapsedProjects().has(projectId);
+  }
+
+  protected toggleProject(projectId: string): void {
+    this.collapsedProjects.update((current) => {
+      const next = new Set(current);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
+  }
+
+  protected enterProjectScope(projectId: string): void {
+    void this.router.navigate(['/docs'], { queryParams: { projectId } });
   }
 
   protected onSearchInput(event: Event): void {

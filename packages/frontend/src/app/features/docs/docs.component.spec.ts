@@ -2,11 +2,13 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { DocsComponent } from './docs.component';
 import { DocumentStore } from '../../stores/document.store';
+import { ProjectStore } from '../../stores/project.store';
 import { ToastService } from '../../core/toast/toast.service';
 import { Document } from '../../stores/document-api.service';
+import { Project } from '../../stores/project-api.service';
 
 function makeDoc(over: Partial<Document> = {}): Document {
   return {
@@ -43,7 +45,11 @@ describe('DocsComponent', () => {
     search: ReturnType<typeof vi.fn>;
   };
   let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
-  let routerMock: { navigate: ReturnType<typeof vi.fn>; events: Subject<unknown> };
+  let routerMock: { navigate: ReturnType<typeof vi.fn>; events: Subject<unknown>; url: string };
+  let projectStoreMock: {
+    items: ReturnType<typeof signal<Project[]>>;
+    byId: ReturnType<typeof signal<Record<string, Project>>>;
+  };
 
   beforeEach(() => {
     storeMock = {
@@ -58,11 +64,20 @@ describe('DocsComponent', () => {
       search: vi.fn().mockResolvedValue([]),
     };
     toastMock = { success: vi.fn(), error: vi.fn() };
-    routerMock = { navigate: vi.fn(), events: new Subject<unknown>() };
+    routerMock = {
+      navigate: vi.fn().mockResolvedValue(true),
+      events: new Subject<unknown>(),
+      url: '/docs',
+    };
+    projectStoreMock = {
+      items: signal<Project[]>([]),
+      byId: signal<Record<string, Project>>({}),
+    };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: DocumentStore, useValue: storeMock },
+        { provide: ProjectStore, useValue: projectStoreMock },
         { provide: ToastService, useValue: toastMock },
         { provide: Router, useValue: routerMock },
         {
@@ -70,6 +85,7 @@ describe('DocsComponent', () => {
           useValue: {
             firstChild: null,
             children: [],
+            queryParamMap: of({ get: (_k: string) => null }),
             snapshot: { paramMap: { get: () => null } },
           },
         },
@@ -109,7 +125,7 @@ describe('DocsComponent', () => {
       selectDoc: (id: string) => void;
     };
     comp.selectDoc('abc');
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'abc']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'abc'], undefined);
   });
 
   it('creates an editable Untitled page immediately without a native prompt', async () => {
@@ -122,8 +138,12 @@ describe('DocsComponent', () => {
     await comp.createDoc(null);
 
     expect(promptSpy).not.toHaveBeenCalled();
-    expect(storeMock.create).toHaveBeenCalledWith({ title: 'Untitled', parentId: null });
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'new1']);
+    expect(storeMock.create).toHaveBeenCalledWith({
+      title: 'Untitled',
+      parentId: null,
+      projectId: null,
+    });
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'new1'], undefined);
     expect(toastMock.success).toHaveBeenCalledWith('Page created');
   });
 
@@ -136,7 +156,7 @@ describe('DocsComponent', () => {
     comp.onTreeAction({ type: 'rename', doc: makeDoc({ id: 'rename-me' }) });
 
     expect(promptSpy).not.toHaveBeenCalled();
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'rename-me']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'rename-me'], undefined);
   });
 
   it('can expose the page navigation drawer on small screens', () => {
@@ -181,7 +201,7 @@ describe('DocsComponent', () => {
       onTreeAction: (e: { type: 'select'; doc: Document }) => void;
     };
     comp.onTreeAction({ type: 'select', doc: makeDoc({ id: 'pick' }) });
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'pick']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'pick'], undefined);
   });
 
   it('onDropped prevents move into own subtree', async () => {
@@ -197,6 +217,42 @@ describe('DocsComponent', () => {
 
     expect(storeMock.move).not.toHaveBeenCalled();
     expect(toastMock.error).toHaveBeenCalledWith('Cannot move a page into its own subtree');
+  });
+
+  it('groups docs by project in the root view', () => {
+    const project: Project = {
+      id: 'p1',
+      workspaceId: 'ws1',
+      name: 'Atlas',
+      slug: 'atlas',
+      description: null,
+      visibility: 'private',
+      ownerUserId: 'u1',
+      createdAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-01-01T00:00:00Z',
+    } as unknown as Project;
+
+    projectStoreMock.byId.set({ p1: project });
+    storeMock.tree.set([
+      makeDoc({ id: 'ws-doc', projectId: null, title: 'Workspace note' }),
+      makeDoc({ id: 'p-doc', projectId: 'p1', title: 'Atlas plan' }),
+    ]);
+
+    fixture.detectChanges();
+
+    const grouped = (
+      fixture.componentInstance as unknown as {
+        groupedTree: () => {
+          workspaceDocs: Document[];
+          projectGroups: { project: Project; docs: Document[] }[];
+        };
+      }
+    ).groupedTree();
+
+    expect(grouped.workspaceDocs.map(d => d.id)).toEqual(['ws-doc']);
+    expect(grouped.projectGroups).toHaveLength(1);
+    expect(grouped.projectGroups[0].project.id).toBe('p1');
+    expect(grouped.projectGroups[0].docs.map(d => d.id)).toEqual(['p-doc']);
   });
 
   it('onDropped delegates to store.move and reloads the tree', async () => {
