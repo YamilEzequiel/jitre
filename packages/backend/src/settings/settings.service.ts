@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { UserSetting } from './user-setting.entity';
 import { WorkspaceSetting } from './workspace-setting.entity';
 import { AiSetting } from './ai-setting.entity';
@@ -81,7 +82,9 @@ export class SettingsService {
       where: { userId, key, deletedAt: IsNull() },
     });
     if (existing) {
-      await this.userRepo.update(existing.id, { value });
+      await this.userRepo.update(existing.id, {
+        value,
+      } as QueryDeepPartialEntity<UserSetting>);
     } else {
       await this.userRepo.save(this.userRepo.create({ userId, key, value }));
     }
@@ -112,7 +115,9 @@ export class SettingsService {
       where: { workspaceId, key, deletedAt: IsNull() },
     });
     if (existing) {
-      await this.workspaceRepo.update(existing.id, { value });
+      await this.workspaceRepo.update(existing.id, {
+        value,
+      } as QueryDeepPartialEntity<WorkspaceSetting>);
     } else {
       await this.workspaceRepo.save(
         this.workspaceRepo.create({ workspaceId, key, value }),
@@ -161,7 +166,9 @@ export class SettingsService {
       where: { workspaceId, key, deletedAt: IsNull() },
     });
     if (existing) {
-      await this.aiRepo.update(existing.id, { value });
+      await this.aiRepo.update(existing.id, {
+        value,
+      } as QueryDeepPartialEntity<AiSetting>);
     } else {
       await this.aiRepo.save(
         this.aiRepo.create({ workspaceId, key, value }),
@@ -246,7 +253,9 @@ export class SettingsService {
       } as Record<string, unknown>,
     });
     if (existing) {
-      await this.notificationRepo.update(existing.id, { value });
+      await this.notificationRepo.update(existing.id, {
+        value,
+      } as QueryDeepPartialEntity<NotificationSetting>);
     } else {
       await this.notificationRepo.save(
         this.notificationRepo.create({ userId, workspaceId, key, value }),
