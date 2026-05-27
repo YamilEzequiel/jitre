@@ -3,5 +3,6 @@ export enum AiOperation {
   SUGGEST_SUBTASKS = 'SUGGEST_SUBTASKS',
   SUMMARY = 'SUMMARY',
   EMBED = 'EMBED',
+  GENERATE = 'GENERATE',
   OTHER = 'OTHER',
 }

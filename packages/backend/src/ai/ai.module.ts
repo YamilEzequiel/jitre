@@ -11,11 +11,18 @@ import { GeminiProvider } from './providers/gemini.provider';
 import { AnthropicProvider } from './providers/anthropic.provider';
 import { OpenAiProvider } from './providers/openai.provider';
 import { AI_PROVIDERS } from './providers/ai-provider.interface';
+import { AiGeneratorService } from './generator/ai-generator.service';
+import { AiGeneratorController } from './generator/ai-generator.controller';
 import { TaskModule } from '../task/task.module';
 import { CommentModule } from '../comment/comment.module';
+import { ProjectModule } from '../project/project.module';
+import { DocumentModule } from '../document/document.module';
 import { SettingsModule } from '../settings/settings.module';
+import { WorkspaceModule } from '../workspace/workspace.module';
 import { TaskService } from '../task/task.service';
 import { CommentService } from '../comment/comment.service';
+import { CaslAbilityFactory } from '../auth/casl/ability.factory';
+import { AbilityGuard } from '../auth/guards/ability.guard';
 import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.entity';
 
 @Global()
@@ -24,7 +31,10 @@ import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.ent
     TypeOrmModule.forFeature([AiUsageRecord, WorkspaceMembershipEntity]),
     TaskModule,
     CommentModule,
+    ProjectModule,
+    DocumentModule,
     SettingsModule,
+    WorkspaceModule,
   ],
   providers: [
     {
@@ -51,8 +61,11 @@ import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.ent
     },
     AiUsageService,
     AiService,
+    AiGeneratorService,
     AiQuotaGuard,
     AiUsageListener,
+    CaslAbilityFactory,
+    AbilityGuard,
     Logger,
     // String injection tokens for AiController (backward-compat with controller spec)
     {
@@ -64,7 +77,7 @@ import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.ent
       useExisting: CommentService,
     },
   ],
-  controllers: [AiController],
+  controllers: [AiController, AiGeneratorController],
   exports: [AiService, AiUsageService, AiQuotaGuard],
 })
 export class AiModule {}

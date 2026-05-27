@@ -12,6 +12,12 @@ export const AI_RATE_CARD: readonly RateCardEntry[] = [
   // Gemini (2025-Q4 rates)
   {
     provider: AiProvider.GEMINI,
+    model: 'gemini-2.0-flash',
+    pricePerMillionPromptTokens: 0.075,
+    pricePerMillionCompletionTokens: 0.3,
+  },
+  {
+    provider: AiProvider.GEMINI,
     model: 'gemini-2.0-flash-exp',
     pricePerMillionPromptTokens: 0.075,
     pricePerMillionCompletionTokens: 0.3,
