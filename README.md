@@ -114,3 +114,44 @@ Un-skip when Playwright + backend Docker harness are available.
 npm install -D @playwright/test -w @jitre/frontend
 npx playwright install
 ```
+
+---
+
+## Licencia
+
+Copyright © Yamil Lazzari. Todos los derechos reservados.
+
+Jitre se distribuye bajo la **[PolyForm Internal Use License 1.0.0](./LICENSE)** — una licencia *source-available* (no es OSS según OSI). En una línea: podés usarlo, modificarlo y estudiarlo libremente para uso interno de empresa o personal; no podés revenderlo, sublicenciarlo ni ofrecerlo como SaaS de terceros.
+
+### Permitido
+
+- **Uso interno en empresas:** desplegarlo y operarlo para tus propios proyectos, equipos y tiempos.
+- **Uso personal:** correrlo para uso personal, estudio, hobby, experimentación.
+- **Fork y modificación:** podés tocar el código para adaptarlo a tu uso interno o personal.
+
+### No permitido
+
+- **Reventa / SaaS de terceros:** vender Jitre (modificado o no), ofrecerlo como servicio gestionado, sublicenciarlo o redistribuirlo como producto comercial propio.
+- **Re-branding:** comercializarlo bajo otra marca o quitar los avisos de copyright.
+
+Texto legal completo en [`LICENSE`](./LICENSE). Para licencias comerciales distintas (reventa, OEM, SaaS, white-label) contactar al autor.
+
+---
+
+## Contribuciones
+
+Las contribuciones son bienvenidas, vía **Pull Request** y comentarios en issues.
+
+1. **Abrí un issue primero** si el cambio es grande (feature, refactor, nuevo módulo) — alineamos el enfoque antes de que codees.
+2. **PRs chicos y enfocados.** Commits convencionales, tests pasando, sin atribución de IA en los commits.
+3. **Comentá tu implementación en el PR.** Decisiones, tradeoffs, qué descartaste — facilita la review y ayuda a otros a aprender.
+
+### Cambios de UX
+
+La UX está pensada con un criterio específico (minimalista, AI-first, productividad). **No aceptamos PRs que cambien la UX a grandes rasgos** sin discusión previa: rediseños globales, restructuras de navegación, cambios de información architecture, sustitución del sistema de diseño, etc. → **abrir issue primero**.
+
+Sí son bienvenidos sin discusión previa: fixes de UI rotos, mejoras de accesibilidad, ajustes finos de copy/spacing, traducciones nuevas, micro-interacciones que no alteren el flow.
+
+### Sin garantía
+
+El software se entrega "AS IS", sin garantías de ningún tipo. El autor no se hace responsable de daños derivados de su uso (ver `LICENSE`).
