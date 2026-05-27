@@ -60,7 +60,7 @@ export const DEFAULT_VALUES: Record<string, unknown> = {
   'workspace.invite_only': false,
   // Fase 8 — Analytics
   'analytics.default_period': 'week',
-  'ai.gemini.model': 'gemini-1.5-pro',
+  'ai.gemini.model': 'gemini-2.5-flash',
   'ai.gemini.temperature': 0.7,
   'ai.enabled': false,
   // Fase 7

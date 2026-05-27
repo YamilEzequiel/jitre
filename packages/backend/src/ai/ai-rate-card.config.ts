@@ -9,7 +9,19 @@ export interface RateCardEntry {
 }
 
 export const AI_RATE_CARD: readonly RateCardEntry[] = [
-  // Gemini (2025-Q4 rates)
+  // Gemini (2026 rates — 2.5 series is current default)
+  {
+    provider: AiProvider.GEMINI,
+    model: 'gemini-2.5-flash',
+    pricePerMillionPromptTokens: 0.3,
+    pricePerMillionCompletionTokens: 2.5,
+  },
+  {
+    provider: AiProvider.GEMINI,
+    model: 'gemini-2.5-pro',
+    pricePerMillionPromptTokens: 1.25,
+    pricePerMillionCompletionTokens: 10.0,
+  },
   {
     provider: AiProvider.GEMINI,
     model: 'gemini-2.0-flash',
@@ -22,6 +34,7 @@ export const AI_RATE_CARD: readonly RateCardEntry[] = [
     pricePerMillionPromptTokens: 0.075,
     pricePerMillionCompletionTokens: 0.3,
   },
+  // gemini-1.5-pro kept for historical cost calculations on stored ai_usage rows
   {
     provider: AiProvider.GEMINI,
     model: 'gemini-1.5-pro',

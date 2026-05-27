@@ -47,9 +47,10 @@ interface AiUsagePointResponse {
 }
 
 const GEMINI_MODEL_OPTIONS = [
-  { label: 'Gemini 2.0 Flash (rápido, barato)', value: 'gemini-2.0-flash' },
-  { label: 'Gemini 2.0 Flash Exp', value: 'gemini-2.0-flash-exp' },
-  { label: 'Gemini 1.5 Pro (más capaz)', value: 'gemini-1.5-pro' },
+  { label: 'Gemini 2.5 Flash (recomendado — rápido y económico)', value: 'gemini-2.5-flash' },
+  { label: 'Gemini 2.5 Pro (más capaz, más caro)', value: 'gemini-2.5-pro' },
+  { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
+  { label: 'Gemini 2.0 Flash Exp (experimental)', value: 'gemini-2.0-flash-exp' },
 ];
 
 @Component({
@@ -192,7 +193,7 @@ const GEMINI_MODEL_OPTIONS = [
           <input
             type="checkbox"
             formControlName="enabled"
-            class="mt-0.5 h-4 w-4 rounded border-slate-300 bg-white text-violet-600 focus:ring-violet-500/40"
+            class="mt-0.5"
           />
           <span>
             <span class="block text-sm font-semibold text-slate-900">Habilitar funciones de IA</span>
@@ -248,7 +249,7 @@ export class AiSettingsPanelComponent implements OnInit {
 
   readonly form = this.fb.group({
     provider: ['GEMINI', Validators.required],
-    model: ['gemini-2.0-flash', Validators.required],
+    model: ['gemini-2.5-flash', Validators.required],
     dailyBudget: [5, [Validators.required, Validators.min(0.01)]],
     enabled: [false],
   });
@@ -285,7 +286,7 @@ export class AiSettingsPanelComponent implements OnInit {
     )
       .then(s => this.form.patchValue({
         provider: 'GEMINI',
-        model: s['ai.gemini.model'] ?? 'gemini-2.0-flash',
+        model: s['ai.gemini.model'] ?? 'gemini-2.5-flash',
         dailyBudget: s['ai.daily_budget_usd'] ?? 5,
         enabled: s['ai.enabled'] ?? false,
       }))

@@ -12,6 +12,36 @@ import {
 
 const EMBED_MODEL = 'text-embedding-004';
 
+/**
+ * Google retired several Gemini 1.x models. If a stored setting still points
+ * to one of these, transparently route the call to the modern equivalent so
+ * callers don't get a 404. Logged once per process so the caller knows the
+ * stored setting is stale and should be migrated.
+ */
+const DEPRECATED_MODEL_MAP: Record<string, string> = {
+  'gemini-1.5-pro': 'gemini-2.5-flash',
+  'gemini-1.5-pro-latest': 'gemini-2.5-flash',
+  'gemini-1.5-flash': 'gemini-2.5-flash',
+  'gemini-1.5-flash-latest': 'gemini-2.5-flash',
+  'gemini-pro': 'gemini-2.5-flash',
+};
+
+const warnedDeprecated = new Set<string>();
+
+function resolveModelName(requested: string): string {
+  const target = DEPRECATED_MODEL_MAP[requested];
+  if (!target) return requested;
+  if (!warnedDeprecated.has(requested)) {
+    warnedDeprecated.add(requested);
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[GeminiProvider] model "${requested}" is deprecated; routing to "${target}". ` +
+        `Update setting "ai.gemini.model" to a current model.`,
+    );
+  }
+  return target;
+}
+
 function mapErrorCode(err: { status?: number; message?: string }): {
   code: string;
   retryable: boolean;
@@ -46,15 +76,15 @@ export class GeminiProvider implements IAiProvider {
   private readonly genAI: GoogleGenerativeAI;
   private readonly defaultModel: string;
 
-  constructor(apiKey: string, defaultModel: string = 'gemini-2.0-flash-exp') {
+  constructor(apiKey: string, defaultModel: string = 'gemini-2.5-flash') {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.defaultModel = defaultModel;
+    this.defaultModel = resolveModelName(defaultModel);
   }
 
   async generateCompletion(
     req: AiCompletionRequest,
   ): Promise<AiCompletionResponse> {
-    const modelName = req.model ?? this.defaultModel;
+    const modelName = resolveModelName(req.model ?? this.defaultModel);
     const responseMimeType =
       req.responseFormat === 'json' ? 'application/json' : 'text/plain';
 
@@ -114,7 +144,7 @@ export class GeminiProvider implements IAiProvider {
   async *generateStream(
     req: AiCompletionRequest,
   ): AsyncIterable<AiStreamChunk> {
-    const modelName = req.model ?? this.defaultModel;
+    const modelName = resolveModelName(req.model ?? this.defaultModel);
     const model = this.genAI.getGenerativeModel({ model: modelName });
 
     const result = await model.generateContentStream({
