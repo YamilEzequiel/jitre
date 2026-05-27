@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { SearchController } from './search.controller';
@@ -41,13 +40,11 @@ describe('SearchController', () => {
     controller = module.get(SearchController);
   });
 
-  it('returns workspace-scoped search hits', async () => {
-    const result = await controller.search({
-      workspaceId: 'W1',
-      q: 'hello',
-      page: 1,
-      pageSize: 20,
-    });
+  it('returns workspace-scoped search hits using workspace from header', async () => {
+    const result = await controller.search(
+      { q: 'hello', page: 1, pageSize: 20 },
+      'W1',
+    );
     expect(result.items).toHaveLength(1);
     expect(searchService.search).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceId: 'W1', query: 'hello' }),
@@ -56,10 +53,7 @@ describe('SearchController', () => {
 
   describe('SearchQueryDto validation', () => {
     it('rejects empty q string', async () => {
-      const dto = plainToInstance(SearchQueryDto, {
-        workspaceId: 'aad0c2d4-6f07-42c9-ba31-3f92b3b8d000',
-        q: '',
-      });
+      const dto = plainToInstance(SearchQueryDto, { q: '' });
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
       const qError = errors.find((e) => e.property === 'q');
@@ -67,27 +61,20 @@ describe('SearchController', () => {
     });
 
     it('rejects q longer than 200 chars', async () => {
-      const dto = plainToInstance(SearchQueryDto, {
-        workspaceId: 'aad0c2d4-6f07-42c9-ba31-3f92b3b8d000',
-        q: 'a'.repeat(201),
-      });
+      const dto = plainToInstance(SearchQueryDto, { q: 'a'.repeat(201) });
       const errors = await validate(dto);
       const qError = errors.find((e) => e.property === 'q');
       expect(qError).toBeDefined();
     });
 
     it('accepts valid dto', async () => {
-      const dto = plainToInstance(SearchQueryDto, {
-        workspaceId: 'aad0c2d4-6f07-42c9-ba31-3f92b3b8d000',
-        q: 'hello',
-      });
+      const dto = plainToInstance(SearchQueryDto, { q: 'hello' });
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
     });
 
     it('accepts document as a searchable entity type', async () => {
       const dto = plainToInstance(SearchQueryDto, {
-        workspaceId: 'aad0c2d4-6f07-42c9-ba31-3f92b3b8d000',
         q: 'runbook',
         type: 'document',
       });

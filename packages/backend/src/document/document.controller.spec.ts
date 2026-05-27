@@ -95,6 +95,7 @@ describe('DocumentController', () => {
       expect(mockService.create).toHaveBeenCalledWith({
         workspaceId: 'W1',
         actorUserId: 'U1',
+        isWorkspaceAdmin: false,
         title: 'Spec page',
         projectId: 'P1',
         parentId: 'D0',
@@ -131,6 +132,8 @@ describe('DocumentController', () => {
 
       expect(mockService.list).toHaveBeenCalledWith({
         workspaceId: 'W1',
+        actorUserId: 'U1',
+        isWorkspaceAdmin: false,
         projectId: 'P1',
         parentId: null,
         q: 'design',
@@ -154,7 +157,7 @@ describe('DocumentController', () => {
         makeReq() as Parameters<typeof controller.tree>[1],
       );
 
-      expect(mockService.tree).toHaveBeenCalledWith('W1', null);
+      expect(mockService.tree).toHaveBeenCalledWith('W1', null, 'U1', false);
     });
 
     it('passes a real project id straight through', async () => {
@@ -165,7 +168,7 @@ describe('DocumentController', () => {
         makeReq() as Parameters<typeof controller.tree>[1],
       );
 
-      expect(mockService.tree).toHaveBeenCalledWith('W1', 'P1');
+      expect(mockService.tree).toHaveBeenCalledWith('W1', 'P1', 'U1', false);
     });
 
     it('passes undefined when no projectId query is provided', async () => {
@@ -176,7 +179,20 @@ describe('DocumentController', () => {
         makeReq() as Parameters<typeof controller.tree>[1],
       );
 
-      expect(mockService.tree).toHaveBeenCalledWith('W1', undefined);
+      expect(mockService.tree).toHaveBeenCalledWith('W1', undefined, 'U1', false);
+    });
+
+    it('flags workspace OWNER/ADMIN so the service can bypass project scoping', async () => {
+      mockService.tree.mockResolvedValueOnce([]);
+
+      await controller.tree(
+        undefined,
+        makeReq({
+          workspace: { id: 'W1', role: WorkspaceRole.ADMIN },
+        }) as Parameters<typeof controller.tree>[1],
+      );
+
+      expect(mockService.tree).toHaveBeenCalledWith('W1', undefined, 'U1', true);
     });
 
     it('serializes tree nodes as nested documents for the frontend contract', async () => {
@@ -205,7 +221,7 @@ describe('DocumentController', () => {
         'D7',
         makeReq() as Parameters<typeof controller.findOne>[1],
       );
-      expect(mockService.findOne).toHaveBeenCalledWith('D7', 'W1');
+      expect(mockService.findOne).toHaveBeenCalledWith('D7', 'W1', 'U1', false);
       expect((result as { id: string }).id).toBe('D7');
     });
 
@@ -240,6 +256,7 @@ describe('DocumentController', () => {
         id: 'D1',
         workspaceId: 'W1',
         actorUserId: 'U1',
+        isWorkspaceAdmin: false,
         title: 'Renamed',
         content: undefined,
         icon: undefined,
@@ -261,6 +278,7 @@ describe('DocumentController', () => {
         id: 'D1',
         workspaceId: 'W1',
         actorUserId: 'U1',
+        isWorkspaceAdmin: false,
         parentId: 'D9',
         order: 3,
       });
@@ -293,7 +311,7 @@ describe('DocumentController', () => {
         'D1',
         makeReq() as Parameters<typeof controller.remove>[1],
       );
-      expect(mockService.remove).toHaveBeenCalledWith('D1', 'W1', 'U1');
+      expect(mockService.remove).toHaveBeenCalledWith('D1', 'W1', 'U1', false);
     });
   });
 });

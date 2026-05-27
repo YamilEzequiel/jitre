@@ -110,8 +110,9 @@ describe('Search indexing (e2e)', () => {
 
     it('GET /search returns workspace-scoped results', async () => {
       const res = await request(app.getHttpServer())
-        .get(`/api/v1/search?workspaceId=${workspaceId}&q=jitre`)
+        .get(`/api/v1/search?q=jitre`)
         .set('Authorization', `Bearer ${ownerToken}`)
+        .set('x-workspace-id', workspaceId)
         .expect((r) => {
           // 200 if index ran; 200 with empty results if processor hasn't run yet
           expect([200]).toContain(r.status);
@@ -126,15 +127,17 @@ describe('Search indexing (e2e)', () => {
     it('GET /search rejects cross-workspace access', async () => {
       const otherWsId = '00000000-0000-0000-0000-000000000001';
       await request(app.getHttpServer())
-        .get(`/api/v1/search?workspaceId=${otherWsId}&q=test`)
+        .get(`/api/v1/search?q=test`)
         .set('Authorization', `Bearer ${ownerToken}`)
+        .set('x-workspace-id', otherWsId)
         .expect(403);
     });
 
     it('GET /search rejects empty query', async () => {
       await request(app.getHttpServer())
-        .get(`/api/v1/search?workspaceId=${workspaceId}&q=`)
+        .get(`/api/v1/search?q=`)
         .set('Authorization', `Bearer ${ownerToken}`)
+        .set('x-workspace-id', workspaceId)
         .expect(400);
     });
   });

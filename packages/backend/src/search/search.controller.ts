@@ -8,6 +8,7 @@ import {
 import { SearchService } from './search.service';
 import { SearchResult } from './search-engine.interface';
 import { SearchQueryDto } from './dto/search-query.dto';
+import { CurrentWorkspace } from '../auth/decorators/current-workspace.decorator';
 
 @ApiTags('search')
 @ApiBearerAuth('access-token')
@@ -20,9 +21,12 @@ export class SearchController {
   @ApiResponse({ status: 400, description: 'Invalid query parameters.' })
   @ApiResponse({ status: 403, description: 'Not a workspace member.' })
   @Get()
-  async search(@Query() dto: SearchQueryDto): Promise<SearchResult> {
+  async search(
+    @Query() dto: SearchQueryDto,
+    @CurrentWorkspace() workspaceId: string,
+  ): Promise<SearchResult> {
     return this.searchService.search({
-      workspaceId: dto.workspaceId,
+      workspaceId,
       query: dto.q,
       entityType: dto.type,
       page: dto.page,

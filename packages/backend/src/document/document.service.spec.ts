@@ -1,12 +1,17 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   DocumentService,
   extractPlainText,
 } from './document.service';
 import { DocumentEntity } from './document.entity';
 import { EventBusService } from '../events/event-bus.service';
+import { ProjectMembershipService } from '../project/project-membership/project-membership.service';
 
 function makeDoc(overrides: Partial<DocumentEntity> = {}): DocumentEntity {
   return {
@@ -42,6 +47,11 @@ const mockRepo = {
 };
 
 const mockEventBus = { publish: jest.fn() };
+
+const mockMembership = {
+  findMembership: jest.fn(),
+  findProjectIdsForUser: jest.fn(),
+};
 
 function makeQb() {
   const qb = {
@@ -99,11 +109,14 @@ describe('DocumentService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockMembership.findMembership.mockResolvedValue({ id: 'MEM' });
+    mockMembership.findProjectIdsForUser.mockResolvedValue([]);
     const module = await Test.createTestingModule({
       providers: [
         DocumentService,
         { provide: getRepositoryToken(DocumentEntity), useValue: mockRepo },
         { provide: EventBusService, useValue: mockEventBus },
+        { provide: ProjectMembershipService, useValue: mockMembership },
       ],
     }).compile();
 
@@ -172,20 +185,41 @@ describe('DocumentService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('forbids creating a project-scoped doc when the actor is not a member', async () => {
+      mockMembership.findMembership.mockResolvedValueOnce(null);
+
+      await expect(
+        service.create({
+          workspaceId: 'W1',
+          actorUserId: 'OUTSIDER',
+          title: 'Sneaky',
+          projectId: 'P1',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 
   // ── findOne() ─────────────────────────────────────────────────────────────
   describe('findOne()', () => {
     it('returns the document when present', async () => {
       mockRepo.findOne.mockResolvedValueOnce(makeDoc());
-      const doc = await service.findOne('D1', 'W1');
+      const doc = await service.findOne('D1', 'W1', 'U1');
       expect(doc.id).toBe('D1');
     });
 
     it('throws NotFoundException otherwise', async () => {
       mockRepo.findOne.mockResolvedValueOnce(null);
-      await expect(service.findOne('Z', 'W1')).rejects.toThrow(
+      await expect(service.findOne('Z', 'W1', 'U1')).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('forbids access when the doc belongs to a project the actor is not a member of', async () => {
+      mockRepo.findOne.mockResolvedValueOnce(makeDoc({ projectId: 'P1' }));
+      mockMembership.findMembership.mockResolvedValueOnce(null);
+      await expect(service.findOne('D1', 'W1', 'OUTSIDER')).rejects.toThrow(
+        ForbiddenException,
       );
     });
   });
@@ -390,7 +424,7 @@ describe('DocumentService', () => {
       mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
       qb.getMany.mockResolvedValueOnce([makeDoc()]);
 
-      await service.list({ workspaceId: 'W1' });
+      await service.list({ workspaceId: 'W1', actorUserId: 'U1' });
 
       expect(qb.where).toHaveBeenCalledWith('d.workspaceId = :workspaceId', {
         workspaceId: 'W1',
@@ -402,7 +436,7 @@ describe('DocumentService', () => {
       const qb = makeQb();
       mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
 
-      await service.list({ workspaceId: 'W1', parentId: null });
+      await service.list({ workspaceId: 'W1', actorUserId: 'U1', parentId: null });
 
       expect(qb.andWhere).toHaveBeenCalledWith('d.parentId IS NULL');
     });
@@ -411,33 +445,43 @@ describe('DocumentService', () => {
       const qb = makeQb();
       mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
 
-      await service.list({ workspaceId: 'W1', parentId: 'P1' });
+      await service.list({ workspaceId: 'W1', actorUserId: 'U1', parentId: 'P1' });
 
       expect(qb.andWhere).toHaveBeenCalledWith('d.parentId = :parentId', {
         parentId: 'P1',
       });
     });
 
-    it('applies projectId filter when provided', async () => {
+    it('applies projectId filter when actor is a member', async () => {
       const qb = makeQb();
       mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      mockMembership.findMembership.mockResolvedValueOnce({ id: 'MEM' });
 
-      await service.list({ workspaceId: 'W1', projectId: 'P1' });
+      await service.list({ workspaceId: 'W1', actorUserId: 'U1', projectId: 'P1' });
 
       expect(qb.andWhere).toHaveBeenCalledWith('d.projectId = :projectId', {
         projectId: 'P1',
       });
     });
 
+    it('forbids list when projectId is provided but actor is not a member', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      mockMembership.findMembership.mockResolvedValueOnce(null);
+
+      await expect(
+        service.list({ workspaceId: 'W1', actorUserId: 'U1', projectId: 'P1' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('applies free-text search when q is provided', async () => {
       const qb = makeQb();
       mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
 
-      await service.list({ workspaceId: 'W1', q: 'design' });
+      await service.list({ workspaceId: 'W1', actorUserId: 'U1', q: 'design' });
 
       // The Brackets call cannot be matched literally — assert that andWhere
-      // was called with an extra "search" group (3rd andWhere on top of the
-      // baseline two).
+      // was called with an extra "search" group.
       expect(qb.andWhere).toHaveBeenCalled();
     });
   });
@@ -445,8 +489,11 @@ describe('DocumentService', () => {
   // ── tree() ────────────────────────────────────────────────────────────────
   describe('tree()', () => {
     it('returns an empty array when no documents exist', async () => {
-      mockRepo.find.mockResolvedValueOnce([]);
-      const result = await service.tree('W1');
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce([]);
+
+      const result = await service.tree('W1', undefined, 'U1');
       expect(result).toEqual([]);
     });
 
@@ -457,9 +504,11 @@ describe('DocumentService', () => {
         makeDoc({ id: 'C', parentId: 'A', order: 1 }),
         makeDoc({ id: 'D', parentId: 'B', order: 0 }),
       ];
-      mockRepo.find.mockResolvedValueOnce(docs);
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce(docs);
 
-      const tree = await service.tree('W1');
+      const tree = await service.tree('W1', undefined, 'U1');
 
       expect(tree).toHaveLength(1);
       expect(tree[0].document.id).toBe('A');
@@ -470,11 +519,82 @@ describe('DocumentService', () => {
 
     it('treats orphan documents (parent missing) as roots', async () => {
       const docs = [makeDoc({ id: 'ORPH', parentId: 'MISSING' })];
-      mockRepo.find.mockResolvedValueOnce(docs);
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce(docs);
 
-      const tree = await service.tree('W1');
+      const tree = await service.tree('W1', undefined, 'U1');
       expect(tree).toHaveLength(1);
       expect(tree[0].document.id).toBe('ORPH');
+    });
+
+    it('restricts to workspace-level docs only when projectId === null', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce([]);
+
+      await service.tree('W1', null, 'U1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('d.projectId IS NULL');
+      expect(mockMembership.findProjectIdsForUser).not.toHaveBeenCalled();
+    });
+
+    it('forbids tree access when projectId is provided and actor is not a member', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      mockMembership.findMembership.mockResolvedValueOnce(null);
+
+      await expect(service.tree('W1', 'P1', 'U1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('workspace admin bypasses membership scoping in the unscoped view', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce([]);
+
+      await service.tree('W1', undefined, 'ADMIN_USER', true);
+
+      expect(mockMembership.findProjectIdsForUser).not.toHaveBeenCalled();
+      // No project filter added — workspace admin sees every doc.
+      expect(qb.andWhere).not.toHaveBeenCalledWith('d.projectId IS NULL');
+    });
+
+    it('workspace admin can fetch a project tree without explicit membership', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce([]);
+
+      await service.tree('W1', 'P1', 'ADMIN_USER', true);
+
+      expect(mockMembership.findMembership).not.toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith('d.projectId = :projectId', {
+        projectId: 'P1',
+      });
+    });
+
+    it('filters to workspace docs only when actor has no project memberships', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce([]);
+      mockMembership.findProjectIdsForUser.mockResolvedValueOnce([]);
+
+      await service.tree('W1', undefined, 'U1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('d.projectId IS NULL');
+    });
+
+    it('includes docs from member projects in the unscoped view', async () => {
+      const qb = makeQb();
+      mockRepo.createQueryBuilder.mockReturnValueOnce(qb);
+      qb.getMany.mockResolvedValueOnce([]);
+      mockMembership.findProjectIdsForUser.mockResolvedValueOnce(['P1', 'P2']);
+
+      await service.tree('W1', undefined, 'U1');
+
+      // The Brackets wrapper can't be matched literally; assert membership was checked.
+      expect(mockMembership.findProjectIdsForUser).toHaveBeenCalledWith('W1', 'U1');
     });
   });
 });

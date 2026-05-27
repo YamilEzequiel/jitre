@@ -1,10 +1,8 @@
 import {
   IsIn,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -14,9 +12,6 @@ import { Type } from 'class-transformer';
 import { SearchEntityType } from '../search-engine.interface';
 
 export class SearchQueryDto {
-  @IsUUID()
-  workspaceId!: string;
-
   @IsString()
   @MinLength(1)
   @MaxLength(200)

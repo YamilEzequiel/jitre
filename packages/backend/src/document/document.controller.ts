@@ -24,6 +24,11 @@ import { AbilityGuard } from '../auth/guards/ability.guard';
 import { RequireAbility } from '../auth/decorators/require-ability.decorator';
 import type { AppAbility } from '../auth/casl/ability.types';
 import { DocumentService, DocumentTreeNode } from './document.service';
+
+/** OWNER and ADMIN bypass project-level scoping (CASL grants 'manage all'). */
+function isWorkspaceAdmin(role: WorkspaceRole | undefined): boolean {
+  return role === WorkspaceRole.OWNER || role === WorkspaceRole.ADMIN;
+}
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { MoveDocumentDto } from './dto/move-document.dto';
@@ -51,7 +56,12 @@ export class DocumentController {
   ): Promise<unknown> {
     const project =
       projectId === 'null' || projectId === '' ? null : projectId;
-    const nodes = await this.documentService.tree(req.workspace!.id, project);
+    const nodes = await this.documentService.tree(
+      req.workspace!.id,
+      project,
+      req.user!.id,
+      isWorkspaceAdmin(req.workspace!.role),
+    );
     return nodes.map((node) => this.toTreeDocument(node));
   }
 
@@ -72,6 +82,8 @@ export class DocumentController {
   ): Promise<unknown> {
     return this.documentService.list({
       workspaceId: req.workspace!.id,
+      actorUserId: req.user!.id,
+      isWorkspaceAdmin: isWorkspaceAdmin(req.workspace!.role),
       projectId: dto.projectId,
       parentId: dto.parentId,
       q: dto.q,
@@ -87,7 +99,12 @@ export class DocumentController {
     @Param('id') id: string,
     @Req() req: AuthRequest,
   ): Promise<unknown> {
-    return this.documentService.findOne(id, req.workspace!.id);
+    return this.documentService.findOne(
+      id,
+      req.workspace!.id,
+      req.user!.id,
+      isWorkspaceAdmin(req.workspace!.role),
+    );
   }
 
   @ApiOperation({ summary: 'Create a document' })
@@ -102,6 +119,7 @@ export class DocumentController {
     return this.documentService.create({
       workspaceId: req.workspace!.id,
       actorUserId: req.user!.id,
+      isWorkspaceAdmin: isWorkspaceAdmin(req.workspace!.role),
       title: dto.title,
       projectId: dto.projectId ?? null,
       parentId: dto.parentId ?? null,
@@ -125,6 +143,7 @@ export class DocumentController {
       id,
       workspaceId: req.workspace!.id,
       actorUserId: req.user!.id,
+      isWorkspaceAdmin: isWorkspaceAdmin(req.workspace!.role),
       title: dto.title,
       content: dto.content,
       icon: dto.icon,
@@ -149,6 +168,7 @@ export class DocumentController {
       id,
       workspaceId: req.workspace!.id,
       actorUserId: req.user!.id,
+      isWorkspaceAdmin: isWorkspaceAdmin(req.workspace!.role),
       parentId: dto.parentId,
       order: dto.order,
     });
@@ -163,6 +183,11 @@ export class DocumentController {
     @Param('id') id: string,
     @Req() req: AuthRequest,
   ): Promise<void> {
-    await this.documentService.remove(id, req.workspace!.id, req.user!.id);
+    await this.documentService.remove(
+      id,
+      req.workspace!.id,
+      req.user!.id,
+      isWorkspaceAdmin(req.workspace!.role),
+    );
   }
 }

@@ -1,13 +1,15 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, IsNull, Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { DocumentEntity } from './document.entity';
 import { EventBusService } from '../events/event-bus.service';
+import { ProjectMembershipService } from '../project/project-membership/project-membership.service';
 import {
   DocumentCreatedEvent,
   DocumentUpdatedEvent,
@@ -17,6 +19,8 @@ import {
 export interface CreateDocumentInput {
   workspaceId: string;
   actorUserId: string;
+  /** OWNER / ADMIN bypass project membership scoping. */
+  isWorkspaceAdmin?: boolean;
   title: string;
   projectId?: string | null;
   parentId?: string | null;
@@ -29,6 +33,7 @@ export interface UpdateDocumentInput {
   id: string;
   workspaceId: string;
   actorUserId: string;
+  isWorkspaceAdmin?: boolean;
   title?: string;
   content?: Record<string, unknown>;
   icon?: string | null;
@@ -39,12 +44,20 @@ export interface MoveDocumentInput {
   id: string;
   workspaceId: string;
   actorUserId: string;
+  isWorkspaceAdmin?: boolean;
   parentId?: string | null;
   order?: number;
 }
 
 export interface ListDocumentsInput {
   workspaceId: string;
+  actorUserId: string;
+  /**
+   * When true, the actor (workspace OWNER or ADMIN) bypasses project membership
+   * scoping and sees every doc in the workspace. CASL grants 'manage all' to
+   * these roles — the service mirrors that authority.
+   */
+  isWorkspaceAdmin?: boolean;
   projectId?: string;
   /** undefined → no filter, null → roots only, string → that parent's children */
   parentId?: string | null;
@@ -87,7 +100,19 @@ export class DocumentService {
     @InjectRepository(DocumentEntity)
     private readonly docRepo: Repository<DocumentEntity>,
     private readonly eventBus: EventBusService,
+    private readonly projectMembership: ProjectMembershipService,
   ) {}
+
+  /**
+   * Returns the project IDs visible to the actor inside this workspace.
+   * Used to scope tree/list/findOne to docs the actor can actually read.
+   */
+  private async visibleProjectIds(
+    workspaceId: string,
+    actorUserId: string,
+  ): Promise<string[]> {
+    return this.projectMembership.findProjectIdsForUser(workspaceId, actorUserId);
+  }
 
   async create(input: CreateDocumentInput): Promise<DocumentEntity> {
     const {
@@ -112,6 +137,17 @@ export class DocumentService {
       // would mix scopes and break access checks.
       if ((parent.projectId ?? null) !== (projectId ?? null)) {
         throw new BadRequestException('PARENT_PROJECT_MISMATCH');
+      }
+    }
+
+    if (projectId && !input.isWorkspaceAdmin) {
+      const membership = await this.projectMembership.findMembership(
+        projectId,
+        workspaceId,
+        actorUserId,
+      );
+      if (!membership) {
+        throw new ForbiddenException('PROJECT_MEMBERSHIP_REQUIRED');
       }
     }
 
@@ -154,10 +190,25 @@ export class DocumentService {
     return saved;
   }
 
-  async findOne(id: string, workspaceId: string): Promise<DocumentEntity> {
+  async findOne(
+    id: string,
+    workspaceId: string,
+    actorUserId?: string,
+    isWorkspaceAdmin = false,
+  ): Promise<DocumentEntity> {
     const doc = await this.docRepo.findOne({ where: { id, workspaceId } });
     if (!doc) {
       throw new NotFoundException('DOCUMENT_NOT_FOUND');
+    }
+    if (doc.projectId && actorUserId && !isWorkspaceAdmin) {
+      const membership = await this.projectMembership.findMembership(
+        doc.projectId,
+        workspaceId,
+        actorUserId,
+      );
+      if (!membership) {
+        throw new ForbiddenException('PROJECT_MEMBERSHIP_REQUIRED');
+      }
     }
     return doc;
   }
@@ -165,7 +216,12 @@ export class DocumentService {
   async update(input: UpdateDocumentInput): Promise<DocumentEntity> {
     const { id, workspaceId, actorUserId, title, content, icon, order } = input;
 
-    const doc = await this.findOne(id, workspaceId);
+    const doc = await this.findOne(
+      id,
+      workspaceId,
+      actorUserId,
+      input.isWorkspaceAdmin,
+    );
     const changes: Record<string, unknown> = {};
 
     if (title !== undefined && title !== doc.title) {
@@ -225,7 +281,12 @@ export class DocumentService {
   async move(input: MoveDocumentInput): Promise<DocumentEntity> {
     const { id, workspaceId, actorUserId, parentId, order } = input;
 
-    const doc = await this.findOne(id, workspaceId);
+    const doc = await this.findOne(
+      id,
+      workspaceId,
+      actorUserId,
+      input.isWorkspaceAdmin,
+    );
 
     if (parentId !== undefined) {
       if (parentId === id) {
@@ -296,8 +357,13 @@ export class DocumentService {
    * `deletedAt` is consistent across the whole branch. This matches Notion-like
    * UX where deleting a parent page archives its sub-pages too.
    */
-  async remove(id: string, workspaceId: string, actorUserId: string): Promise<void> {
-    const doc = await this.findOne(id, workspaceId);
+  async remove(
+    id: string,
+    workspaceId: string,
+    actorUserId: string,
+    isWorkspaceAdmin = false,
+  ): Promise<void> {
+    const doc = await this.findOne(id, workspaceId, actorUserId, isWorkspaceAdmin);
 
     // Collect the subtree using BFS to support arbitrary nesting.
     const subtreeIds: string[] = [doc.id];
@@ -333,14 +399,39 @@ export class DocumentService {
   }
 
   async list(input: ListDocumentsInput): Promise<DocumentEntity[]> {
-    const { workspaceId, projectId, parentId, q } = input;
+    const { workspaceId, actorUserId, projectId, parentId, q } = input;
+    const isWorkspaceAdmin = input.isWorkspaceAdmin === true;
 
     const qb = this.docRepo
       .createQueryBuilder('d')
       .where('d.workspaceId = :workspaceId', { workspaceId });
 
     if (projectId !== undefined) {
+      if (!isWorkspaceAdmin) {
+        const membership = await this.projectMembership.findMembership(
+          projectId,
+          workspaceId,
+          actorUserId,
+        );
+        if (!membership) {
+          throw new ForbiddenException('PROJECT_MEMBERSHIP_REQUIRED');
+        }
+      }
       qb.andWhere('d.projectId = :projectId', { projectId });
+    } else if (!isWorkspaceAdmin) {
+      const visibleIds = await this.visibleProjectIds(workspaceId, actorUserId);
+      if (visibleIds.length === 0) {
+        qb.andWhere('d.projectId IS NULL');
+      } else {
+        qb.andWhere(
+          new Brackets((b) => {
+            b.where('d.projectId IS NULL').orWhere(
+              'd.projectId IN (:...visibleIds)',
+              { visibleIds },
+            );
+          }),
+        );
+      }
     }
 
     if (parentId === null) {
@@ -369,22 +460,58 @@ export class DocumentService {
   /**
    * Return the full document tree for a workspace (optionally filtered by
    * project). Performed with a single query plus an in-memory assembly pass.
+   *
+   * Visibility rules:
+   * - `projectId === null` → workspace-level docs (no project) only.
+   * - `projectId === <uuid>` → that project only; actor must be a member.
+   * - `projectId === undefined` → workspace-level docs + every project the
+   *   actor is a member of.
    */
   async tree(
     workspaceId: string,
-    projectId?: string | null,
+    projectId: string | null | undefined,
+    actorUserId: string,
+    isWorkspaceAdmin = false,
   ): Promise<DocumentTreeNode[]> {
-    const where: Record<string, unknown> = { workspaceId };
-    if (projectId === null) {
-      where.projectId = IsNull();
-    } else if (typeof projectId === 'string') {
-      where.projectId = projectId;
-    }
+    const qb = this.docRepo
+      .createQueryBuilder('d')
+      .where('d.workspaceId = :workspaceId', { workspaceId });
 
-    const all = await this.docRepo.find({
-      where,
-      order: { order: 'ASC', createdAt: 'ASC' },
-    });
+    if (projectId === null) {
+      qb.andWhere('d.projectId IS NULL');
+    } else if (typeof projectId === 'string') {
+      if (!isWorkspaceAdmin) {
+        const membership = await this.projectMembership.findMembership(
+          projectId,
+          workspaceId,
+          actorUserId,
+        );
+        if (!membership) {
+          throw new ForbiddenException('PROJECT_MEMBERSHIP_REQUIRED');
+        }
+      }
+      qb.andWhere('d.projectId = :projectId', { projectId });
+    } else if (!isWorkspaceAdmin) {
+      const visibleIds = await this.visibleProjectIds(workspaceId, actorUserId);
+      if (visibleIds.length === 0) {
+        qb.andWhere('d.projectId IS NULL');
+      } else {
+        qb.andWhere(
+          new Brackets((b) => {
+            b.where('d.projectId IS NULL').orWhere(
+              'd.projectId IN (:...visibleIds)',
+              { visibleIds },
+            );
+          }),
+        );
+      }
+    }
+    // Workspace admins with projectId === undefined see every doc in the
+    // workspace (no project filter applied).
+
+    qb.orderBy('d.order', 'ASC').addOrderBy('d.createdAt', 'ASC');
+
+    const all = await qb.getMany();
 
     const nodes = new Map<string, DocumentTreeNode>();
     for (const doc of all) {
