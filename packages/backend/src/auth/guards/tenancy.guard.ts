@@ -1,13 +1,11 @@
 import {
   Injectable,
-  NestInterceptor,
+  CanActivate,
   ExecutionContext,
-  CallHandler,
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Observable, from, switchMap } from 'rxjs';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { SKIP_TENANCY_KEY } from '../decorators/skip-tenancy.decorator';
 import { WorkspaceService } from '../../workspace/workspace.service';
@@ -18,8 +16,14 @@ import type { WorkspaceRole } from '@jitre/shared';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Resolves the active workspace from the `x-workspace-id` header, validates
+ * the caller's membership, and seeds `RequestContext` with workspaceId, role
+ * and ability. Runs as a guard (after `JwtAuthGuard`) so any downstream guard
+ * — e.g. `AiQuotaGuard`, `AbilityGuard` — can rely on the context being set.
+ */
 @Injectable()
-export class TenancyInterceptor implements NestInterceptor {
+export class TenancyGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly workspaceService: WorkspaceService,
@@ -27,7 +31,7 @@ export class TenancyInterceptor implements NestInterceptor {
     private readonly abilityFactory: CaslAbilityFactory,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -38,15 +42,9 @@ export class TenancyInterceptor implements NestInterceptor {
     );
 
     if (isPublic || skipTenancy) {
-      return next.handle();
+      return true;
     }
 
-    return from(this.checkTenancy(context)).pipe(
-      switchMap(() => next.handle()),
-    );
-  }
-
-  private async checkTenancy(context: ExecutionContext): Promise<void> {
     const request = context.switchToHttp().getRequest<{
       headers: Record<string, string>;
       user?: { id: string };
@@ -83,8 +81,7 @@ export class TenancyInterceptor implements NestInterceptor {
     );
     this.requestContext.setAbility(ability);
 
-    // Expose workspace on the Request so controllers reading `req.workspace`
-    // (legacy style) work alongside ones using RequestContextService.
     request.workspace = { id: workspaceId, role };
+    return true;
   }
 }

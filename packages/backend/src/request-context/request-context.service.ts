@@ -29,7 +29,7 @@ export const RC_KEYS = {
  *
  * Used by:
  *   - `AuditSubscriber` to fill `createdBy` / `updatedBy`
- *   - `TenancyInterceptor` to apply the workspace scope
+ *   - `TenancyGuard` to apply the workspace scope
  *   - Pino logger correlation via `requestId`
  */
 @Injectable()

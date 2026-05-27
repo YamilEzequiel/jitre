@@ -1,5 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -12,7 +12,7 @@ import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { TenancyInterceptor } from './interceptors/tenancy.interceptor';
+import { TenancyGuard } from './guards/tenancy.guard';
 import { CaslAbilityFactory } from './casl/ability.factory';
 import { UserModule } from '../user/user.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
@@ -54,8 +54,8 @@ import { ProjectModule } from '../project/project.module';
       useClass: JwtAuthGuard,
     },
     {
-      provide: APP_INTERCEPTOR,
-      useClass: TenancyInterceptor,
+      provide: APP_GUARD,
+      useClass: TenancyGuard,
     },
   ],
   exports: [

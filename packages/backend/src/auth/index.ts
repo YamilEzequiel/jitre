@@ -12,7 +12,7 @@ export * from './guards/jwt-auth.guard';
 export * from './guards/csrf.guard';
 export * from './guards/role.guard';
 export * from './guards/ability.guard';
-export * from './interceptors/tenancy.interceptor';
+export * from './guards/tenancy.guard';
 export * from './strategies/jwt.strategy';
 export * from './services/password-hasher.service';
 export * from './services/token.service';
