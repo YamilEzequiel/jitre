@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   AiDailyDigest,
@@ -18,6 +19,7 @@ import { ToastService } from '../../core/toast/toast.service';
 @Component({
   selector: 'jt-daily-digest-widget',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe],
   template: `
     <section
       class="relative overflow-hidden rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/30 to-indigo-50/40 p-5 shadow-sm shadow-slate-200/70"
@@ -27,11 +29,11 @@ import { ToastService } from '../../core/toast/toast.service';
           <div class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5">
             <span class="pi pi-sparkles text-[10px] text-violet-600" aria-hidden="true"></span>
             <span class="text-[9px] font-bold uppercase tracking-[0.18em] text-violet-700">
-              AI digest
+              {{ 'dashboard.dailyDigest.badge' | translate }}
             </span>
           </div>
           <h2 class="text-lg font-black tracking-tight text-slate-950">
-            Yesterday at a glance
+            {{ 'dashboard.dailyDigest.title' | translate }}
           </h2>
           @if (digest(); as d) {
             <p class="text-[11px] font-medium text-slate-500">{{ d.digestDate }} · {{ d.model }}</p>
@@ -51,7 +53,7 @@ import { ToastService } from '../../core/toast/toast.service';
               "
               aria-hidden="true"
             ></span>
-            {{ regenerating() ? 'Generando…' : 'Regenerar' }}
+            {{ (regenerating() ? 'common.generating' : 'common.regenerate') | translate }}
           </button>
         }
       </header>
@@ -66,19 +68,19 @@ import { ToastService } from '../../core/toast/toast.service';
         @if (d.tasksCreated || d.tasksCompleted || d.commentsPosted || d.timeLoggedMinutes) {
           <div class="mb-4 grid grid-cols-4 gap-2">
             <div class="rounded-lg border border-emerald-100 bg-emerald-50/60 px-2 py-1.5">
-              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">Completed</p>
+              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-700">{{ 'dashboard.dailyDigest.metrics.completed' | translate }}</p>
               <p class="text-base font-black tabular-nums text-emerald-900">{{ d.tasksCompleted }}</p>
             </div>
             <div class="rounded-lg border border-indigo-100 bg-indigo-50/60 px-2 py-1.5">
-              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-indigo-700">Created</p>
+              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-indigo-700">{{ 'dashboard.dailyDigest.metrics.created' | translate }}</p>
               <p class="text-base font-black tabular-nums text-indigo-900">{{ d.tasksCreated }}</p>
             </div>
             <div class="rounded-lg border border-fuchsia-100 bg-fuchsia-50/60 px-2 py-1.5">
-              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-fuchsia-700">Comments</p>
+              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-fuchsia-700">{{ 'dashboard.dailyDigest.metrics.comments' | translate }}</p>
               <p class="text-base font-black tabular-nums text-fuchsia-900">{{ d.commentsPosted }}</p>
             </div>
             <div class="rounded-lg border border-amber-100 bg-amber-50/60 px-2 py-1.5">
-              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-700">Time</p>
+              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-700">{{ 'dashboard.dailyDigest.metrics.time' | translate }}</p>
               <p class="text-base font-black tabular-nums text-amber-900">{{ hoursLabel(d.timeLoggedMinutes) }}</p>
             </div>
           </div>
@@ -90,7 +92,7 @@ import { ToastService } from '../../core/toast/toast.service';
       } @else {
         <div class="flex flex-col items-center gap-2 py-6 text-center text-sm text-slate-500">
           <span class="pi pi-moon text-2xl text-slate-300" aria-hidden="true"></span>
-          <p>Todav&iacute;a no hay digest. Se genera autom&aacute;ticamente cada d&iacute;a a las 6 UTC.</p>
+          <p>{{ 'dashboard.dailyDigest.empty' | translate }}</p>
           @if (isAdmin()) {
             <button
               type="button"
@@ -99,7 +101,7 @@ import { ToastService } from '../../core/toast/toast.service';
               class="mt-2 inline-flex items-center gap-1.5 rounded-md bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
             >
               <span class="pi pi-sparkles text-[10px]" aria-hidden="true"></span>
-              {{ regenerating() ? 'Generando…' : 'Generar ahora' }}
+              {{ (regenerating() ? 'common.generating' : 'dashboard.dailyDigest.generateNow') | translate }}
             </button>
           }
         </div>
@@ -145,6 +147,7 @@ export class DailyDigestWidgetComponent implements OnInit {
   private readonly api = inject(AiDailyDigestApiService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly t = inject(TranslateService);
 
   readonly loading = signal(true);
   readonly digest = signal<AiDailyDigest | null>(null);
@@ -185,9 +188,9 @@ export class DailyDigestWidgetComponent implements OnInit {
     this.regenerating.set(true);
     try {
       this.digest.set(await this.api.regenerate());
-      this.toast.success('Digest regenerado');
+      this.toast.success(this.t.instant('dashboard.dailyDigest.successToast'));
     } catch {
-      this.toast.error('No pudimos regenerar el digest');
+      this.toast.error(this.t.instant('dashboard.dailyDigest.failedToast'));
     } finally {
       this.regenerating.set(false);
     }

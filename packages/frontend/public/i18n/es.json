@@ -18,7 +18,19 @@
     "actions": "Acciones",
     "required": "Obligatorio",
     "optional": "Opcional",
-    "language": "Idioma"
+    "language": "Idioma",
+    "saving": "Guardando…",
+    "saved": "Guardado",
+    "apply": "Aplicar",
+    "dismiss": "Descartar",
+    "regenerate": "Regenerar",
+    "generating": "Generando…",
+    "recompute": "Recomputar",
+    "recomputing": "Recomputando…",
+    "default": "Por defecto",
+    "builtin": "Built-in",
+    "new": "Nuevo",
+    "remove": "Quitar"
   },
   "nav": {
     "dashboard": "Tablero",
@@ -34,7 +46,10 @@
     "settings": "Configuración",
     "support": "Soporte",
     "notifications": "Notificaciones",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "changelog": "Changelog",
+    "license": "Licencia",
+    "aiPrompts": "Prompts de IA"
   },
   "layout": {
     "brandTagline": "Planificá y entregá",
@@ -79,6 +94,120 @@
         "userInactive": "Tu cuenta está deshabilitada. Contactá soporte.",
         "generic": "No pudimos ingresar. Intentá de nuevo."
       }
+    }
+  },
+  "tasks": {
+    "back": "Volver",
+    "project": "Proyecto",
+    "prevTaskAria": "Tarea anterior: {{title}}",
+    "nextTaskAria": "Siguiente tarea: {{title}}",
+    "noPrevTask": "No hay tarea anterior",
+    "noNextTask": "No hay siguiente tarea",
+    "comments": {
+      "header": "Comentarios",
+      "empty": "Sin comentarios todavía. Sé el primero en decir algo.",
+      "placeholder": "Escribí un comentario… usá @ para mencionar",
+      "submit": "Comentar",
+      "submitting": "Posteando…",
+      "attach": "Adjuntar",
+      "attachAria": "Adjuntar archivos al comentario",
+      "removePendingAria": "Quitar {{name}}",
+      "viewAttachments": "Ver adjuntos",
+      "hideAttachments": "Ocultar adjuntos",
+      "noAttachments": "Sin adjuntos",
+      "success": "Comentario publicado",
+      "successWithFile": "Comentario y archivo subidos",
+      "successWithFiles": "Comentario y {{count}} archivos subidos",
+      "failed": "No pudimos publicar el comentario",
+      "attachmentsFailed": "{{count}} adjunto(s) fallaron"
+    },
+    "aiDescribe": {
+      "label": "AI Describe",
+      "loading": "Describiendo…",
+      "successToast": "Descripción generada por AI",
+      "failedToast": "AI describe falló",
+      "pickerHeader": "Describir con template",
+      "pickerEmpty": "No hay templates configurados.",
+      "defaultTemplate": "template por defecto",
+      "chooseTemplateAria": "Elegir template de IA"
+    }
+  },
+  "dashboard": {
+    "dailyDigest": {
+      "badge": "AI digest",
+      "title": "Ayer en un vistazo",
+      "empty": "Todavía no hay digest. Se genera automáticamente cada día a las 6 UTC.",
+      "generateNow": "Generar ahora",
+      "metrics": {
+        "completed": "Completadas",
+        "created": "Creadas",
+        "comments": "Comentarios",
+        "time": "Tiempo"
+      },
+      "successToast": "Digest regenerado",
+      "failedToast": "No pudimos regenerar el digest"
+    },
+    "prioritySuggestions": {
+      "badge": "Sugerencias IA",
+      "title": "Prioridad recomendada",
+      "description": "Tareas con fecha cercana cuyo nivel de prioridad podría subir.",
+      "empty": "Sin recomendaciones por ahora. La IA volverá a chequear mañana.",
+      "applyAria": "Aplicar {{priority}}",
+      "applyToast": "Prioridad actualizada",
+      "applyFailed": "No pudimos aplicar la sugerencia",
+      "dismissFailed": "No pudimos descartar",
+      "regenerateToast": "Sugerencias regeneradas",
+      "regenerateFailed": "No pudimos regenerar"
+    }
+  },
+  "settings": {
+    "aiPrompts": {
+      "badge": "Prompts",
+      "title": "Templates de IA",
+      "description": "Definí cómo escribe la IA en este workspace. Elegí el template por defecto para cada operación (descripción de tareas, sugerir subtareas, resumir comentarios). Los templates marcados como built-in vienen pre-cargados y son de solo lectura.",
+      "operations": {
+        "describe": "Descripción de tarea",
+        "suggest_subtasks": "Sugerir subtareas",
+        "summary": "Resumen de comentarios",
+        "generate_draft": "Generar desde lenguaje natural"
+      },
+      "list": {
+        "header": "Templates",
+        "empty": "No hay templates para esta operación."
+      },
+      "editor": {
+        "newTitle": "Nuevo template",
+        "readonlyBadge": "Solo lectura (built-in)",
+        "markAsDefault": "Marcar default",
+        "name": "Nombre",
+        "operation": "Operación",
+        "descriptionField": "Descripción",
+        "descriptionPlaceholder": "Opcional: hint breve para el picker",
+        "systemPrompt": "System prompt",
+        "userTemplate": "User prompt template",
+        "variablesHint": "Variables disponibles:",
+        "tip": "Tip: usá {{example}} y demás en cualquier parte del system o user prompt — se reemplazan al ejecutar.",
+        "submitCreate": "Crear",
+        "submitUpdate": "Guardar cambios",
+        "emptyState": "Elegí un template de la lista para editarlo, o creá uno nuevo.",
+        "deleteConfirm": "¿Eliminar este template?",
+        "toasts": {
+          "created": "Template creado",
+          "updated": "Template actualizado",
+          "deleted": "Template eliminado",
+          "deleteFailed": "No pudimos eliminar",
+          "defaultSet": "\"{{name}}\" es ahora el default",
+          "defaultFailed": "No pudimos marcar como default",
+          "loadFailed": "No pudimos cargar los templates"
+        }
+      }
+    }
+  },
+  "timeTracking": {
+    "duration": {
+      "hint": "Acepta 1h 30min, 1.5h, 90m, 1:30, \"1 hora 30 mins\"…",
+      "preview": "= {{value}}",
+      "invalid": "Duración inválida. Probá \"1h 30m\", \"1.5h\" o \"90m\"."
     }
   },
   "language": {

@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   AiPrioritySuggestion,
   AiPrioritySuggestionApiService,
@@ -26,7 +27,7 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
 @Component({
   selector: 'jt-priority-suggestions-widget',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70"
@@ -36,14 +37,14 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
           <div class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5">
             <span class="pi pi-bolt text-[10px] text-indigo-600" aria-hidden="true"></span>
             <span class="text-[9px] font-bold uppercase tracking-[0.18em] text-indigo-700">
-              AI suggestions
+              {{ 'dashboard.prioritySuggestions.badge' | translate }}
             </span>
           </div>
           <h2 class="text-lg font-black tracking-tight text-slate-950">
-            Prioridad recomendada
+            {{ 'dashboard.prioritySuggestions.title' | translate }}
           </h2>
           <p class="text-[11px] text-slate-500">
-            Tareas con fecha cercana cuyo nivel de prioridad podr&iacute;a subir.
+            {{ 'dashboard.prioritySuggestions.description' | translate }}
           </p>
         </div>
         @if (isAdmin()) {
@@ -59,7 +60,7 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
               "
               aria-hidden="true"
             ></span>
-            {{ regenerating() ? 'Recomputando…' : 'Recomputar' }}
+            {{ (regenerating() ? 'common.recomputing' : 'common.recompute') | translate }}
           </button>
         }
       </header>
@@ -72,7 +73,7 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
       } @else if (suggestions().length === 0) {
         <div class="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
           <span class="pi pi-check-circle text-[12px]" aria-hidden="true"></span>
-          Sin recomendaciones por ahora. La IA volverá a chequear ma&ntilde;ana.
+          {{ 'dashboard.prioritySuggestions.empty' | translate }}
         </div>
       } @else {
         <ul class="space-y-2">
@@ -104,19 +105,19 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
                   type="button"
                   (click)="accept(s)"
                   class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
-                  [attr.aria-label]="'Aplicar ' + priorityLabel(s.suggestedPriority)"
+                  [attr.aria-label]="('dashboard.prioritySuggestions.applyAria' | translate: { priority: priorityLabel(s.suggestedPriority) })"
                 >
                   <i class="pi pi-check text-[10px]" aria-hidden="true"></i>
-                  Aplicar
+                  {{ 'common.apply' | translate }}
                 </button>
                 <button
                   type="button"
                   (click)="dismiss(s)"
                   class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-200"
-                  aria-label="Descartar"
+                  [attr.aria-label]="'common.dismiss' | translate"
                 >
                   <i class="pi pi-times text-[10px]" aria-hidden="true"></i>
-                  Descartar
+                  {{ 'common.dismiss' | translate }}
                 </button>
               </span>
             </li>
@@ -131,6 +132,7 @@ export class PrioritySuggestionsWidgetComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly taskStore = inject(TaskStore);
+  private readonly t = inject(TranslateService);
 
   readonly loading = signal(true);
   readonly suggestions = signal<AiPrioritySuggestion[]>([]);
@@ -169,9 +171,9 @@ export class PrioritySuggestionsWidgetComponent implements OnInit {
     try {
       await this.api.accept(s.id);
       this.suggestions.update((curr) => curr.filter((x) => x.id !== s.id));
-      this.toast.success('Prioridad actualizada');
+      this.toast.success(this.t.instant('dashboard.prioritySuggestions.applyToast'));
     } catch {
-      this.toast.error('No pudimos aplicar la sugerencia');
+      this.toast.error(this.t.instant('dashboard.prioritySuggestions.applyFailed'));
     }
   }
 
@@ -180,7 +182,7 @@ export class PrioritySuggestionsWidgetComponent implements OnInit {
       await this.api.dismiss(s.id);
       this.suggestions.update((curr) => curr.filter((x) => x.id !== s.id));
     } catch {
-      this.toast.error('No pudimos descartar');
+      this.toast.error(this.t.instant('dashboard.prioritySuggestions.dismissFailed'));
     }
   }
 
@@ -189,9 +191,9 @@ export class PrioritySuggestionsWidgetComponent implements OnInit {
     try {
       await this.api.regenerate();
       this.suggestions.set(await this.api.list());
-      this.toast.success('Sugerencias regeneradas');
+      this.toast.success(this.t.instant('dashboard.prioritySuggestions.regenerateToast'));
     } catch {
-      this.toast.error('No pudimos regenerar');
+      this.toast.error(this.t.instant('dashboard.prioritySuggestions.regenerateFailed'));
     } finally {
       this.regenerating.set(false);
     }

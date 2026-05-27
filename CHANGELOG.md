@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- _(nothing yet — next round goes here)_
+- **i18n keys** for the surfaces shipped in 0.2.0: navigation (Changelog / License / AI Prompts), dashboard widgets (daily digest + priority suggestions), task detail (back / prev-next / comments / AI describe), settings → AI Prompts panel, and time-tracking duration helper text. Both `es` and `en` cover the same tree.
+- Sidebar Changelog and License entries now translate.
+- Dashboard daily-digest and priority-suggestions widgets fully translated (badges, titles, metric labels, empty states, toasts).
 
 ---
 

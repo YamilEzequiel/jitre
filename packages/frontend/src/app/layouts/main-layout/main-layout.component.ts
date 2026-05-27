@@ -174,7 +174,7 @@ interface NavItem {
             class="flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
           >
             <i class="pi pi-history text-[12px]" aria-hidden="true"></i>
-            Changelog
+            {{ 'nav.changelog' | translate }}
           </a>
           <a
             routerLink="/license"
@@ -182,7 +182,7 @@ interface NavItem {
             class="flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
           >
             <i class="pi pi-file text-[12px]" aria-hidden="true"></i>
-            License
+            {{ 'nav.license' | translate }}
           </a>
         </div>
 
