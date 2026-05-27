@@ -101,9 +101,9 @@ export class UserService {
     const enriched = users.map((u) => {
       const { passwordHash: _, ...rest } = u as unknown as Record<string, unknown>;
       return {
-        ...(rest as UserEntity),
+        ...rest,
         workspaceRole: roleByUser.get(u.id) ?? 'member',
-      } as UserEntity & { workspaceRole: string };
+      } as unknown as UserEntity & { workspaceRole: string };
     });
     enriched.sort((a, b) =>
       (a.displayName ?? '').localeCompare(b.displayName ?? ''),
