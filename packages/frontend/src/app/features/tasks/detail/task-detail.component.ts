@@ -399,23 +399,30 @@ interface DisplayComment {
                     [innerHTML]="renderMentions(comment.body) | markdown"
                   ></div>
                   <div class="mt-3">
-                    <button
-                      type="button"
-                      (click)="toggleCommentAttachments(comment.id)"
-                      [attr.aria-expanded]="isCommentAttachmentsOpen(comment.id)"
-                      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700"
-                    >
-                      <i class="pi pi-paperclip text-[10px]" aria-hidden="true"></i>
-                      {{ isCommentAttachmentsOpen(comment.id) ? 'Ocultar adjuntos' : 'Ver adjuntos' }}
-                      <i
-                        [class]="'pi text-[10px] transition-transform ' + (isCommentAttachmentsOpen(comment.id) ? 'pi-chevron-up' : 'pi-chevron-down')"
-                        aria-hidden="true"
-                      ></i>
-                    </button>
-                    @if (isCommentAttachmentsOpen(comment.id)) {
-                      <div class="mt-2 -mx-1">
-                        <jt-attachment-list context="comment" [contextId]="comment.id" />
-                      </div>
+                    @if (commentAttachmentCount(comment.id) === 0) {
+                      <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-400">
+                        <i class="pi pi-paperclip text-[10px]" aria-hidden="true"></i>
+                        Sin adjuntos
+                      </span>
+                    } @else {
+                      <button
+                        type="button"
+                        (click)="toggleCommentAttachments(comment.id)"
+                        [attr.aria-expanded]="isCommentAttachmentsOpen(comment.id)"
+                        class="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100"
+                      >
+                        <i class="pi pi-paperclip text-[10px]" aria-hidden="true"></i>
+                        {{ isCommentAttachmentsOpen(comment.id) ? 'Ocultar' : 'Ver' }} adjuntos · {{ commentAttachmentCount(comment.id) }}
+                        <i
+                          [class]="'pi text-[10px] transition-transform ' + (isCommentAttachmentsOpen(comment.id) ? 'pi-chevron-up' : 'pi-chevron-down')"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                      @if (isCommentAttachmentsOpen(comment.id)) {
+                        <div class="mt-2 -mx-1">
+                          <jt-attachment-list context="comment" [contextId]="comment.id" />
+                        </div>
+                      }
                     }
                   </div>
                 </div>
@@ -529,9 +536,14 @@ export class TaskDetailComponent implements OnInit {
   readonly commentDraft = signal('');
   readonly pendingAttachments = signal<File[]>([]);
   private readonly openCommentAttachments = signal<Set<string>>(new Set());
+  private readonly commentAttachmentCounts = signal<Record<string, number>>({});
 
   isCommentAttachmentsOpen(commentId: string): boolean {
     return this.openCommentAttachments().has(commentId);
+  }
+
+  commentAttachmentCount(commentId: string): number {
+    return this.commentAttachmentCounts()[commentId] ?? 0;
   }
 
   toggleCommentAttachments(commentId: string): void {
@@ -799,11 +811,37 @@ export class TaskDetailComponent implements OnInit {
       await this.memberStore.loadForProject(t.projectId).catch(() => undefined);
       const raw = await this.commentApi.list({ contextType: 'task', contextId: t.id });
       this.comments.set(raw.map(c => this.toDisplayComment(c)));
+      void this.loadAttachmentCountsFor(raw.map((c) => c.id));
     } catch {
       this.comments.set([]);
+      this.commentAttachmentCounts.set({});
     } finally {
       this.commentsLoading.set(false);
     }
+  }
+
+  /**
+   * Fetch the attachment list for each comment in parallel and store just
+   * the count. Lets the UI show "Ver adjuntos · 3" or disable the toggle
+   * when empty so the user doesn't click for nothing. Failures per-id are
+   * silent (count stays at 0).
+   */
+  private async loadAttachmentCountsFor(commentIds: string[]): Promise<void> {
+    if (commentIds.length === 0) {
+      this.commentAttachmentCounts.set({});
+      return;
+    }
+    const entries = await Promise.all(
+      commentIds.map(async (id): Promise<[string, number]> => {
+        try {
+          const list = await this.attachmentApi.list({ context: 'comment', contextId: id });
+          return [id, list.length];
+        } catch {
+          return [id, 0];
+        }
+      }),
+    );
+    this.commentAttachmentCounts.set(Object.fromEntries(entries));
   }
 
   private toDisplayComment(c: CommentDto): DisplayComment {
@@ -959,7 +997,14 @@ export class TaskDetailComponent implements OnInit {
           ),
         );
         const failures = results.filter((r) => r.status === 'rejected').length;
+        const succeeded = results.length - failures;
         this.pendingAttachments.set([]);
+        if (succeeded > 0) {
+          this.commentAttachmentCounts.update((curr) => ({
+            ...curr,
+            [created.id]: (curr[created.id] ?? 0) + succeeded,
+          }));
+        }
         if (failures > 0) {
           this.toast.error(`${failures} adjunto(s) fallaron`);
         } else if (results.length > 0) {
