@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   AiPromptOperation,
   AiPromptTemplate,
@@ -47,18 +48,16 @@ const OPERATIONS: OperationDef[] = [
 @Component({
   selector: 'jt-ai-prompt-templates-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SelectModule],
+  imports: [ReactiveFormsModule, SelectModule, TranslatePipe],
   template: `
     <section class="space-y-5">
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 space-y-2">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-200 bg-violet-50">
-          <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700">Prompts</span>
+          <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700">{{ 'settings.aiPrompts.badge' | translate }}</span>
         </div>
-        <h2 class="text-2xl font-black tracking-tight text-slate-950">AI Prompt Templates</h2>
+        <h2 class="text-2xl font-black tracking-tight text-slate-950">{{ 'settings.aiPrompts.title' | translate }}</h2>
         <p class="text-sm text-slate-500 max-w-2xl">
-          Defin&iacute; c&oacute;mo escribe la IA en este workspace. Eleg&iacute; el template por defecto para cada
-          operaci&oacute;n (descripci&oacute;n de tareas, sugerir subtareas, resumir comentarios). Los templates marcados
-          como built-in vienen pre-cargados y son de solo lectura.
+          {{ 'settings.aiPrompts.description' | translate }}
         </p>
       </header>
 
@@ -75,7 +74,7 @@ const OPERATIONS: OperationDef[] = [
                 : 'bg-white border-slate-200 text-slate-600 hover:border-violet-300 hover:text-violet-700')
             "
           >
-            {{ op.label }}
+            {{ operationLabelKey(op.value) | translate }}
             <span
               [class]="
                 'inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums ' +
@@ -94,7 +93,7 @@ const OPERATIONS: OperationDef[] = [
         <aside class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/70">
           <div class="mb-2 flex items-center justify-between">
             <h3 class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
-              Templates
+              {{ 'settings.aiPrompts.list.header' | translate }}
             </h3>
             <button
               type="button"
@@ -102,11 +101,11 @@ const OPERATIONS: OperationDef[] = [
               class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-bold text-indigo-700 transition hover:bg-indigo-100"
             >
               <span class="pi pi-plus text-[10px]" aria-hidden="true"></span>
-              Nuevo
+              {{ 'common.new' | translate }}
             </button>
           </div>
           @if (loading()) {
-            <p class="px-3 py-2 text-xs italic text-slate-400">Cargando…</p>
+            <p class="px-3 py-2 text-xs italic text-slate-400">{{ 'common.loading' | translate }}</p>
           } @else {
             <ul class="space-y-1">
               @for (t of currentList(); track t.id) {
@@ -125,12 +124,12 @@ const OPERATIONS: OperationDef[] = [
                       <span class="flex-1 truncate font-semibold">{{ t.name }}</span>
                       @if (t.isDefault) {
                         <span class="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700">
-                          Default
+                          {{ 'common.default' | translate }}
                         </span>
                       }
                       @if (t.isBuiltin) {
                         <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                          Built-in
+                          {{ 'common.builtin' | translate }}
                         </span>
                       }
                     </div>
@@ -141,7 +140,7 @@ const OPERATIONS: OperationDef[] = [
                 </li>
               } @empty {
                 <li class="px-3 py-2 text-xs italic text-slate-400">
-                  No hay templates para esta operación.
+                  {{ 'settings.aiPrompts.list.empty' | translate }}
                 </li>
               }
             </ul>
@@ -155,11 +154,11 @@ const OPERATIONS: OperationDef[] = [
               <header class="flex flex-wrap items-baseline justify-between gap-2">
                 <div class="flex items-center gap-2">
                   <h3 class="text-lg font-black text-slate-950">
-                    {{ isNew() ? 'Nuevo template' : t.name }}
+                    {{ isNew() ? ('settings.aiPrompts.editor.newTitle' | translate) : t.name }}
                   </h3>
                   @if (t.isBuiltin && !isNew()) {
                     <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Read-only (built-in)
+                      {{ 'settings.aiPrompts.editor.readonlyBadge' | translate }}
                     </span>
                   }
                 </div>
@@ -170,7 +169,7 @@ const OPERATIONS: OperationDef[] = [
                       (click)="makeDefault()"
                       class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
                     >
-                      Marcar default
+                      {{ 'settings.aiPrompts.editor.markAsDefault' | translate }}
                     </button>
                   }
                   @if (!t.isBuiltin && !isNew() && !t.isDefault) {
@@ -179,7 +178,7 @@ const OPERATIONS: OperationDef[] = [
                       (click)="remove()"
                       class="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100"
                     >
-                      Eliminar
+                      {{ 'common.delete' | translate }}
                     </button>
                   }
                 </div>
@@ -188,7 +187,7 @@ const OPERATIONS: OperationDef[] = [
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label class="block">
                   <span class="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-1">
-                    Nombre
+                    {{ 'settings.aiPrompts.editor.name' | translate }}
                   </span>
                   <input
                     type="text"
@@ -199,11 +198,11 @@ const OPERATIONS: OperationDef[] = [
                 </label>
                 <label class="block">
                   <span class="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-1">
-                    Operaci&oacute;n
+                    {{ 'settings.aiPrompts.editor.operation' | translate }}
                   </span>
                   <input
                     type="text"
-                    [value]="operationLabel(t.operation)"
+                    [value]="operationLabelText(t.operation)"
                     readonly
                     class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600"
                   />
@@ -212,12 +211,12 @@ const OPERATIONS: OperationDef[] = [
 
               <label class="block">
                 <span class="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-1">
-                  Descripci&oacute;n
+                  {{ 'settings.aiPrompts.editor.descriptionField' | translate }}
                 </span>
                 <input
                   type="text"
                   formControlName="description"
-                  placeholder="Optional: short hint shown in the picker"
+                  [placeholder]="'settings.aiPrompts.editor.descriptionPlaceholder' | translate"
                   [readonly]="t.isBuiltin && !isNew()"
                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 read-only:bg-slate-50"
                 />
@@ -226,10 +225,10 @@ const OPERATIONS: OperationDef[] = [
               <label class="block">
                 <span class="mb-1 flex items-center justify-between">
                   <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                    System prompt
+                    {{ 'settings.aiPrompts.editor.systemPrompt' | translate }}
                   </span>
                   <span class="text-[10px] text-slate-400">
-                    Variables disponibles:
+                    {{ 'settings.aiPrompts.editor.variablesHint' | translate }}
                     @for (v of variablesFor(t.operation); track v) {
                       <code class="ml-1 rounded bg-slate-100 px-1 py-0.5 text-[10px] text-slate-700">{{ '{{' + v + '}}' }}</code>
                     }
@@ -245,7 +244,7 @@ const OPERATIONS: OperationDef[] = [
 
               <label class="block">
                 <span class="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-1">
-                  User prompt template
+                  {{ 'settings.aiPrompts.editor.userTemplate' | translate }}
                 </span>
                 <textarea
                   formControlName="userTemplate"
@@ -258,15 +257,18 @@ const OPERATIONS: OperationDef[] = [
               @if (!t.isBuiltin || isNew()) {
                 <div class="flex items-center justify-between pt-1">
                   <p class="text-[11px] text-slate-400">
-                    Tip: us&aacute; <code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">{{ '{{taskTitle}}' }}</code> y dem&aacute;s
-                    en cualquier parte del system o user prompt — se reemplazan al ejecutar.
+                    {{ 'settings.aiPrompts.editor.tip' | translate: { example: '{{taskTitle}}' } }}
                   </p>
                   <button
                     type="submit"
                     [disabled]="form.invalid || saving()"
                     class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-indigo-500/25 transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {{ saving() ? 'Guardando…' : (isNew() ? 'Crear' : 'Guardar cambios') }}
+                    {{ saving()
+                        ? ('common.saving' | translate)
+                        : (isNew()
+                            ? ('settings.aiPrompts.editor.submitCreate' | translate)
+                            : ('settings.aiPrompts.editor.submitUpdate' | translate)) }}
                   </button>
                 </div>
               }
@@ -274,7 +276,7 @@ const OPERATIONS: OperationDef[] = [
           } @else {
             <div class="flex h-full flex-col items-center justify-center gap-3 py-12 text-center text-sm text-slate-500">
               <span class="pi pi-sparkles text-3xl text-slate-300" aria-hidden="true"></span>
-              <p>Eleg&iacute; un template de la lista para editarlo, o creá uno nuevo.</p>
+              <p>{{ 'settings.aiPrompts.editor.emptyState' | translate }}</p>
             </div>
           }
         </article>
@@ -286,6 +288,7 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
   private readonly api = inject(AiPromptTemplateApiService);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
+  private readonly t = inject(TranslateService);
 
   readonly operations = OPERATIONS;
   readonly activeOperation = signal<AiPromptOperation>('describe');
@@ -341,6 +344,14 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
     return OPERATIONS.find((o) => o.value === op)?.label ?? op;
   }
 
+  operationLabelKey(op: AiPromptOperation): string {
+    return `settings.aiPrompts.operations.${op}`;
+  }
+
+  operationLabelText(op: AiPromptOperation): string {
+    return this.t.instant(this.operationLabelKey(op));
+  }
+
   variablesFor(op: AiPromptOperation): string[] {
     return OPERATIONS.find((o) => o.value === op)?.variables ?? [];
   }
@@ -390,7 +401,7 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
         this.templates.update((curr) => [...curr, created]);
         this.selectedId.set(created.id);
         this.isNew.set(false);
-        this.toast.success('Template creado');
+        this.toast.success(this.t.instant('settings.aiPrompts.editor.toasts.created'));
       } else {
         const id = this.selectedId();
         if (!id) return;
@@ -400,11 +411,13 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
           systemPrompt: values.systemPrompt,
           userTemplate: values.userTemplate,
         });
-        this.templates.update((curr) => curr.map((t) => (t.id === id ? updated : t)));
-        this.toast.success('Template actualizado');
+        this.templates.update((curr) => curr.map((tpl) => (tpl.id === id ? updated : tpl)));
+        this.toast.success(this.t.instant('settings.aiPrompts.editor.toasts.updated'));
       }
     } catch (err: unknown) {
-      this.toast.error(this.errorMessage(err) ?? 'No pudimos guardar el template');
+      this.toast.error(
+        this.errorMessage(err) ?? this.t.instant('settings.aiPrompts.editor.toasts.createFailed'),
+      );
     } finally {
       this.saving.set(false);
     }
@@ -422,23 +435,29 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
           return { ...t, isDefault: false };
         }),
       );
-      this.toast.success(`"${updated.name}" es ahora el default`);
+      this.toast.success(
+        this.t.instant('settings.aiPrompts.editor.toasts.defaultSet', { name: updated.name }),
+      );
     } catch (err: unknown) {
-      this.toast.error(this.errorMessage(err) ?? 'No pudimos marcar como default');
+      this.toast.error(
+        this.errorMessage(err) ?? this.t.instant('settings.aiPrompts.editor.toasts.defaultFailed'),
+      );
     }
   }
 
   async remove(): Promise<void> {
     const id = this.selectedId();
     if (!id || id === '__new__') return;
-    if (!confirm('¿Eliminar este template?')) return;
+    if (!confirm(this.t.instant('settings.aiPrompts.editor.deleteConfirm'))) return;
     try {
       await this.api.remove(id);
       this.templates.update((curr) => curr.filter((t) => t.id !== id));
       this.selectedId.set(null);
-      this.toast.success('Template eliminado');
+      this.toast.success(this.t.instant('settings.aiPrompts.editor.toasts.deleted'));
     } catch (err: unknown) {
-      this.toast.error(this.errorMessage(err) ?? 'No pudimos eliminar');
+      this.toast.error(
+        this.errorMessage(err) ?? this.t.instant('settings.aiPrompts.editor.toasts.deleteFailed'),
+      );
     }
   }
 
@@ -448,7 +467,7 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
       this.templates.set(await this.api.list());
     } catch {
       this.templates.set([]);
-      this.toast.error('No pudimos cargar los templates');
+      this.toast.error(this.t.instant('settings.aiPrompts.editor.toasts.loadFailed'));
     } finally {
       this.loading.set(false);
     }

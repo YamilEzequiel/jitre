@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { TaskStore } from '../../../stores/task.store';
@@ -58,6 +59,7 @@ interface DisplayComment {
     AttachmentListComponent,
     MentionInputComponent,
     CheckboxComponent,
+    TranslatePipe,
   ],
   template: `
     <div class="flex w-full flex-col">
@@ -69,13 +71,13 @@ interface DisplayComment {
             (click)="goBack()"
             class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-            aria-label="Volver"
+            [attr.aria-label]="'tasks.back' | translate"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Volver
+            {{ 'tasks.back' | translate }}
           </button>
           @if (task(); as t) {
             <span class="text-slate-300" aria-hidden="true">/</span>
@@ -83,7 +85,7 @@ interface DisplayComment {
               [routerLink]="['/projects', t.projectId]"
               class="rounded-md px-2 py-1 transition hover:bg-slate-100 hover:text-slate-900"
             >
-              Proyecto
+              {{ 'tasks.project' | translate }}
             </a>
           }
         </div>
@@ -96,7 +98,7 @@ interface DisplayComment {
               [disabled]="!prevTask()"
               class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-              [attr.aria-label]="prevTask() ? 'Tarea anterior: ' + prevTask()!.title : 'No hay tarea anterior'"
+              [attr.aria-label]="prevTask() ? ('tasks.prevTaskAria' | translate: { title: prevTask()!.title }) : ('tasks.noPrevTask' | translate)"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="15 18 9 12 15 6" />
@@ -111,7 +113,7 @@ interface DisplayComment {
               [disabled]="!nextTask()"
               class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-              [attr.aria-label]="nextTask() ? 'Siguiente tarea: ' + nextTask()!.title : 'No hay siguiente tarea'"
+              [attr.aria-label]="nextTask() ? ('tasks.nextTaskAria' | translate: { title: nextTask()!.title }) : ('tasks.noNextTask' | translate)"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="9 18 15 12 9 6" />
@@ -601,6 +603,7 @@ export class TaskDetailComponent implements OnInit {
   private readonly commentApi = inject(CommentApiService);
   private readonly attachmentApi = inject(AttachmentApiService);
   private readonly templateApi = inject(AiPromptTemplateApiService);
+  private readonly i18n = inject(TranslateService);
   private readonly optimistic = inject(OptimisticUpdateService);
   private readonly ai = inject(AiService);
   private readonly toast = inject(ToastService);
@@ -908,10 +911,10 @@ export class TaskDetailComponent implements OnInit {
         // Backend applies the description server-side (applied: true) — sync
         // the local store so the UI reflects the new value without a refetch.
         this.taskStore.upsert({ ...t, description: result.description });
-        this.toast.success('Descripción generada por AI');
+        this.toast.success(this.i18n.instant('tasks.aiDescribe.successToast'));
       }
     } catch {
-      this.toast.error('AI describe failed');
+      this.toast.error(this.i18n.instant('tasks.aiDescribe.failedToast'));
     }
   }
 
@@ -1122,17 +1125,21 @@ export class TaskDetailComponent implements OnInit {
           }));
         }
         if (failures > 0) {
-          this.toast.error(`${failures} adjunto(s) fallaron`);
+          this.toast.error(
+            this.i18n.instant('tasks.comments.attachmentsFailed', { count: failures }),
+          );
         } else if (results.length > 0) {
           this.toast.success(
-            results.length === 1 ? 'Comentario y archivo subidos' : `Comentario y ${results.length} archivos subidos`,
+            results.length === 1
+              ? this.i18n.instant('tasks.comments.successWithFile')
+              : this.i18n.instant('tasks.comments.successWithFiles', { count: results.length }),
           );
         }
       } else {
-        this.toast.success('Comment posted');
+        this.toast.success(this.i18n.instant('tasks.comments.success'));
       }
     } catch {
-      this.toast.error('Failed to add comment');
+      this.toast.error(this.i18n.instant('tasks.comments.failed'));
     } finally {
       this.submittingComment.set(false);
     }
