@@ -4,6 +4,7 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { AnalyticsComponent } from './analytics.component';
 import { AnalyticsService } from '../../core/analytics/analytics.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { signal } from '@angular/core';
 
 describe('AnalyticsComponent', () => {
@@ -30,6 +31,10 @@ describe('AnalyticsComponent', () => {
       providers: [
         { provide: AnalyticsService, useValue: analyticsMock },
         { provide: AuthService, useValue: { currentUser: signal({ role: 'admin' }).asReadonly() } },
+        {
+          provide: WorkspaceMemberStore,
+          useValue: { displayNameFor: (id: string, fb?: string) => fb ?? id },
+        },
       ],
     });
 

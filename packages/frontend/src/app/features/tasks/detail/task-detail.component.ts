@@ -12,6 +12,7 @@ import { TaskStore } from '../../../stores/task.store';
 import { TaskApiService, Task, TaskPriority, TaskType } from '../../../stores/task-api.service';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
+import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
 import { CommentApiService, CommentDto } from '../../../stores/comment-api.service';
 import { OptimisticUpdateService } from '../../../core/optimistic/optimistic-update.service';
 import { AiService } from '../../../core/ai/ai.service';
@@ -376,6 +377,7 @@ export class TaskDetailComponent implements OnInit {
   private readonly taskApi = inject(TaskApiService);
   private readonly statusStore = inject(WorkflowStatusStore, { optional: true });
   private readonly memberStore = inject(ProjectMemberStore);
+  private readonly workspaceMemberStore = inject(WorkspaceMemberStore, { optional: true });
   private readonly commentApi = inject(CommentApiService);
   private readonly optimistic = inject(OptimisticUpdateService);
   private readonly ai = inject(AiService);
@@ -594,11 +596,17 @@ export class TaskDetailComponent implements OnInit {
     const t = this.task();
     const members = t ? this.memberStore.byProject(t.projectId)() : [];
     const author = members.find(m => m.userId === c.authorUserId);
+    const workspace = this.workspaceMemberStore?.memberFor(c.authorUserId);
     return {
       id: c.id,
       body: c.body,
       authorId: c.authorUserId,
-      authorName: author?.displayName ?? author?.email ?? 'User',
+      authorName:
+        author?.displayName ??
+        author?.email ??
+        workspace?.displayName ??
+        workspace?.email ??
+        'User',
       createdAt: c.createdAt,
     };
   }

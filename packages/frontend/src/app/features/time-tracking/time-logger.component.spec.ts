@@ -6,6 +6,7 @@ import { TimeEntryStore } from '../../stores/time-entry.store';
 import { TimeEntry } from '../../stores/time-entry-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 
 const sampleEntry: TimeEntry = {
   id: 'e1',
@@ -96,6 +97,14 @@ function setupTestBed(opts: {
       { provide: TimeEntryStore, useValue: storeMock },
       { provide: AuthService, useValue: authMock },
       { provide: ToastService, useValue: toastMock },
+      {
+        provide: WorkspaceMemberStore,
+        useValue: {
+          initialsFor: (id: string) => id.slice(0, 2).toUpperCase(),
+          displayNameFor: (id: string) => id,
+          memberFor: () => null,
+        },
+      },
     ],
   });
 

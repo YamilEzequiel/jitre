@@ -5,6 +5,10 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { Router, provideRouter } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
+import { provideTranslateService, TranslateNoOpLoader, TranslateLoader } from '@ngx-translate/core';
+import { ProjectStore } from '../../stores/project.store';
+import { TaskStore } from '../../stores/task.store';
+import { NotificationStore } from '../../stores/notification.store';
 
 describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -20,8 +24,14 @@ describe('LoginComponent', () => {
       imports: [ReactiveFormsModule],
       providers: [
         provideRouter([]),
+        provideTranslateService({
+          loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+        }),
         { provide: AuthService, useValue: { login: loginMock, currentWorkspace: () => null } },
         { provide: ToastService, useValue: { error: errorToastMock, success: vi.fn() } },
+        { provide: ProjectStore, useValue: { onWorkspaceSwitch: vi.fn().mockResolvedValue(undefined) } },
+        { provide: TaskStore, useValue: { onWorkspaceSwitch: vi.fn().mockResolvedValue(undefined) } },
+        { provide: NotificationStore, useValue: { onWorkspaceSwitch: vi.fn().mockResolvedValue(undefined) } },
       ],
     });
 

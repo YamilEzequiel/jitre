@@ -7,6 +7,7 @@ import { ChatChannelStore } from '../../stores/chat-channel.store';
 import { ChatMessageStore } from '../../stores/chat-message.store';
 import { ChatPresenceStore } from '../../stores/chat-presence.store';
 import { ChatApiService, ChatMessage } from '../../stores/chat-api.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { ChatRealtimeService } from '../../core/chat-realtime/chat-realtime.service';
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -109,6 +110,16 @@ describe('ChatChannelViewComponent', () => {
     currentUser: signal({ id: 'u1', email: 'u1@x', displayName: 'U1', role: 'member' }).asReadonly(),
   };
 
+  const memberStore = {
+    members: signal([]).asReadonly(),
+    loading: signal(false).asReadonly(),
+    refresh: vi.fn().mockResolvedValue(undefined),
+    dmTitleFor: vi.fn((name: string) => name),
+    displayNameFor: vi.fn((id: string) => id),
+    initialsFor: vi.fn(() => '??'),
+    avatarColorFor: vi.fn(() => 'hsl(0, 0%, 0%)'),
+  };
+
   beforeEach(async () => {
     vi.clearAllMocks();
     TestBed.configureTestingModule({
@@ -121,6 +132,7 @@ describe('ChatChannelViewComponent', () => {
         { provide: ChatApiService, useValue: chatApi },
         { provide: ChatRealtimeService, useValue: realtime },
         { provide: AuthService, useValue: auth },
+        { provide: WorkspaceMemberStore, useValue: memberStore },
       ],
     }).compileComponents();
 

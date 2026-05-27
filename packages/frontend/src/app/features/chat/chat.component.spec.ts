@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ChatComponent } from './chat.component';
 import { ChatApiService, ChatChannel } from '../../stores/chat-api.service';
 import { ChatChannelStore } from '../../stores/chat-channel.store';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { ChatRealtimeService } from '../../core/chat-realtime/chat-realtime.service';
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -80,6 +81,23 @@ describe('ChatComponent', () => {
     currentWorkspace: signal({ id: 'ws1', name: 'Workspace', slug: 'workspace' }).asReadonly(),
     getAccessToken: () => 'tk',
   };
+  const members = [
+    { userId: 'u2', displayName: 'Maya R.', email: 'maya@x', avatarUrl: null, role: 'member' },
+  ];
+  const memberStore = {
+    members: signal(members).asReadonly(),
+    loading: signal(false).asReadonly(),
+    refresh: vi.fn().mockResolvedValue(undefined),
+    dmTitleFor: vi.fn((channelName: string, currentUserId: string) => {
+      if (!channelName?.startsWith('dm:')) return channelName;
+      const parts = channelName.slice(3).split(':');
+      const other = parts[0] === currentUserId ? parts[1] : parts[0];
+      return members.find(m => m.userId === other)?.displayName ?? other;
+    }),
+    displayNameFor: vi.fn((id: string) => members.find(m => m.userId === id)?.displayName ?? id),
+    initialsFor: vi.fn(() => 'MR'),
+    avatarColorFor: vi.fn(() => 'hsl(0, 0%, 0%)'),
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -88,6 +106,7 @@ describe('ChatComponent', () => {
         { provide: ChatApiService, useValue: api },
         { provide: ChatRealtimeService, useValue: realtime },
         { provide: AuthService, useValue: auth },
+        { provide: WorkspaceMemberStore, useValue: memberStore },
         { provide: Router, useValue: router },
       ],
     });

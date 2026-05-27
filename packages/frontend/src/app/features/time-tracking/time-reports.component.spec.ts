@@ -6,6 +6,7 @@ import { TimeReportsComponent } from './time-reports.component';
 import { TimeEntryApiService, TimeReportRow } from '../../stores/time-entry-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 
 const sampleRows: TimeReportRow[] = [
   { groupKey: 'u-alice', totalMinutes: 240, entryCount: 4 },
@@ -50,6 +51,10 @@ function setup(opts: { admin?: boolean; myTimeOnly?: boolean } = {}) {
       { provide: AuthService, useValue: authMock },
       { provide: ToastService, useValue: toastMock },
       { provide: Router, useValue: routerMock },
+      {
+        provide: WorkspaceMemberStore,
+        useValue: { displayNameFor: (id: string, fb?: string) => fb ?? id },
+      },
     ],
   });
 

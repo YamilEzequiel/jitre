@@ -15,11 +15,12 @@ import { ChatChannelStore } from '../../stores/chat-channel.store';
 import { ChatMessageStore } from '../../stores/chat-message.store';
 import { ChatPresenceStore } from '../../stores/chat-presence.store';
 import { ChatApiService, ChatMessage } from '../../stores/chat-api.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { ChatRealtimeService } from '../../core/chat-realtime/chat-realtime.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { MarkdownPipe } from '../../shared/markdown/markdown.pipe';
 import { MessageInputComponent } from './message-input.component';
-import { hashHue, initialsFor, formatTime, shouldGroupWith, shortId } from './chat-utils';
+import { formatTime, shouldGroupWith } from './chat-utils';
 
 interface RenderedMessage {
   message: ChatMessage;
@@ -49,7 +50,7 @@ interface RenderedMessage {
                 } @else {
                   <span class="text-slate-500">#</span>
                 }
-                {{ ch.name }}
+                {{ channelTitle() }}
               </span>
             </div>
             @if (ch.description) {
@@ -121,7 +122,7 @@ interface RenderedMessage {
                 <span
                   class="inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
                   [style.background]="avatarBg(rm.message.authorId)"
-                  [attr.aria-label]="'Author ' + rm.message.authorId"
+                  [attr.aria-label]="'Author ' + name(rm.message.authorId)"
                 >
                   {{ initials(rm.message.authorId) }}
                 </span>
@@ -131,7 +132,7 @@ interface RenderedMessage {
               @if (rm.showHeader) {
                 <header class="flex items-baseline gap-2">
                   <span class="text-sm font-semibold text-slate-900">
-                    {{ short(rm.message.authorId) }}
+                    {{ name(rm.message.authorId) }}
                   </span>
                   <span class="text-[10px] text-slate-400">
                     {{ time(rm.message.createdAt) }}
@@ -251,7 +252,7 @@ interface RenderedMessage {
           <div class="flex-1 overflow-y-auto px-4 py-4">
             <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
               <header class="flex items-baseline gap-2">
-                <span class="text-sm font-semibold text-slate-900">{{ short(root.authorId) }}</span>
+                <span class="text-sm font-semibold text-slate-900">{{ name(root.authorId) }}</span>
                 <span class="text-[10px] text-slate-400">{{ time(root.createdAt) }}</span>
               </header>
               <div
@@ -264,7 +265,7 @@ interface RenderedMessage {
               @for (reply of threadMessages(); track reply.id) {
                 <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                   <header class="flex items-baseline gap-2">
-                    <span class="text-sm font-semibold text-slate-900">{{ short(reply.authorId) }}</span>
+                    <span class="text-sm font-semibold text-slate-900">{{ name(reply.authorId) }}</span>
                     <span class="text-[10px] text-slate-400">{{ time(reply.createdAt) }}</span>
                   </header>
                   <div
@@ -296,6 +297,7 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
   private readonly channelStore = inject(ChatChannelStore);
   private readonly messageStore = inject(ChatMessageStore);
   private readonly presenceStore = inject(ChatPresenceStore);
+  private readonly memberStore = inject(WorkspaceMemberStore);
   private readonly chatApi = inject(ChatApiService);
   private readonly realtime = inject(ChatRealtimeService);
   private readonly auth = inject(AuthService);
@@ -318,6 +320,15 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
   readonly channel = computed(() => {
     const id = this._channelId();
     return id ? this.channelStore.byId()[id] ?? null : null;
+  });
+
+  readonly channelTitle = computed(() => {
+    const ch = this.channel();
+    if (!ch) return '';
+    if (ch.type === 'dm') {
+      return this.memberStore.dmTitleFor(ch.name, this.currentUserId());
+    }
+    return ch.name;
   });
 
   readonly messages = computed<ChatMessage[]>(() => {
@@ -359,15 +370,17 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
   readonly typingLabel = computed(() => {
     const users = this.typingUsers();
     if (users.length === 0) return '';
-    if (users.length === 1) return `${shortId(users[0])} is typing…`;
-    if (users.length === 2)
-      return `${shortId(users[0])} and ${shortId(users[1])} are typing…`;
+    const nameOf = (id: string): string => this.memberStore.displayNameFor(id);
+    if (users.length === 1) return `${nameOf(users[0])} is typing…`;
+    if (users.length === 2) return `${nameOf(users[0])} and ${nameOf(users[1])} are typing…`;
     return 'Several people are typing…';
   });
 
   readonly inputPlaceholder = computed(() => {
     const ch = this.channel();
-    return ch ? `Message ${ch.type === 'dm' ? '' : '#'}${ch.name}` : 'Write a message…';
+    if (!ch) return 'Write a message…';
+    const prefix = ch.type === 'dm' ? '' : '#';
+    return `Message ${prefix}${this.channelTitle()}`;
   });
 
   readonly realtimeConnected = computed(() => this.realtime.connected());
@@ -547,19 +560,19 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
   }
 
   avatarBg(userId: string): string {
-    return `hsl(${hashHue(userId)}, 65%, 45%)`;
+    return this.memberStore.avatarColorFor(userId);
   }
 
   initials(userId: string): string {
-    return initialsFor(userId);
+    return this.memberStore.initialsFor(userId);
   }
 
   time(iso: string): string {
     return formatTime(iso);
   }
 
-  short(id: string): string {
-    return shortId(id);
+  name(userId: string): string {
+    return this.memberStore.displayNameFor(userId);
   }
 
   renderBody(body: string): string {

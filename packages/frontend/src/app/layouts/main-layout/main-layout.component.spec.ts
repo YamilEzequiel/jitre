@@ -3,11 +3,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MainLayoutComponent } from './main-layout.component';
 import { KeyboardShortcutService } from '../../core/keyboard/keyboard-shortcut.service';
 import { CommandPaletteService } from '../../shared/command-palette/command-palette.service';
+import { AiCreateService } from '../../features/ai-create/ai-create.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { TimeEntryStore } from '../../stores/time-entry.store';
 import { TaskStore } from '../../stores/task.store';
 import { ChatChannelStore } from '../../stores/chat-channel.store';
+import { LocaleService } from '../../core/i18n/locale.service';
+import { provideTranslateService, TranslateNoOpLoader, TranslateLoader } from '@ngx-translate/core';
 import { signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
 import type { TimeEntry } from '../../stores/time-entry-api.service';
@@ -40,6 +43,10 @@ function setup(opts: { active?: TimeEntry | null; role?: 'admin' | 'member' } = 
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
+      provideTranslateService({
+        loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+      }),
+      { provide: LocaleService, useValue: { current: signal('es').asReadonly(), use: vi.fn(), init: vi.fn() } },
       { provide: KeyboardShortcutService, useValue: { register: registerMock, getAll: vi.fn().mockReturnValue([]) } },
       {
         provide: CommandPaletteService,
@@ -49,6 +56,15 @@ function setup(opts: { active?: TimeEntry | null; role?: 'admin' | 'member' } = 
           close: vi.fn(),
           search: vi.fn().mockResolvedValue([]),
           recents: { get: vi.fn().mockReturnValue([]), add: vi.fn(), clear: vi.fn() },
+        },
+      },
+      {
+        provide: AiCreateService,
+        useValue: {
+          isOpen: signal(false).asReadonly(),
+          open: vi.fn(),
+          close: vi.fn(),
+          toggle: vi.fn(),
         },
       },
       {
@@ -114,11 +130,11 @@ describe('MainLayoutComponent', () => {
   it('renders compact product navigation and header actions', () => {
     ({ fixture } = setup({ role: 'admin' }));
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('AI Insights');
-    expect(text).toContain('Automations');
-    expect(text).toContain('Chat');
-    expect(text).toContain('Support');
-    expect((fixture.nativeElement as HTMLElement).querySelector('[aria-label="Notifications"]')).toBeTruthy();
+    expect(text).toContain('nav.aiInsights');
+    expect(text).toContain('nav.automations');
+    expect(text).toContain('nav.chat');
+    expect(text).toContain('nav.support');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[aria-label="nav.notifications"]')).toBeTruthy();
   });
 
   it('registers cmd+k shortcut on init', () => {
@@ -164,12 +180,12 @@ describe('MainLayoutComponent', () => {
   it('hides Time Reports link for non-admin', () => {
     ({ fixture } = setup({ role: 'member' }));
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).not.toContain('Time Reports');
+    expect(el.textContent).not.toContain('nav.timeReports');
   });
 
   it('shows Time Reports link for admin', () => {
     ({ fixture } = setup({ role: 'admin' }));
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Time Reports');
+    expect(el.textContent).toContain('nav.timeReports');
   });
 });

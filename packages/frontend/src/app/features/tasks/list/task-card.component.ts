@@ -11,6 +11,7 @@ import { Task, TaskPriority, TaskType } from '../../../stores/task-api.service';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
+import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
 
 export type TaskCardVariant = 'row' | 'tile';
 
@@ -371,6 +372,7 @@ export class TaskCardComponent {
   private readonly statusStore = inject(WorkflowStatusStore, { optional: true });
   private readonly labelStore = inject(LabelStore, { optional: true });
   private readonly memberStore = inject(ProjectMemberStore, { optional: true });
+  private readonly workspaceMemberStore = inject(WorkspaceMemberStore, { optional: true });
 
   readonly task = input.required<Task>();
   readonly isSelected = input<boolean>(false);
@@ -514,7 +516,12 @@ export class TaskCardComponent {
   });
 
   memberLabel(member: { userId: string; displayName?: string; email?: string }): string {
-    return member.displayName ?? member.email ?? member.userId;
+    if (member.displayName) return member.displayName;
+    if (member.email) return member.email;
+    // Final fallback: ex-members or cross-project assignees that aren't in the
+    // ProjectMemberStore for this task can still be resolved via the workspace store.
+    const workspace = this.workspaceMemberStore?.memberFor(member.userId);
+    return workspace?.displayName ?? workspace?.email ?? member.userId;
   }
 
   onCardClick(event: MouseEvent): void {

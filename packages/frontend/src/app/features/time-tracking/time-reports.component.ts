@@ -18,6 +18,7 @@ import {
 } from '../../stores/time-entry-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { formatMinutes } from './duration.util';
 
 interface SummaryCardData {
@@ -206,8 +207,8 @@ function escapeCsv(value: string): string {
             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 mb-2">
               Top {{ groupBy() }}
             </p>
-            <p class="text-sm font-bold text-slate-950 truncate" [attr.title]="summary().topContributor?.groupKey">
-              {{ summary().topContributor?.groupKey ?? '—' }}
+            <p class="text-sm font-bold text-slate-950 truncate" [attr.title]="labelForGroupKey(summary().topContributor?.groupKey)">
+              {{ labelForGroupKey(summary().topContributor?.groupKey) }}
             </p>
           </article>
         </section>
@@ -226,8 +227,8 @@ function escapeCsv(value: string): string {
             <ul class="space-y-2" data-testid="bar-chart">
               @for (row of rows(); track row.groupKey) {
                 <li class="flex items-center gap-3 text-xs">
-                  <span class="w-40 shrink-0 truncate text-slate-600" [attr.title]="row.groupKey">
-                    {{ row.groupKey }}
+                  <span class="w-40 shrink-0 truncate text-slate-600" [attr.title]="labelForGroupKey(row.groupKey)">
+                    {{ labelForGroupKey(row.groupKey) }}
                   </span>
                   <div class="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden">
                     <div
@@ -267,9 +268,9 @@ function escapeCsv(value: string): string {
                   (keydown.enter)="drilldown(row)"
                   tabindex="0"
                   role="button"
-                  [attr.aria-label]="'Drill down ' + row.groupKey"
+                  [attr.aria-label]="'Drill down ' + labelForGroupKey(row.groupKey)"
                 >
-                  <td class="px-4 py-3 text-slate-700 truncate">{{ row.groupKey }}</td>
+                  <td class="px-4 py-3 text-slate-700 truncate">{{ labelForGroupKey(row.groupKey) }}</td>
                   <td class="px-4 py-3 text-right text-violet-700 font-semibold tabular-nums">
                     {{ formatRow(row.totalMinutes) }}
                   </td>
@@ -308,7 +309,7 @@ function escapeCsv(value: string): string {
             >
               <div class="flex items-center justify-between gap-3 mb-4">
                 <h2 class="text-lg font-bold text-slate-950">
-                  {{ dr.groupKey }}
+                  {{ labelForGroupKey(dr.groupKey) }}
                 </h2>
                 <button
                   type="button"
@@ -348,6 +349,7 @@ export class TimeReportsComponent implements OnInit {
 
   private readonly api = inject(TimeEntryApiService);
   private readonly auth = inject(AuthService);
+  private readonly memberStore = inject(WorkspaceMemberStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -426,6 +428,12 @@ export class TimeReportsComponent implements OnInit {
     return formatMinutes(min);
   }
 
+  labelForGroupKey(key: string | null | undefined): string {
+    if (!key) return '—';
+    if (this.groupBy() !== 'user') return key;
+    return this.memberStore.displayNameFor(key, key);
+  }
+
   rowPct(row: TimeReportRow): number {
     const max = this.maxMinutes();
     if (max <= 0) return 0;
@@ -460,7 +468,7 @@ export class TimeReportsComponent implements OnInit {
     if (rows.length === 0) return;
     const header = [this.groupBy(), 'total_minutes', 'entry_count'];
     const body = rows.map(r =>
-      [escapeCsv(r.groupKey), String(r.totalMinutes), String(r.entryCount)].join(','),
+      [escapeCsv(this.labelForGroupKey(r.groupKey)), String(r.totalMinutes), String(r.entryCount)].join(','),
     );
     const csv = [header.join(','), ...body].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });

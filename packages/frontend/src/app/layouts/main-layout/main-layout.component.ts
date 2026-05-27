@@ -8,19 +8,23 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { KeyboardShortcutService } from '../../core/keyboard/keyboard-shortcut.service';
 import { CommandPaletteService } from '../../shared/command-palette/command-palette.service';
 import { ChatChannelStore } from '../../stores/chat-channel.store';
 import { ToastContainerComponent } from '../../shared/toast/toast-container.component';
 import { CommandPaletteComponent } from '../../shared/command-palette/command-palette.component';
+import { AiCreateDialogComponent } from '../../features/ai-create/ai-create-dialog.component';
+import { AiCreateService } from '../../features/ai-create/ai-create.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { TimeEntryStore } from '../../stores/time-entry.store';
 import { TaskStore } from '../../stores/task.store';
 import { ToastService } from '../../core/toast/toast.service';
 import { formatTimerSeconds } from '../../features/time-tracking/duration.util';
+import { LocaleService, SUPPORTED_LOCALES, SupportedLocale } from '../../core/i18n/locale.service';
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   route: string;
   icon: string;
   exact?: boolean;
@@ -36,6 +40,8 @@ interface NavItem {
     RouterLinkActive,
     ToastContainerComponent,
     CommandPaletteComponent,
+    AiCreateDialogComponent,
+    TranslatePipe,
   ],
   template: `
     <div class="relative flex h-screen overflow-hidden bg-[#f7f8fc] text-slate-950">
@@ -58,7 +64,7 @@ interface NavItem {
       <nav
         class="relative hidden w-[13.5rem] shrink-0 flex-col border-r border-white/[0.06]
                bg-[#070b1f] text-white md:flex"
-        aria-label="Main navigation"
+        [attr.aria-label]="'nav.dashboard' | translate"
       >
         <a routerLink="/" class="flex items-center gap-2.5 px-5 pb-5 pt-5">
           <div
@@ -84,7 +90,7 @@ interface NavItem {
           </div>
           <span class="min-w-0">
             <span class="block text-base font-black tracking-tight text-white">Jitre</span>
-            <span class="block text-[8px] font-bold uppercase tracking-[0.17em] text-slate-500">Plan and ship</span>
+            <span class="block text-[8px] font-bold uppercase tracking-[0.17em] text-slate-500">{{ 'layout.brandTagline' | translate }}</span>
           </span>
         </a>
 
@@ -94,8 +100,8 @@ interface NavItem {
               <i class="pi pi-sparkles text-xs" aria-hidden="true"></i>
             </span>
             <div class="min-w-0">
-              <p class="truncate text-xs font-bold text-white">Product team</p>
-              <p class="truncate text-[9px] font-semibold text-emerald-400">● Active workspace</p>
+              <p class="truncate text-xs font-bold text-white">{{ 'layout.productTeam' | translate }}</p>
+              <p class="truncate text-[9px] font-semibold text-emerald-400">● {{ 'layout.activeWorkspace' | translate }}</p>
             </div>
           </div>
         </div>
@@ -110,7 +116,7 @@ interface NavItem {
                 class="group flex items-center gap-3 rounded-md px-3 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/[0.05] hover:text-white"
               >
                 <i [class]="'pi ' + item.icon + ' text-[12px] text-violet-300 group-hover:text-white'" aria-hidden="true"></i>
-                <span class="flex-1 truncate">{{ item.label }}</span>
+                <span class="flex-1 truncate">{{ item.labelKey | translate }}</span>
                 @if (item.badge === 'chat' && chatUnread() > 0) {
                   <span class="rounded-full bg-indigo-400 px-1.5 py-0.5 text-[9px] font-bold text-white">{{ chatUnread() }}</span>
                 }
@@ -127,7 +133,7 @@ interface NavItem {
               class="flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
             >
               <i [class]="'pi ' + item.icon + ' text-[12px]'" aria-hidden="true"></i>
-              {{ item.label }}
+              {{ item.labelKey | translate }}
             </a>
           }
         </div>
@@ -145,7 +151,7 @@ interface NavItem {
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60
                    focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950
                    transition-colors"
-            aria-label="Open command palette"
+            [attr.aria-label]="'layout.openCommandPalette' | translate"
           >
             <svg
               class="h-3.5 w-3.5 text-slate-400"
@@ -161,7 +167,7 @@ interface NavItem {
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.3-4.3" />
             </svg>
-            Search commands...
+            {{ 'layout.searchCommands' | translate }}
             <kbd
               class="ml-2 inline-flex items-center gap-0.5 rounded
                      border border-slate-200 bg-white px-1.5 py-0.5
@@ -172,13 +178,30 @@ interface NavItem {
           </button>
 
           <div class="flex items-center gap-4">
+          <button
+            type="button"
+            (click)="openAiCreate()"
+            class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5
+                   text-xs font-bold text-white shadow-md shadow-violet-500/25 transition-shadow
+                   hover:shadow-lg hover:shadow-violet-500/40
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60
+                   focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            aria-label="Open AI create dialog"
+            data-testid="ai-create-trigger"
+          >
+            <i class="pi pi-sparkles text-[10px]" aria-hidden="true"></i>
+            AI create
+            <kbd class="ml-1 inline-flex items-center rounded bg-white/20 px-1 py-0.5 text-[9px] font-semibold tracking-wide">
+              ⌘I
+            </kbd>
+          </button>
           @if (activeTimer(); as t) {
             <div
               class="inline-flex items-center gap-2 px-2 py-1 rounded-full
                      border border-emerald-200 bg-emerald-50 text-emerald-700"
               data-testid="active-timer-pill"
               role="status"
-              aria-label="Active timer"
+              [attr.aria-label]="'layout.timer.ariaActiveTimer' | translate"
             >
               <span
                 class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
@@ -189,9 +212,9 @@ interface NavItem {
                 type="button"
                 (click)="goToTimerTask()"
                 class="max-w-[14rem] truncate text-xs font-semibold text-emerald-700 hover:text-emerald-900"
-                [attr.aria-label]="'Go to task ' + (activeTaskTitle() ?? t.taskId)"
+                [attr.aria-label]="'layout.timer.goToTask' | translate: { title: activeTaskTitle() ?? t.taskId }"
               >
-                {{ activeTaskTitle() ?? 'Tracking task' }}
+                {{ activeTaskTitle() ?? ('layout.timer.trackingTask' | translate) }}
               </button>
               <button
                 type="button"
@@ -200,17 +223,17 @@ interface NavItem {
                 class="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5
                        border border-rose-200 bg-rose-50 text-rose-600
                        hover:bg-rose-100 transition-colors disabled:opacity-60"
-                aria-label="Stop timer"
+                [attr.aria-label]="'layout.timer.stopAria' | translate"
               >
                 <span class="pi pi-stop-circle" aria-hidden="true"></span>
-                Stop
+                {{ 'layout.timer.stop' | translate }}
               </button>
             </div>
           }
-            <a routerLink="/notifications" aria-label="Notifications" class="text-slate-400 transition hover:text-indigo-600">
+            <a routerLink="/notifications" [attr.aria-label]="'nav.notifications' | translate" class="text-slate-400 transition hover:text-indigo-600">
               <i class="pi pi-bell text-sm" aria-hidden="true"></i>
             </a>
-            <button type="button" aria-label="Help" class="text-slate-400 transition hover:text-indigo-600">
+            <button type="button" [attr.aria-label]="'nav.help' | translate" class="text-slate-400 transition hover:text-indigo-600">
               <i class="pi pi-question-circle text-sm" aria-hidden="true"></i>
             </button>
 
@@ -220,7 +243,7 @@ interface NavItem {
                 (click)="toggleUserMenu($event)"
                 [attr.aria-expanded]="userMenuOpen()"
                 aria-haspopup="menu"
-                aria-label="Open account menu"
+                [attr.aria-label]="'layout.openAccountMenu' | translate"
                 class="flex h-8 w-8 items-center justify-center rounded-full
                        bg-gradient-to-br from-indigo-500 to-violet-600 text-[11px] font-bold text-white
                        shadow-md shadow-indigo-500/25
@@ -236,7 +259,7 @@ interface NavItem {
                 <button
                   type="button"
                   class="fixed inset-0 z-30 cursor-default bg-transparent"
-                  aria-label="Close account menu"
+                  [attr.aria-label]="'layout.closeAccountMenu' | translate"
                   (click)="closeUserMenu()"
                 ></button>
                 <div
@@ -252,6 +275,30 @@ interface NavItem {
                       {{ userEmail() }}
                     </p>
                   </div>
+
+                  <div class="px-3 py-2 border-b border-slate-100">
+                    <p class="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                      {{ 'common.language' | translate }}
+                    </p>
+                    <div class="flex gap-1.5" role="group" [attr.aria-label]="'common.language' | translate">
+                      @for (loc of locales; track loc) {
+                        <button
+                          type="button"
+                          (click)="setLocale(loc)"
+                          [attr.aria-pressed]="currentLocale() === loc"
+                          [class.bg-indigo-600]="currentLocale() === loc"
+                          [class.text-white]="currentLocale() === loc"
+                          [class.border-indigo-600]="currentLocale() === loc"
+                          class="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200
+                                 px-2 py-1 text-[10px] font-bold uppercase tracking-wider
+                                 text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+                        >
+                          {{ loc }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
                   <a
                     routerLink="/settings"
                     role="menuitem"
@@ -259,7 +306,7 @@ interface NavItem {
                     class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700
                            hover:bg-slate-50"
                   >
-                    <i class="pi pi-cog text-[11px]" aria-hidden="true"></i> Settings
+                    <i class="pi pi-cog text-[11px]" aria-hidden="true"></i> {{ 'layout.settings' | translate }}
                   </a>
                   <button
                     type="button"
@@ -268,7 +315,7 @@ interface NavItem {
                     class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-rose-600
                            hover:bg-rose-50"
                   >
-                    <i class="pi pi-sign-out text-[11px]" aria-hidden="true"></i> Log out
+                    <i class="pi pi-sign-out text-[11px]" aria-hidden="true"></i> {{ 'layout.logout' | translate }}
                   </button>
                 </div>
               }
@@ -287,27 +334,35 @@ interface NavItem {
 
     <jt-toast-container></jt-toast-container>
     <jt-command-palette></jt-command-palette>
+    <jt-ai-create-dialog></jt-ai-create-dialog>
   `,
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
   private readonly shortcuts = inject(KeyboardShortcutService);
   private readonly palette = inject(CommandPaletteService);
+  private readonly aiCreate = inject(AiCreateService);
   private readonly chatChannelStore = inject(ChatChannelStore);
   private readonly auth = inject(AuthService);
   private readonly timeStore = inject(TimeEntryStore);
   private readonly taskStore = inject(TaskStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly translate = inject(TranslateService);
+  private readonly locale = inject(LocaleService);
 
   readonly chatUnread = this.chatChannelStore.totalUnread;
 
   private _unregisterCmdK?: () => void;
   private _unregisterHelp?: () => void;
+  private _unregisterAiCreate?: () => void;
   private _tickHandle?: ReturnType<typeof setInterval>;
 
   readonly stopping = computed(() => this.timeStore.stopping());
   readonly nowMs = signal<number>(Date.now());
   readonly userMenuOpen = signal(false);
+
+  readonly locales = SUPPORTED_LOCALES;
+  readonly currentLocale = this.locale.current;
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'admin');
   readonly userDisplayName = computed(() => this.auth.currentUser()?.displayName ?? 'Guest');
@@ -322,20 +377,20 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   });
   readonly activeTimer = computed(() => this.timeStore.activeTimer());
   readonly primaryNav = computed<NavItem[]>(() => [
-    { label: 'Dashboard', route: '/', icon: 'pi-th-large', exact: true },
-    { label: 'Projects', route: '/projects', icon: 'pi-folder' },
-    { label: 'AI Insights', route: '/analytics', icon: 'pi-lightbulb' },
-    { label: 'Automations', route: '/my-time', icon: 'pi-sliders-h' },
-    { label: 'Tickets', route: '/tickets', icon: 'pi-exclamation-circle' },
-    { label: 'Docs', route: '/docs', icon: 'pi-file' },
-    { label: 'Chat', route: '/chat', icon: 'pi-comments', badge: 'chat' },
+    { labelKey: 'nav.dashboard', route: '/', icon: 'pi-th-large', exact: true },
+    { labelKey: 'nav.projects', route: '/projects', icon: 'pi-folder' },
+    { labelKey: 'nav.aiInsights', route: '/analytics', icon: 'pi-lightbulb' },
+    { labelKey: 'nav.automations', route: '/my-time', icon: 'pi-sliders-h' },
+    { labelKey: 'nav.tickets', route: '/tickets', icon: 'pi-exclamation-circle' },
+    { labelKey: 'nav.docs', route: '/docs', icon: 'pi-file' },
+    { labelKey: 'nav.chat', route: '/chat', icon: 'pi-comments', badge: 'chat' },
     ...(this.isAdmin()
-      ? [{ label: 'Time Reports', route: '/time-reports', icon: 'pi-chart-bar' }]
+      ? [{ labelKey: 'nav.timeReports', route: '/time-reports', icon: 'pi-chart-bar' }]
       : []),
   ]);
   readonly footerNav: NavItem[] = [
-    { label: 'Settings', route: '/settings', icon: 'pi-cog' },
-    { label: 'Support', route: '/docs', icon: 'pi-question-circle' },
+    { labelKey: 'nav.settings', route: '/settings', icon: 'pi-cog' },
+    { labelKey: 'nav.support', route: '/docs', icon: 'pi-question-circle' },
   ];
 
   readonly timerLabel = computed(() => {
@@ -366,6 +421,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       },
       context: 'Global',
     });
+    this._unregisterAiCreate = this.shortcuts.register({
+      key: 'cmd+i',
+      handler: () => this.aiCreate.open(),
+      context: 'Global',
+    });
     void this.timeStore.loadActiveTimer();
     this._tickHandle = setInterval(() => this.nowMs.set(Date.now()), 1000);
   }
@@ -373,11 +433,16 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this._unregisterCmdK?.();
     this._unregisterHelp?.();
+    this._unregisterAiCreate?.();
     if (this._tickHandle) clearInterval(this._tickHandle);
   }
 
   openCommandPalette(): void {
     this.palette.open();
+  }
+
+  openAiCreate(): void {
+    this.aiCreate.open();
   }
 
   toggleUserMenu(event: MouseEvent): void {
@@ -387,6 +452,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   closeUserMenu(): void {
     this.userMenuOpen.set(false);
+  }
+
+  setLocale(loc: SupportedLocale): void {
+    this.locale.use(loc);
   }
 
   logout(): void {
@@ -404,9 +473,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   async stopTimer(): Promise<void> {
     try {
       const result = await this.timeStore.stop();
-      if (result) this.toast.success('Timer stopped');
+      if (result) this.toast.success(this.translate.instant('layout.timer.stopped'));
     } catch {
-      this.toast.error('Failed to stop timer');
+      this.toast.error(this.translate.instant('layout.timer.stopFailed'));
     }
   }
 }

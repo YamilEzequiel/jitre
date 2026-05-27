@@ -17,9 +17,9 @@ import {
   ChatMessage,
   WorkspaceContact,
 } from '../../stores/chat-api.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { AuthService } from '../../core/auth/auth.service';
 import { CreateChannelComponent } from './create-channel.component';
-import { otherUserIdFromDmName, shortId } from './chat-utils';
 
 function rankChannel(channel: ChatChannel): number {
   if (channel.kind === 'general') return 0;
@@ -277,6 +277,7 @@ function rankChannel(channel: ChatChannel): number {
 })
 export class ChatComponent implements OnInit, OnDestroy {
   private readonly channelStore = inject(ChatChannelStore);
+  private readonly memberStore = inject(WorkspaceMemberStore);
   private readonly chatApi = inject(ChatApiService);
   private readonly realtime = inject(ChatRealtimeService);
   private readonly auth = inject(AuthService);
@@ -288,10 +289,11 @@ export class ChatComponent implements OnInit, OnDestroy {
   readonly dmOpen = signal(false);
   readonly selectedId = signal<string | null>(null);
   readonly contactQuery = signal('');
-  readonly contacts = signal<WorkspaceContact[]>([]);
-  readonly contactsLoading = signal(false);
   readonly dmCreatingFor = signal<string | null>(null);
   readonly dmError = signal<string | null>(null);
+
+  readonly contacts = this.memberStore.members;
+  readonly contactsLoading = this.memberStore.loading;
 
   private _searchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -319,7 +321,6 @@ export class ChatComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.realtime.connect();
     void this.channelStore.refresh();
-    void this.loadContacts();
     // sync selectedId with URL on first load
     const segments = this.router.url.split('/');
     const idx = segments.indexOf('chat');
@@ -338,7 +339,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   openDmPicker(): void {
     this.dmOpen.set(true);
     this.dmError.set(null);
-    void this.loadContacts();
+    void this.memberStore.refresh();
   }
 
   closeDmPicker(): void {
@@ -382,9 +383,7 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   dmLabel(channel: ChatChannel): string {
     const me = this.auth.currentUser()?.id ?? '';
-    const other = otherUserIdFromDmName(channel.name, me);
-    const contact = this.contacts().find((candidate) => candidate.userId === other);
-    return contact?.displayName ?? (other ? shortId(other) : channel.name || 'Direct message');
+    return this.memberStore.dmTitleFor(channel.name, me);
   }
 
   contactInitials(contact: WorkspaceContact): string {
@@ -408,19 +407,6 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.dmError.set('Could not start this conversation.');
     } finally {
       this.dmCreatingFor.set(null);
-    }
-  }
-
-  private async loadContacts(): Promise<void> {
-    const workspaceId = this.auth.currentWorkspace()?.id;
-    if (!workspaceId) return;
-    this.contactsLoading.set(true);
-    try {
-      this.contacts.set(await this.chatApi.listWorkspaceContacts(workspaceId));
-    } catch {
-      if (this.dmOpen()) this.dmError.set('Could not load teammates.');
-    } finally {
-      this.contactsLoading.set(false);
     }
   }
 

@@ -12,6 +12,7 @@ import { TimeEntryStore } from '../../stores/time-entry.store';
 import { TimeEntry } from '../../stores/time-entry-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { parseDurationToMinutes, formatMinutes } from './duration.util';
 
 function todayIso(): string {
@@ -20,14 +21,6 @@ function todayIso(): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
-}
-
-function initials(name: string | null | undefined): string {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 @Component({
@@ -191,7 +184,7 @@ function initials(name: string | null | undefined): string {
                 <span
                   class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
                          bg-gradient-to-br from-indigo-600 to-violet-600 text-[10px] font-bold text-white"
-                  [attr.title]="entry.userId"
+                  [attr.title]="userDisplayName(entry.userId)"
                 >
                   {{ userInitials(entry.userId) }}
                 </span>
@@ -280,6 +273,7 @@ export class TimeLoggerComponent implements OnInit {
 
   private readonly store = inject(TimeEntryStore);
   private readonly auth = inject(AuthService);
+  private readonly memberStore = inject(WorkspaceMemberStore);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
 
@@ -331,9 +325,13 @@ export class TimeLoggerComponent implements OnInit {
   }
 
   userInitials(userId: string): string {
+    return this.memberStore.initialsFor(userId);
+  }
+
+  userDisplayName(userId: string): string {
     const me = this.auth.currentUser();
-    if (me?.id === userId) return initials(me.displayName);
-    return initials(userId.slice(0, 2));
+    if (me?.id === userId) return me.displayName ?? this.memberStore.displayNameFor(userId);
+    return this.memberStore.displayNameFor(userId);
   }
 
   formatDuration(min: number): string {

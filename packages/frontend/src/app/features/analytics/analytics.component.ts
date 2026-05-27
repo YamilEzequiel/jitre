@@ -13,6 +13,7 @@ import {
   WorkloadBucket,
 } from '../../core/analytics/analytics.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
 import { VelocityChartComponent, type TimeSeriesPoint } from './velocity-chart.component';
 import { WorkloadChartComponent, type WorkloadPoint } from './workload-chart.component';
@@ -142,6 +143,7 @@ import { AiConsumptionChartComponent } from './ai-consumption-chart.component';
 export class AnalyticsComponent implements OnInit {
   private readonly analytics = inject(AnalyticsService);
   private readonly auth = inject(AuthService);
+  private readonly memberStore = inject(WorkspaceMemberStore);
 
   readonly loading = signal(true);
   readonly rangeDays = signal(30);
@@ -149,7 +151,15 @@ export class AnalyticsComponent implements OnInit {
 
   readonly velocityData = signal<TimeSeriesPoint[]>([]);
   readonly throughputData = signal<TimeSeriesPoint[]>([]);
-  readonly workloadData = signal<WorkloadPoint[]>([]);
+  private readonly _workloadBuckets = signal<WorkloadBucket[]>([]);
+  readonly workloadData = computed<WorkloadPoint[]>(() =>
+    this._workloadBuckets().map(p => ({
+      label: p.key === '__unassigned__'
+        ? 'Sin asignar'
+        : this.memberStore.displayNameFor(p.key, p.key),
+      count: Number(p.count ?? 0),
+    })),
+  );
   readonly aiChartData = signal<TimeSeriesPoint[]>([]);
 
   readonly totalVelocity = computed(() => sumValues(this.velocityData()));
@@ -186,7 +196,7 @@ export class AnalyticsComponent implements OnInit {
     const requests = [
       this.analytics.getVelocity(from, to).then(data => this.velocityData.set(toTimeSeries(data))),
       this.analytics.getThroughput(from, to).then(data => this.throughputData.set(toTimeSeries(data))),
-      this.analytics.getWorkload('assignee').then(data => this.workloadData.set(toWorkload(data))),
+      this.analytics.getWorkload('assignee').then(data => this._workloadBuckets.set(data ?? [])),
     ];
 
     if (this.isAdmin()) {
@@ -212,13 +222,6 @@ export class AnalyticsComponent implements OnInit {
 
 function toTimeSeries(points: AnalyticsPeriodPoint[] | null | undefined): TimeSeriesPoint[] {
   return (points ?? []).map(p => ({ date: p.period, value: Number(p.value ?? 0) }));
-}
-
-function toWorkload(points: WorkloadBucket[] | null | undefined): WorkloadPoint[] {
-  return (points ?? []).map(p => ({
-    label: p.key === '__unassigned__' ? 'Sin asignar' : p.key,
-    count: Number(p.count ?? 0),
-  }));
 }
 
 function toAiSeries(points: AiUsagePoint[] | null | undefined): TimeSeriesPoint[] {
