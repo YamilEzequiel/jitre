@@ -71,3 +71,4 @@ skills-lock.json
 
 # Local temp / scratch
 .tmp-*
+.playwright-mcp/
