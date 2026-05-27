@@ -23,6 +23,12 @@ export interface Employee {
   bio: string | null;
   employeeCode: string | null;
   emergencyContact: string | null;
+  /**
+   * Optional reference to a workspace `Area`. Surfaces the colored area badge
+   * in the directory / org-chart. Backend sets it to NULL when an area is
+   * soft-deleted, so renderers must handle nulls gracefully.
+   */
+  areaId: string | null;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -40,6 +46,7 @@ export interface UpdateEmployeeBody {
   bio?: string | null;
   employeeCode?: string | null;
   emergencyContact?: string | null;
+  areaId?: string | null;
   status?: string;
 }
 
@@ -66,6 +73,24 @@ export class EmployeeApiService {
     form.append('file', file);
     return firstValueFrom(
       this.http.post(`/api/v1/employees/${id}/avatar`, form),
+    );
+  }
+
+  /**
+   * Updates the workspace-level role for a member. Routed through the
+   * workspace endpoint because employees are workspace memberships under
+   * the hood.
+   */
+  updateRole(
+    workspaceId: string,
+    userId: string,
+    role: 'owner' | 'admin' | 'member',
+  ): Promise<unknown> {
+    return firstValueFrom(
+      this.http.patch(
+        `/api/v1/workspaces/${workspaceId}/members/${userId}`,
+        { role },
+      ),
     );
   }
 }

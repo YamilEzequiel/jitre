@@ -104,7 +104,7 @@ export class UserController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: AuthRequest,
   ): Promise<unknown> {
-    return this.attachmentService.replaceAvatar({
+    const attachment = await this.attachmentService.replaceAvatar({
       file: {
         buffer: file.buffer,
         originalname: file.originalname,
@@ -116,5 +116,17 @@ export class UserController {
       uploaderUserId: req.user!.id,
       workspaceId: req.workspace!.id,
     });
+    // Inline the uploaded bytes as a data URL on users.avatarUrl so any `<img
+    // src>` can render without juggling signed-URL plumbing. Mirrors what
+    // employee.controller does — see the note there for the reasoning.
+    const avatarUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    const updated = await this.userService.updateEmployee(req.user!.id, {
+      avatarUrl,
+    });
+    const { passwordHash: _, ...safe } = updated as unknown as Record<
+      string,
+      unknown
+    >;
+    return { attachment, user: safe };
   }
 }

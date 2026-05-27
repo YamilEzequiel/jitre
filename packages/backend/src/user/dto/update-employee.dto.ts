@@ -4,8 +4,10 @@ import {
   IsEmail,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 /**
@@ -86,4 +88,14 @@ export class UpdateEmployeeDto {
   @IsString()
   @MaxLength(20)
   status?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Area assignment. Pass null to clear.',
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsUUID()
+  areaId?: string | null;
 }

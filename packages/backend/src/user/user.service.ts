@@ -18,6 +18,7 @@ export interface EmployeePatch {
   employeeCode?: string | null;
   emergencyContact?: string | null;
   status?: string;
+  areaId?: string | null;
 }
 
 @Injectable()

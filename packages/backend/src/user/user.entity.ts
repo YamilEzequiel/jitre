@@ -51,6 +51,10 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 200, name: 'emergency_contact', nullable: true })
   emergencyContact!: string | null;
 
+  // ── Area / department (migration 1700000002300)
+  @Column({ type: 'uuid', name: 'area_id', nullable: true })
+  areaId!: string | null;
+
   // ── Email preferences (migration 1700000002000)
   @Column({ type: 'boolean', name: 'email_mentions', default: true })
   emailMentions!: boolean;
