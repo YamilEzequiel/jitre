@@ -40,6 +40,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { DocumentModule } from './document/document.module';
 import { ChatModule } from './chat/chat.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
+import { OrgGraphModule } from './org-graph/org-graph.module';
+import { AreaModule } from './area/area.module';
 
 @Module({
   imports: [
@@ -134,6 +136,8 @@ import { TimeTrackingModule } from './time-tracking/time-tracking.module';
     DocumentModule,
     ChatModule,
     TimeTrackingModule,
+    OrgGraphModule,
+    AreaModule,
   ],
   providers: [
     {

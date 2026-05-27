@@ -14,6 +14,8 @@ import { TaskStore } from '../../../stores/task.store';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
+import { AreaStore } from '../../../stores/area.store';
+import { Area } from '../../../stores/area-api.service';
 import { Task, TaskApiService } from '../../../stores/task-api.service';
 import {
   CreatePlanningItemBody,
@@ -85,6 +87,58 @@ type TaskView = 'board' | 'list';
             </h1>
             @if (project()!.description) {
               <p class="max-w-2xl text-xs text-slate-600">{{ project()!.description }}</p>
+            }
+            @if (hasMetadata()) {
+              <ul class="flex flex-wrap items-center gap-2 pt-2 text-[11px]">
+                @if (areaOf(project()!); as area) {
+                  <li class="inline-flex items-center gap-1 rounded-full px-2 py-1 font-bold"
+                      [style.background]="area.color + '20'"
+                      [style.color]="area.color">
+                    @if (isPiIcon(area.icon)) {
+                      <i [class]="'pi ' + area.icon + ' text-[10px]'" aria-hidden="true"></i>
+                    } @else if (area.icon) {
+                      <span aria-hidden="true">{{ area.icon }}</span>
+                    }
+                    {{ area.name }}
+                  </li>
+                }
+                @if (project()!.category) {
+                  <li class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600">
+                    <i class="pi pi-tag text-[10px]" aria-hidden="true"></i>
+                    {{ project()!.category }}
+                  </li>
+                }
+                @if (project()!.framework) {
+                  <li class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600">
+                    <i class="pi pi-code text-[10px]" aria-hidden="true"></i>
+                    {{ project()!.framework }}
+                  </li>
+                }
+                @if (project()!.database) {
+                  <li class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600">
+                    <i class="pi pi-database text-[10px]" aria-hidden="true"></i>
+                    {{ project()!.database }}
+                  </li>
+                }
+                @if (project()!.customerName) {
+                  <li class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600">
+                    <i class="pi pi-building text-[10px]" aria-hidden="true"></i>
+                    {{ project()!.customerName }}
+                  </li>
+                }
+                @if (project()!.repositoryUrl) {
+                  <li>
+                    <a [href]="project()!.repositoryUrl"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:border-violet-300 hover:text-violet-700">
+                      <i class="pi pi-github text-[10px]" aria-hidden="true"></i>
+                      Repositorio
+                      <i class="pi pi-external-link text-[9px]" aria-hidden="true"></i>
+                    </a>
+                  </li>
+                }
+              </ul>
             }
           </div>
           <div class="flex flex-wrap items-center gap-2">
@@ -618,6 +672,7 @@ export class ProjectDetailComponent implements OnInit {
   private readonly statusStore = inject(WorkflowStatusStore);
   private readonly labelStore = inject(LabelStore);
   private readonly memberStore = inject(ProjectMemberStore);
+  private readonly areaStore = inject(AreaStore);
   private readonly analytics = inject(AnalyticsService);
   private readonly statusApi = inject(WorkflowStatusApiService);
   private readonly planningApi = inject(PlanningApiService);
@@ -1023,7 +1078,42 @@ export class ProjectDetailComponent implements OnInit {
       this.memberStore.loadForProject(this.projectId),
       this.loadProjectAnalytics(),
       this.loadPlanningItems(),
+      this.loadAreas(),
     ]);
+  }
+
+  /**
+   * Refreshes the workspace area cache so the metadata pill row can render
+   * the colored badge for `project.areaId`. Best-effort — the rest of the
+   * project view works without it.
+   */
+  private async loadAreas(): Promise<void> {
+    const workspaceId = this.projectStore.byId()[this.projectId]?.workspaceId;
+    if (!workspaceId) return;
+    await this.areaStore.load(workspaceId).catch(() => undefined);
+  }
+
+  /** Exposed to the template; pi-* class names render as primeicons. */
+  protected readonly isPiIcon = (icon: string | null | undefined): boolean =>
+    !!icon && icon.trim().startsWith('pi-');
+
+  areaOf(project: { areaId?: string | null }): Area | null {
+    if (!project.areaId) return null;
+    return this.areaStore.byId()[project.areaId] ?? null;
+  }
+
+  /** True when any metadata pill should render — pure UI helper. */
+  hasMetadata(): boolean {
+    const p = this.project();
+    if (!p) return false;
+    return !!(
+      p.areaId ||
+      p.category ||
+      p.framework ||
+      p.database ||
+      p.customerName ||
+      p.repositoryUrl
+    );
   }
 
   private async loadProjectAnalytics(): Promise<void> {

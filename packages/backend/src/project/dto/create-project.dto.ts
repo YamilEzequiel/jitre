@@ -2,8 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsOptional,
+  IsUrl,
   Length,
   Matches,
+  MaxLength,
   MinLength,
   IsDateString,
 } from 'class-validator';
@@ -50,4 +52,35 @@ export class CreateProjectDto {
   @IsOptional()
   @IsDateString()
   targetDate?: Date | null;
+
+  @ApiPropertyOptional({ maxLength: 40 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  category?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 60 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  framework?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 60 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  database?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 120 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  customerName?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 500, format: 'uri' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @IsUrl({ require_tld: false, require_protocol: true })
+  repositoryUrl?: string | null;
 }

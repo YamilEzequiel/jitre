@@ -10,6 +10,7 @@ const mockWsService = {
   listContacts: jest.fn(),
   addMember: jest.fn(),
   removeMember: jest.fn(),
+  updateMemberRole: jest.fn(),
 };
 
 const mockAttachmentService = {
@@ -102,6 +103,39 @@ describe('WorkspaceController', () => {
       await controller.removeMember('ws-1', 'u2');
 
       expect(mockWsService.removeMember).toHaveBeenCalledWith('ws-1', 'u2');
+    });
+  });
+
+  describe('updateMemberRole', () => {
+    it('forwards the actor identity and role to the service', async () => {
+      const updated = {
+        id: 'm2',
+        userId: 'u2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.ADMIN,
+      };
+      mockWsService.updateMemberRole.mockResolvedValue(updated);
+      const dto = { role: WorkspaceRole.ADMIN };
+      const req = {
+        user: { id: 'user-1' },
+        workspace: { id: 'ws-1', role: WorkspaceRole.OWNER },
+      };
+
+      const result = await controller.updateMemberRole(
+        'ws-1',
+        'u2',
+        dto,
+        req as never,
+      );
+
+      expect(mockWsService.updateMemberRole).toHaveBeenCalledWith(
+        'ws-1',
+        'u2',
+        WorkspaceRole.ADMIN,
+        'user-1',
+        WorkspaceRole.OWNER,
+      );
+      expect(result).toEqual(updated);
     });
   });
 });

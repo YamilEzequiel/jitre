@@ -258,6 +258,10 @@ export class ChatService {
     }
     if (dto.name !== undefined) channel.name = dto.name;
     if (dto.description !== undefined) channel.description = dto.description;
+    if (dto.icon !== undefined) {
+      // Normalize empty string to null so the column stays clean.
+      channel.icon = dto.icon === '' ? null : dto.icon;
+    }
     return this.channelRepo.save(channel);
   }
 

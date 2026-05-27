@@ -10,3 +10,5 @@ export * from './project-member.store';
 export * from './project-member-api.service';
 export * from './document.store';
 export * from './document-api.service';
+export * from './area-api.service';
+export * from './area.store';

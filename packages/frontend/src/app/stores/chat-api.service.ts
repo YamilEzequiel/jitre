@@ -17,6 +17,11 @@ export interface ChatChannel {
   createdBy?: string;
   lastMessageAt: string | null;
   createdAt: string;
+  /**
+   * Optional emoji shown next to the channel name in the sidebar and header.
+   * `null` (or missing) means "fall back to the lock/hash/user iconography".
+   */
+  icon?: string | null;
 }
 
 export interface ChatAttachment {
@@ -97,8 +102,18 @@ export class ChatApiService {
     return firstValueFrom(this.http.post<ChatChannel>('/api/v1/chat/channels', body));
   }
 
-  updateChannel(id: string, body: { name?: string; description?: string }): Promise<ChatChannel> {
+  updateChannel(
+    id: string,
+    body: { name?: string; description?: string; icon?: string | null },
+  ): Promise<ChatChannel> {
     return firstValueFrom(this.http.patch<ChatChannel>(`/api/v1/chat/channels/${id}`, body));
+  }
+
+  /** Lists membership records (channelId, userId, joinedAt...) for a channel. */
+  listMembers(channelId: string): Promise<ChatChannelMember[]> {
+    return firstValueFrom(
+      this.http.get<ChatChannelMember[]>(`/api/v1/chat/channels/${channelId}/members`),
+    );
   }
 
   deleteChannel(id: string): Promise<void> {

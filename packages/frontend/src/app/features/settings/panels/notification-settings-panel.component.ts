@@ -39,8 +39,6 @@ interface MySettingsResponse {
                 type="checkbox"
                 [checked]="prefs()![pref.key]"
                 (change)="toggle(pref.key)"
-                class="h-4 w-4 rounded border-slate-300 bg-white text-indigo-500
-                       focus:ring-indigo-500/40 focus:ring-offset-0"
               />
               <span class="text-sm text-slate-700">{{ pref.label }}</span>
             </label>

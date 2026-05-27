@@ -1,21 +1,51 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
+  computed,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { TabsModule } from 'primeng/tabs';
+import { SelectModule } from 'primeng/select';
 import { ProjectApiService, Project } from '../../../stores/project-api.service';
+import { AreaStore } from '../../../stores/area.store';
+import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/toast/toast.service';
+
+/**
+ * Accepts `https://...`, `http://...` or `git@host:path` style URLs. Empty
+ * string passes (the field is optional); the backend trims further. Defined
+ * outside the component so we can swap to a stricter check without touching
+ * the template wiring.
+ */
+function isValidRepositoryUrl(value: string): boolean {
+  const v = value.trim();
+  if (!v) return true;
+  if (/^https?:\/\/\S+$/i.test(v)) return true;
+  if (/^git@[\w.\-]+:\S+$/i.test(v)) return true;
+  return false;
+}
+
+function repositoryUrlValidator(control: AbstractControl): ValidationErrors | null {
+  const value = (control.value as string | null) ?? '';
+  return isValidRepositoryUrl(value) ? null : { repositoryUrl: true };
+}
 
 @Component({
   selector: 'jt-create-project',
   host: { class: 'block h-full w-full' },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, TabsModule],
+  imports: [ReactiveFormsModule, TabsModule, SelectModule],
   template: `
     <div class="jitre-editor h-full w-full overflow-hidden bg-white">
       <header class="m-5 rounded-xl border border-slate-200 bg-gradient-to-r from-violet-50 via-white to-white p-5 shadow-sm">
@@ -35,6 +65,7 @@ import { ToastService } from '../../../core/toast/toast.service';
         <p-tabs value="details" [showNavigators]="false">
           <p-tablist>
             <p-tab value="details"><i class="pi pi-file-edit mr-2"></i>Detalles</p-tab>
+            <p-tab value="metadata"><i class="pi pi-tags mr-2"></i>Metadata</p-tab>
             <p-tab value="planning"><i class="pi pi-calendar mr-2"></i>Planificación</p-tab>
             <p-tab value="appearance"><i class="pi pi-palette mr-2"></i>Apariencia</p-tab>
           </p-tablist>
@@ -68,6 +99,68 @@ import { ToastService } from '../../../core/toast/toast.service';
                 </section>
               </div>
             </p-tabpanel>
+            <p-tabpanel value="metadata">
+              <section class="my-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex items-center gap-3 border-b border-slate-100 p-5">
+                  <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><i class="pi pi-tags"></i></span>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-950">Stack y atribución</h3>
+                    <p class="text-xs text-slate-500">Área responsable, framework, cliente y repo. Todo opcional.</p>
+                  </div>
+                </div>
+                <div class="grid gap-4 p-5 sm:grid-cols-2">
+                  <div>
+                    <label for="project-area" class="mb-2 block text-xs font-semibold text-slate-600">Área</label>
+                    <p-select
+                      inputId="project-area"
+                      formControlName="areaId"
+                      [options]="areaSelectOptions()"
+                      optionLabel="label"
+                      optionValue="value"
+                      appendTo="body"
+                      [showClear]="true"
+                      placeholder="Sin área"
+                      styleClass="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label for="project-category" class="mb-2 block text-xs font-semibold text-slate-600">Categoría</label>
+                    <input id="project-category" type="text" formControlName="category" maxlength="40"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                           placeholder="Producto interno, Outsourcing…" />
+                  </div>
+                  <div>
+                    <label for="project-framework" class="mb-2 block text-xs font-semibold text-slate-600">Framework</label>
+                    <input id="project-framework" type="text" formControlName="framework" maxlength="60"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                           placeholder="Angular 21, NestJS 11…" />
+                  </div>
+                  <div>
+                    <label for="project-database" class="mb-2 block text-xs font-semibold text-slate-600">Base de datos</label>
+                    <input id="project-database" type="text" formControlName="database" maxlength="60"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                           placeholder="PostgreSQL 16, MongoDB…" />
+                  </div>
+                  <div>
+                    <label for="project-customer" class="mb-2 block text-xs font-semibold text-slate-600">Cliente</label>
+                    <input id="project-customer" type="text" formControlName="customerName" maxlength="120"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                           placeholder="Nombre del cliente final" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label for="project-repo" class="mb-2 block text-xs font-semibold text-slate-600">Repositorio (URL)</label>
+                    <input id="project-repo" type="text" formControlName="repositoryUrl"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-mono"
+                           placeholder="https://github.com/empresa/proyecto o git@github.com:empresa/proyecto.git" />
+                    @if (form.controls.repositoryUrl.touched && form.controls.repositoryUrl.invalid) {
+                      <p class="mt-1 text-[11px] font-semibold text-rose-600">
+                        La URL debe empezar con <code>https://</code>, <code>http://</code> o <code>git@</code>.
+                      </p>
+                    }
+                  </div>
+                </div>
+              </section>
+            </p-tabpanel>
             <p-tabpanel value="planning">
               <section class="my-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div class="flex items-center gap-3 border-b border-slate-100 p-5"><span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="pi pi-calendar"></i></span><div><h3 class="text-sm font-black text-slate-950">Ventana de planificación</h3><p class="text-xs text-slate-500">Fechas para roadmap, releases y analytics</p></div></div>
@@ -90,11 +183,13 @@ import { ToastService } from '../../../core/toast/toast.service';
     </div>
   `,
 })
-export class CreateProjectComponent {
+export class CreateProjectComponent implements OnInit {
   readonly workspaceId = input.required<string>();
 
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ProjectApiService);
+  private readonly areaStore = inject(AreaStore);
+  private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
   readonly created = output<Project>();
@@ -117,7 +212,31 @@ export class CreateProjectComponent {
     icon: ['🚀'],
     startDate: [''],
     targetDate: [''],
+    // Metadata block — all optional.
+    areaId: [null as string | null],
+    category: ['', [Validators.maxLength(40)]],
+    framework: ['', [Validators.maxLength(60)]],
+    database: ['', [Validators.maxLength(60)]],
+    customerName: ['', [Validators.maxLength(120)]],
+    repositoryUrl: ['', [repositoryUrlValidator]],
   });
+
+  /** Area select options pulled from the shared cache (workspace-scoped). */
+  readonly areaSelectOptions = computed<{ label: string; value: string | null }[]>(() => {
+    return [
+      { label: 'Sin área', value: null },
+      ...this.areaStore.areas().map((a) => ({ label: a.name, value: a.id })),
+    ];
+  });
+
+  async ngOnInit(): Promise<void> {
+    const workspaceId = this.auth.currentWorkspace()?.id;
+    if (workspaceId) {
+      // Best-effort — the form still works without the cache (just shows
+      // "Sin área" as the only option).
+      await this.areaStore.load(workspaceId).catch(() => undefined);
+    }
+  }
 
   previewIcon(): string {
     const icon = this.form.controls.icon.value?.trim();
@@ -140,7 +259,21 @@ export class CreateProjectComponent {
     if (this.form.invalid || !workspaceId) return;
     this.loading.set(true);
     try {
-      const { name, key, description, color, icon, startDate, targetDate } = this.form.value;
+      const {
+        name,
+        key,
+        description,
+        color,
+        icon,
+        startDate,
+        targetDate,
+        areaId,
+        category,
+        framework,
+        database,
+        customerName,
+        repositoryUrl,
+      } = this.form.value;
       const project = await this.api.create(workspaceId, {
         name: name!.trim(),
         key: key!,
@@ -149,10 +282,30 @@ export class CreateProjectComponent {
         icon: this.emptyToUndefined(icon),
         startDate: this.emptyToUndefined(startDate),
         targetDate: this.emptyToUndefined(targetDate),
+        areaId: areaId ?? undefined,
+        category: this.emptyToUndefined(category),
+        framework: this.emptyToUndefined(framework),
+        database: this.emptyToUndefined(database),
+        customerName: this.emptyToUndefined(customerName),
+        repositoryUrl: this.emptyToUndefined(repositoryUrl),
       });
       this.toast.success('Project created');
       this.created.emit(project);
-      this.form.reset({ name: '', key: '', description: '', color: '#2563eb', icon: '🚀', startDate: '', targetDate: '' });
+      this.form.reset({
+        name: '',
+        key: '',
+        description: '',
+        color: '#2563eb',
+        icon: '🚀',
+        startDate: '',
+        targetDate: '',
+        areaId: null,
+        category: '',
+        framework: '',
+        database: '',
+        customerName: '',
+        repositoryUrl: '',
+      });
     } catch {
       this.toast.error('Failed to create project');
     } finally {

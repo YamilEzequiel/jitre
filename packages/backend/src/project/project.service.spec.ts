@@ -24,6 +24,11 @@ const makeProject = (overrides: Partial<ProjectEntity> = {}): ProjectEntity =>
     icon: null,
     startDate: null,
     targetDate: null,
+    category: null,
+    framework: null,
+    database: null,
+    customerName: null,
+    repositoryUrl: null,
     ...overrides,
   }) as unknown as ProjectEntity;
 
@@ -156,6 +161,83 @@ describe('ProjectService', () => {
       )?.[0];
       expect(createdEvent).toBeDefined();
     });
+
+    it('persists the optional metadata fields when provided', async () => {
+      const emCreate = jest
+        .fn()
+        .mockImplementation((_cls: unknown, data: unknown) => data);
+      const emSave = jest
+        .fn()
+        .mockImplementation((_cls: unknown, data: unknown) =>
+          Promise.resolve({ ...((data as object) ?? {}), id: 'proj-1' }),
+        );
+
+      dataSource.transaction.mockImplementation(
+        async (cb: (em: unknown) => Promise<unknown>) => {
+          const em = { create: emCreate, save: emSave };
+          return cb(em);
+        },
+      );
+
+      await service.create({
+        workspaceId: WS,
+        name: 'My Project',
+        key: 'MYPRJ',
+        ownerUserId: OWNER,
+        category: 'Internal',
+        framework: 'NestJS',
+        database: 'PostgreSQL',
+        customerName: 'Acme Corp',
+        repositoryUrl: 'https://github.com/acme/proj',
+      });
+
+      expect(emCreate).toHaveBeenCalledWith(
+        ProjectEntity,
+        expect.objectContaining({
+          category: 'Internal',
+          framework: 'NestJS',
+          database: 'PostgreSQL',
+          customerName: 'Acme Corp',
+          repositoryUrl: 'https://github.com/acme/proj',
+        }),
+      );
+    });
+
+    it('stores nulls for metadata when none are provided', async () => {
+      const emCreate = jest
+        .fn()
+        .mockImplementation((_cls: unknown, data: unknown) => data);
+      const emSave = jest
+        .fn()
+        .mockImplementation((_cls: unknown, data: unknown) =>
+          Promise.resolve({ ...((data as object) ?? {}), id: 'proj-1' }),
+        );
+
+      dataSource.transaction.mockImplementation(
+        async (cb: (em: unknown) => Promise<unknown>) => {
+          const em = { create: emCreate, save: emSave };
+          return cb(em);
+        },
+      );
+
+      await service.create({
+        workspaceId: WS,
+        name: 'My Project',
+        key: 'MYPRJ',
+        ownerUserId: OWNER,
+      });
+
+      expect(emCreate).toHaveBeenCalledWith(
+        ProjectEntity,
+        expect.objectContaining({
+          category: null,
+          framework: null,
+          database: null,
+          customerName: null,
+          repositoryUrl: null,
+        }),
+      );
+    });
   });
 
   describe('update', () => {
@@ -176,6 +258,84 @@ describe('ProjectService', () => {
       await expect(
         service.update('missing', WS, { name: 'X', actorUserId: OWNER }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('updates the optional metadata fields', async () => {
+      const project = makeProject();
+      projectRepo.findOne.mockResolvedValue(project);
+      projectRepo.save.mockImplementation((p: ProjectEntity) =>
+        Promise.resolve(p),
+      );
+
+      const saved = await service.update('proj-1', WS, {
+        category: 'Client',
+        framework: 'Angular',
+        database: 'PostgreSQL',
+        customerName: 'Acme Corp',
+        repositoryUrl: 'https://github.com/acme/proj',
+        actorUserId: OWNER,
+      });
+
+      expect(saved.category).toBe('Client');
+      expect(saved.framework).toBe('Angular');
+      expect(saved.database).toBe('PostgreSQL');
+      expect(saved.customerName).toBe('Acme Corp');
+      expect(saved.repositoryUrl).toBe('https://github.com/acme/proj');
+    });
+
+    it('clears metadata fields when explicitly set to null', async () => {
+      const project = makeProject({
+        category: 'Internal',
+        framework: 'NestJS',
+        database: 'PostgreSQL',
+        customerName: 'Acme Corp',
+        repositoryUrl: 'https://github.com/acme/proj',
+      });
+      projectRepo.findOne.mockResolvedValue(project);
+      projectRepo.save.mockImplementation((p: ProjectEntity) =>
+        Promise.resolve(p),
+      );
+
+      const saved = await service.update('proj-1', WS, {
+        category: null,
+        framework: null,
+        database: null,
+        customerName: null,
+        repositoryUrl: null,
+        actorUserId: OWNER,
+      });
+
+      expect(saved.category).toBeNull();
+      expect(saved.framework).toBeNull();
+      expect(saved.database).toBeNull();
+      expect(saved.customerName).toBeNull();
+      expect(saved.repositoryUrl).toBeNull();
+    });
+
+    it('leaves metadata untouched when fields are omitted from the update DTO', async () => {
+      const project = makeProject({
+        category: 'Internal',
+        framework: 'NestJS',
+        database: 'PostgreSQL',
+        customerName: 'Acme Corp',
+        repositoryUrl: 'https://github.com/acme/proj',
+      });
+      projectRepo.findOne.mockResolvedValue(project);
+      projectRepo.save.mockImplementation((p: ProjectEntity) =>
+        Promise.resolve(p),
+      );
+
+      const saved = await service.update('proj-1', WS, {
+        name: 'Renamed',
+        actorUserId: OWNER,
+      });
+
+      expect(saved.name).toBe('Renamed');
+      expect(saved.category).toBe('Internal');
+      expect(saved.framework).toBe('NestJS');
+      expect(saved.database).toBe('PostgreSQL');
+      expect(saved.customerName).toBe('Acme Corp');
+      expect(saved.repositoryUrl).toBe('https://github.com/acme/proj');
     });
   });
 

@@ -114,7 +114,9 @@ function rankChannel(channel: ChatChannel): number {
                     [attr.aria-current]="selectedId() === ch.id ? 'page' : null"
                   >
                     <span class="flex min-w-0 items-center gap-1.5 truncate">
-                      @if (ch.type === 'private') {
+                      @if (ch.icon) {
+                        <span aria-hidden="true">{{ ch.icon }}</span>
+                      } @else if (ch.type === 'private') {
                         <i class="pi pi-lock text-[10px] text-slate-500" aria-hidden="true"></i>
                       } @else {
                         <span class="text-slate-500">#</span>

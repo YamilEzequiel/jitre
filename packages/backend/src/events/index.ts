@@ -6,6 +6,7 @@ export * from './events/user-disabled.event';
 export * from './events/workspace-created.event';
 export * from './events/workspace-member-added.event';
 export * from './events/workspace-member-removed.event';
+export * from './events/workspace-member-role-changed.event';
 export * from './events/workspace-ownership-transferred.event';
 export * from './events/mention-created.event';
 export * from './events/session-created.event';

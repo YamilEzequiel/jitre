@@ -4,6 +4,7 @@ import { ProjectListComponent } from './project-list.component';
 import { ProjectStore } from '../../../stores/project.store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ProjectApiService } from '../../../stores/project-api.service';
+import { AreaStore } from '../../../stores/area.store';
 import { ToastService } from '../../../core/toast/toast.service';
 import { Router } from '@angular/router';
 import { signal } from '@angular/core';
@@ -39,6 +40,14 @@ describe('ProjectListComponent', () => {
           },
         },
         { provide: ProjectApiService, useValue: { create: vi.fn() } },
+        {
+          provide: AreaStore,
+          useValue: {
+            areas: signal([]).asReadonly(),
+            byId: signal({} as Record<string, unknown>).asReadonly(),
+            load: vi.fn().mockResolvedValue(undefined),
+          },
+        },
         { provide: ToastService, useValue: { success: vi.fn(), error: vi.fn() } },
       ],
     });

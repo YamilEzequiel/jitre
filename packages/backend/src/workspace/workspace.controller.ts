@@ -25,6 +25,7 @@ import type { Request } from 'express';
 import { WorkspaceService } from './workspace.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
 import { SkipTenancy } from '../auth/decorators/skip-tenancy.decorator';
@@ -113,6 +114,31 @@ export class WorkspaceController {
     @Body() dto: AddMemberDto,
   ): Promise<unknown> {
     return this.workspaceService.addMember(id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Change a workspace member role (requires ADMIN role)',
+  })
+  @ApiSecurity('workspace')
+  @ApiResponse({ status: 200, description: 'Member role updated.' })
+  @ApiResponse({ status: 403, description: 'INSUFFICIENT_ROLE / CANNOT_CHANGE_OWN_ROLE / OWNER_REQUIRED' })
+  @ApiResponse({ status: 404, description: 'MEMBER_NOT_FOUND' })
+  @ApiResponse({ status: 409, description: 'LAST_OWNER' })
+  @Patch(':id/members/:userId')
+  @RequireRole(WorkspaceRole.ADMIN)
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateMemberRoleDto,
+    @Req() req: AuthRequest,
+  ): Promise<unknown> {
+    return this.workspaceService.updateMemberRole(
+      id,
+      userId,
+      dto.role,
+      req.user!.id,
+      req.workspace!.role,
+    );
   }
 
   @ApiOperation({

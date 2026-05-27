@@ -36,4 +36,8 @@ export class ChatChannelEntity extends TenantEntity {
   @ApiProperty({ type: String, format: 'date-time', nullable: true })
   @Column({ type: 'timestamptz', nullable: true })
   lastMessageAt!: Date | null;
+
+  @ApiProperty({ nullable: true, maxLength: 8 })
+  @Column({ type: 'varchar', length: 8, nullable: true })
+  icon!: string | null;
 }

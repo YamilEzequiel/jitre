@@ -1,6 +1,11 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager, IsNull } from 'typeorm';
+import { Repository, DataSource, EntityManager, IsNull, Not } from 'typeorm';
 import { WorkspaceEntity } from './workspace.entity';
 import { WorkspaceMembershipEntity } from './workspace-membership.entity';
 import { WorkspaceRole } from '@jitre/shared';
@@ -9,6 +14,7 @@ import {
   WorkspaceCreatedEvent,
   WorkspaceMemberAddedEvent,
   WorkspaceMemberRemovedEvent,
+  WorkspaceMemberRoleChangedEvent,
 } from '../events';
 
 interface CreateWorkspaceDto {
@@ -189,6 +195,83 @@ export class WorkspaceService {
         }),
       );
     }
+  }
+
+  /**
+   * Changes the role of an existing workspace membership.
+   *
+   * Guards:
+   *  - CANNOT_CHANGE_OWN_ROLE: the actor may not edit their own role
+   *  - OWNER_REQUIRED: only an OWNER may promote to or demote away from OWNER
+   *  - MEMBER_NOT_FOUND: the target user is not a member of this workspace
+   *  - LAST_OWNER: cannot demote the only remaining OWNER
+   */
+  async updateMemberRole(
+    workspaceId: string,
+    targetUserId: string,
+    newRole: WorkspaceRole,
+    actorUserId: string,
+    actorRole: WorkspaceRole,
+  ): Promise<WorkspaceMembershipEntity> {
+    if (actorUserId === targetUserId) {
+      throw new ForbiddenException('CANNOT_CHANGE_OWN_ROLE');
+    }
+
+    const membership = await this.memberRepo.findOne({
+      where: { workspaceId, userId: targetUserId, deletedAt: IsNull() },
+    });
+    if (!membership) {
+      throw new NotFoundException('MEMBER_NOT_FOUND');
+    }
+
+    const previousRole = membership.role as WorkspaceRole;
+
+    // Only OWNERs can touch ownership (either grant it or revoke it).
+    if (
+      (newRole === WorkspaceRole.OWNER ||
+        previousRole === WorkspaceRole.OWNER) &&
+      actorRole !== WorkspaceRole.OWNER
+    ) {
+      throw new ForbiddenException('OWNER_REQUIRED');
+    }
+
+    // No-op early return — still return the entity for caller symmetry.
+    if (previousRole === newRole) {
+      return membership;
+    }
+
+    // If demoting an OWNER, make sure at least one OWNER remains afterwards.
+    if (
+      previousRole === WorkspaceRole.OWNER &&
+      newRole !== WorkspaceRole.OWNER
+    ) {
+      const remainingOwners = await this.memberRepo.count({
+        where: {
+          workspaceId,
+          role: WorkspaceRole.OWNER,
+          userId: Not(targetUserId),
+          deletedAt: IsNull(),
+        },
+      });
+      if (remainingOwners < 1) {
+        throw new ConflictException('LAST_OWNER');
+      }
+    }
+
+    membership.role = newRole;
+    const saved = await this.memberRepo.save(membership);
+
+    this.eventBus.publish(
+      new WorkspaceMemberRoleChangedEvent({
+        aggregateId: saved.id,
+        aggregateType: 'WorkspaceMembership',
+        actorUserId,
+        workspaceId,
+        payload: { targetUserId, previousRole, newRole },
+      }),
+    );
+
+    return saved;
   }
 
   async update(

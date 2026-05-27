@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   inject,
   signal,
@@ -8,6 +9,8 @@ import {
 import { Router } from '@angular/router';
 import { ProjectStore } from '../../../stores/project.store';
 import { Project } from '../../../stores/project-api.service';
+import { Area } from '../../../stores/area-api.service';
+import { AreaStore } from '../../../stores/area.store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { SkeletonComponent } from '../../../shared/skeleton/skeleton.component';
 import { CreateProjectComponent } from '../create/create-project.component';
@@ -137,9 +140,32 @@ type StatusFilter = 'all' | 'active' | 'archived';
                     <p class="text-sm font-bold text-slate-950 truncate group-hover:text-violet-700">
                       {{ project.name }}
                     </p>
-                    <p class="text-xs text-slate-500 truncate">{{ project.key }}</p>
+                    <p class="text-xs text-slate-500 truncate">
+                      <span class="font-mono">{{ project.key }}</span>
+                      @if (project.customerName) {
+                        <span class="text-slate-300"> · </span>
+                        <span>{{ project.customerName }}</span>
+                      }
+                      @if (project.framework) {
+                        <span class="text-slate-300"> · </span>
+                        <span>{{ project.framework }}</span>
+                      }
+                    </p>
                   </div>
                 </div>
+                <div class="flex items-center gap-2">
+                  @if (areaOf(project); as area) {
+                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          [style.background]="area.color + '20'"
+                          [style.color]="area.color">
+                      @if (isPiIcon(area.icon)) {
+                        <i [class]="'pi ' + area.icon + ' text-[9px]'" aria-hidden="true"></i>
+                      } @else if (area.icon) {
+                        <span aria-hidden="true">{{ area.icon }}</span>
+                      }
+                      {{ area.name }}
+                    </span>
+                  }
                 <span
                   [class]="
                     'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] border ' +
@@ -157,6 +183,7 @@ type StatusFilter = 'all' | 'active' | 'archived';
                   ></span>
                   {{ project.status }}
                 </span>
+                </div>
               </div>
             } @empty {
               <div
@@ -191,15 +218,35 @@ type StatusFilter = 'all' | 'active' | 'archived';
     }
   `,
 })
-export class ProjectListComponent {
+export class ProjectListComponent implements OnInit {
   readonly store = inject(ProjectStore);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly areaStore = inject(AreaStore);
 
   readonly statusFilter = signal<StatusFilter>('all');
   readonly showCreate = signal(false);
 
   readonly workspaceId = computed(() => this.auth.currentWorkspace()?.id ?? null);
+
+  /** Exposed to the template; pi-* class names render as primeicons. */
+  protected readonly isPiIcon = (icon: string | null | undefined): boolean =>
+    !!icon && icon.trim().startsWith('pi-');
+
+  async ngOnInit(): Promise<void> {
+    const workspaceId = this.workspaceId();
+    if (workspaceId) {
+      // Best-effort — the area badges just won't render until the cache
+      // is populated, which is fine in dev / fallback scenarios.
+      await this.areaStore.load(workspaceId).catch(() => undefined);
+    }
+  }
+
+  /** Resolves a project's `areaId` to the matching cached `Area`. */
+  areaOf(project: Project): Area | null {
+    if (!project.areaId) return null;
+    return this.areaStore.byId()[project.areaId] ?? null;
+  }
 
   readonly statusOptions: { value: StatusFilter; label: string }[] = [
     { value: 'all', label: 'All' },

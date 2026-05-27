@@ -103,7 +103,7 @@ export class ChatController {
     return this.chatService.getProjectChannel(projectId, req.workspace!.id);
   }
 
-  @ApiOperation({ summary: 'Update channel name/description' })
+  @ApiOperation({ summary: 'Update channel name, description, and/or icon' })
   @ApiResponse({ status: 200 })
   @Patch('channels/:id')
   async updateChannel(
@@ -126,6 +126,16 @@ export class ChatController {
   }
 
   // ── Members ─────────────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'List members of a channel' })
+  @ApiResponse({ status: 200 })
+  @Get('channels/:id/members')
+  async listMembers(
+    @Param('id', new ParseUUIDPipe()) channelId: string,
+    @Req() req: AuthRequest,
+  ): Promise<unknown> {
+    return this.chatService.listMembers(channelId, req.workspace!.id);
+  }
 
   @ApiOperation({ summary: 'Add a member to a channel' })
   @ApiResponse({ status: 201 })

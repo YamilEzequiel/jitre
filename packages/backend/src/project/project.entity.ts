@@ -1,5 +1,5 @@
 import { Column, Entity, Index, OneToMany, Unique } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TenantEntity } from '../common/entities/tenant.entity';
 import { ProjectStatus } from '@jitre/shared';
 
@@ -46,6 +46,40 @@ export class ProjectEntity extends TenantEntity {
   @ApiProperty({ type: String, format: 'date', nullable: true })
   @Column({ type: 'date', nullable: true })
   targetDate!: Date | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  category!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @Column({ type: 'varchar', length: 60, nullable: true })
+  framework!: string | null;
+
+  /**
+   * Database technology used by the project (e.g. "PostgreSQL").
+   * Column name is quoted in DDL because `database` is a reserved word in
+   * some SQL dialects. PostgreSQL accepts it unquoted, but TypeORM will
+   * generate identifiers correctly either way.
+   */
+  @ApiPropertyOptional({ nullable: true })
+  @Column({ name: 'database', type: 'varchar', length: 60, nullable: true })
+  database!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @Column({ name: 'customer_name', type: 'varchar', length: 120, nullable: true })
+  customerName!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @Column({ name: 'repository_url', type: 'varchar', length: 500, nullable: true })
+  repositoryUrl!: string | null;
+
+  /**
+   * Optional reference to an {@link AreaEntity}. FK is set up via migration
+   * `1700000002300-AddAreas.ts` with `ON DELETE SET NULL`.
+   */
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @Column({ type: 'uuid', name: 'area_id', nullable: true })
+  areaId!: string | null;
 
   @OneToMany('StatusEntity', 'project')
   statuses?: unknown[];

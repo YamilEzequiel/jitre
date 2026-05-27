@@ -122,4 +122,10 @@ export class AuthService {
   switchWorkspace(workspace: AuthWorkspace): void {
     this._currentWorkspace.set(workspace);
   }
+
+  updateCurrentUser(patch: Partial<AuthUser>): void {
+    const current = this._currentUser();
+    if (!current) return;
+    this._currentUser.set({ ...current, ...patch });
+  }
 }

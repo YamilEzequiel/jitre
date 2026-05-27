@@ -29,6 +29,7 @@ function makeChannel(
     projectId: null,
     createdByUserId: 'U1',
     lastMessageAt: null,
+    icon: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     deletedAt: null,
@@ -442,6 +443,38 @@ describe('ChatService', () => {
       await expect(
         service.updateChannel('CH1', 'W1', { name: 'no' }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('persists icon when provided in the DTO', async () => {
+      const c = makeChannel({ icon: null });
+      channelRepo.findOne.mockResolvedValueOnce(c);
+      channelRepo.save.mockImplementation(async (entity: ChatChannelEntity) => entity);
+
+      const updated = await service.updateChannel('CH1', 'W1', { icon: '🚀' });
+
+      expect(updated.icon).toBe('🚀');
+      const savedArg = channelRepo.save.mock.calls.at(-1)![0] as ChatChannelEntity;
+      expect(savedArg.icon).toBe('🚀');
+    });
+
+    it('clears icon when DTO sends an empty string', async () => {
+      const c = makeChannel({ icon: '🚀' });
+      channelRepo.findOne.mockResolvedValueOnce(c);
+      channelRepo.save.mockImplementation(async (entity: ChatChannelEntity) => entity);
+
+      const updated = await service.updateChannel('CH1', 'W1', { icon: '' });
+
+      expect(updated.icon).toBeNull();
+    });
+
+    it('clears icon when DTO sends null', async () => {
+      const c = makeChannel({ icon: '🚀' });
+      channelRepo.findOne.mockResolvedValueOnce(c);
+      channelRepo.save.mockImplementation(async (entity: ChatChannelEntity) => entity);
+
+      const updated = await service.updateChannel('CH1', 'W1', { icon: null });
+
+      expect(updated.icon).toBeNull();
     });
   });
 

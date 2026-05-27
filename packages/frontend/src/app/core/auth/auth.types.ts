@@ -3,6 +3,7 @@ export interface AuthUser {
   email: string;
   displayName: string;
   role: 'admin' | 'member';
+  avatarUrl?: string | null;
 }
 
 export interface AuthWorkspace {

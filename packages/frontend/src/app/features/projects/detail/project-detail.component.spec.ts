@@ -6,6 +6,7 @@ import { TaskStore } from '../../../stores/task.store';
 import { WorkflowStatusStore } from '../../../stores/workflow-status.store';
 import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
+import { AreaStore } from '../../../stores/area.store';
 import { WorkflowStatus, WorkflowStatusApiService } from '../../../stores/workflow-status-api.service';
 import { PlanningApiService } from '../../../stores/planning-api.service';
 import { TaskApiService } from '../../../stores/task-api.service';
@@ -140,6 +141,14 @@ describe('ProjectDetailComponent', () => {
           useValue: {
             byProject: vi.fn(() => signal([])),
             loadForProject: vi.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: AreaStore,
+          useValue: {
+            areas: signal([]).asReadonly(),
+            byId: signal({} as Record<string, unknown>).asReadonly(),
+            load: vi.fn().mockResolvedValue(undefined),
           },
         },
         {

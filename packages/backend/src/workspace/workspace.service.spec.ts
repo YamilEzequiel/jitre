@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConflictException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource, IsNull } from 'typeorm';
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceEntity } from './workspace.entity';
@@ -11,6 +15,7 @@ import {
   WorkspaceCreatedEvent,
   WorkspaceMemberAddedEvent,
   WorkspaceMemberRemovedEvent,
+  WorkspaceMemberRoleChangedEvent,
 } from '../events';
 
 const savedWorkspace = {
@@ -287,6 +292,188 @@ describe('WorkspaceService', () => {
       await expect(service.removeMember('ws-1', 'user-1')).rejects.toThrow(
         ConflictException,
       );
+    });
+  });
+
+  describe('updateMemberRole', () => {
+    const ownerActorRole = WorkspaceRole.OWNER;
+    const adminActorRole = WorkspaceRole.ADMIN;
+
+    it('throws ForbiddenException(CANNOT_CHANGE_OWN_ROLE) when actor edits themselves', async () => {
+      await expect(
+        service.updateMemberRole(
+          'ws-1',
+          'user-1',
+          WorkspaceRole.MEMBER,
+          'user-1',
+          ownerActorRole,
+        ),
+      ).rejects.toThrow(
+        new ForbiddenException('CANNOT_CHANGE_OWN_ROLE'),
+      );
+      expect(mockMemberRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException(MEMBER_NOT_FOUND) when membership does not exist', async () => {
+      mockMemberRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.updateMemberRole(
+          'ws-1',
+          'user-missing',
+          WorkspaceRole.MEMBER,
+          'actor-1',
+          ownerActorRole,
+        ),
+      ).rejects.toThrow(new NotFoundException('MEMBER_NOT_FOUND'));
+    });
+
+    it('throws ForbiddenException(OWNER_REQUIRED) when a non-OWNER tries to promote to OWNER', async () => {
+      mockMemberRepo.findOne.mockResolvedValue({
+        id: 'm2',
+        userId: 'user-2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.MEMBER,
+      });
+      await expect(
+        service.updateMemberRole(
+          'ws-1',
+          'user-2',
+          WorkspaceRole.OWNER,
+          'actor-1',
+          adminActorRole,
+        ),
+      ).rejects.toThrow(new ForbiddenException('OWNER_REQUIRED'));
+    });
+
+    it('throws ForbiddenException(OWNER_REQUIRED) when a non-OWNER tries to demote an OWNER', async () => {
+      mockMemberRepo.findOne.mockResolvedValue({
+        id: 'm2',
+        userId: 'user-2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.OWNER,
+      });
+      await expect(
+        service.updateMemberRole(
+          'ws-1',
+          'user-2',
+          WorkspaceRole.ADMIN,
+          'actor-1',
+          adminActorRole,
+        ),
+      ).rejects.toThrow(new ForbiddenException('OWNER_REQUIRED'));
+    });
+
+    it('throws ConflictException(LAST_OWNER) when demoting the only remaining OWNER', async () => {
+      mockMemberRepo.findOne.mockResolvedValue({
+        id: 'm2',
+        userId: 'user-2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.OWNER,
+      });
+      mockMemberRepo.count.mockResolvedValue(0); // no other OWNERs
+
+      await expect(
+        service.updateMemberRole(
+          'ws-1',
+          'user-2',
+          WorkspaceRole.MEMBER,
+          'actor-1',
+          ownerActorRole,
+        ),
+      ).rejects.toThrow(new ConflictException('LAST_OWNER'));
+      expect(mockMemberRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('allows OWNER demotion when other OWNERs remain', async () => {
+      const membership = {
+        id: 'm2',
+        userId: 'user-2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.OWNER,
+      };
+      mockMemberRepo.findOne.mockResolvedValue(membership);
+      mockMemberRepo.count.mockResolvedValue(1); // one OWNER remaining
+      mockMemberRepo.save.mockImplementation((m: unknown) =>
+        Promise.resolve(m),
+      );
+
+      const result = await service.updateMemberRole(
+        'ws-1',
+        'user-2',
+        WorkspaceRole.ADMIN,
+        'actor-1',
+        ownerActorRole,
+      );
+
+      expect(result.role).toBe(WorkspaceRole.ADMIN);
+      expect(mockMemberRepo.save).toHaveBeenCalled();
+
+      const event = mockEventBus.publish.mock.calls.find(
+        ([e]: [WorkspaceMemberRoleChangedEvent]) =>
+          e instanceof WorkspaceMemberRoleChangedEvent,
+      )?.[0] as WorkspaceMemberRoleChangedEvent;
+      expect(event).toBeDefined();
+      expect(event.payload.previousRole).toBe(WorkspaceRole.OWNER);
+      expect(event.payload.newRole).toBe(WorkspaceRole.ADMIN);
+      expect(event.payload.targetUserId).toBe('user-2');
+      expect(event.actorUserId).toBe('actor-1');
+    });
+
+    it('lets an ADMIN promote a MEMBER to ADMIN and emits the role-changed event', async () => {
+      const membership = {
+        id: 'm2',
+        userId: 'user-2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.MEMBER,
+      };
+      mockMemberRepo.findOne.mockResolvedValue(membership);
+      mockMemberRepo.save.mockImplementation((m: unknown) =>
+        Promise.resolve(m),
+      );
+
+      const result = await service.updateMemberRole(
+        'ws-1',
+        'user-2',
+        WorkspaceRole.ADMIN,
+        'actor-1',
+        adminActorRole,
+      );
+
+      expect(result.role).toBe(WorkspaceRole.ADMIN);
+
+      const event = mockEventBus.publish.mock.calls.find(
+        ([e]: [WorkspaceMemberRoleChangedEvent]) =>
+          e instanceof WorkspaceMemberRoleChangedEvent,
+      )?.[0] as WorkspaceMemberRoleChangedEvent;
+      expect(event).toBeDefined();
+      expect(event.payload.previousRole).toBe(WorkspaceRole.MEMBER);
+      expect(event.payload.newRole).toBe(WorkspaceRole.ADMIN);
+    });
+
+    it('returns the membership unchanged when newRole equals previousRole', async () => {
+      const membership = {
+        id: 'm2',
+        userId: 'user-2',
+        workspaceId: 'ws-1',
+        role: WorkspaceRole.MEMBER,
+      };
+      mockMemberRepo.findOne.mockResolvedValue(membership);
+
+      const result = await service.updateMemberRole(
+        'ws-1',
+        'user-2',
+        WorkspaceRole.MEMBER,
+        'actor-1',
+        adminActorRole,
+      );
+
+      expect(result).toBe(membership);
+      expect(mockMemberRepo.save).not.toHaveBeenCalled();
+      const roleChangedEvent = mockEventBus.publish.mock.calls.find(
+        ([e]: [WorkspaceMemberRoleChangedEvent]) =>
+          e instanceof WorkspaceMemberRoleChangedEvent,
+      );
+      expect(roleChangedEvent).toBeUndefined();
     });
   });
 

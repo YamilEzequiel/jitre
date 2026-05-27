@@ -29,6 +29,11 @@ export interface CreateProjectDto {
   icon?: string | null;
   startDate?: Date | null;
   targetDate?: Date | null;
+  category?: string | null;
+  framework?: string | null;
+  database?: string | null;
+  customerName?: string | null;
+  repositoryUrl?: string | null;
 }
 
 export interface UpdateProjectDto {
@@ -38,6 +43,11 @@ export interface UpdateProjectDto {
   icon?: string | null;
   startDate?: Date | null;
   targetDate?: Date | null;
+  category?: string | null;
+  framework?: string | null;
+  database?: string | null;
+  customerName?: string | null;
+  repositoryUrl?: string | null;
   actorUserId?: string;
 }
 
@@ -81,6 +91,11 @@ export class ProjectService {
         icon: dto.icon ?? null,
         startDate: dto.startDate ?? null,
         targetDate: dto.targetDate ?? null,
+        category: dto.category ?? null,
+        framework: dto.framework ?? null,
+        database: dto.database ?? null,
+        customerName: dto.customerName ?? null,
+        repositoryUrl: dto.repositoryUrl ?? null,
       });
       savedProject = await em.save(ProjectEntity, project);
     });
@@ -134,6 +149,11 @@ export class ProjectService {
       ...(dto.icon !== undefined && { icon: dto.icon }),
       ...(dto.startDate !== undefined && { startDate: dto.startDate }),
       ...(dto.targetDate !== undefined && { targetDate: dto.targetDate }),
+      ...(dto.category !== undefined && { category: dto.category }),
+      ...(dto.framework !== undefined && { framework: dto.framework }),
+      ...(dto.database !== undefined && { database: dto.database }),
+      ...(dto.customerName !== undefined && { customerName: dto.customerName }),
+      ...(dto.repositoryUrl !== undefined && { repositoryUrl: dto.repositoryUrl }),
     });
 
     const saved = await this.projectRepo.save(project);

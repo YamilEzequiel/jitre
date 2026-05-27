@@ -20,6 +20,7 @@ import { ChatRealtimeService } from '../../core/chat-realtime/chat-realtime.serv
 import { AuthService } from '../../core/auth/auth.service';
 import { MarkdownPipe } from '../../shared/markdown/markdown.pipe';
 import { MessageInputComponent } from './message-input.component';
+import { EditChannelPanelComponent } from './edit-channel-panel.component';
 import { formatTime, shouldGroupWith } from './chat-utils';
 
 interface RenderedMessage {
@@ -31,7 +32,7 @@ interface RenderedMessage {
 @Component({
   selector: 'jt-chat-channel-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MessageInputComponent],
+  imports: [MessageInputComponent, EditChannelPanelComponent],
   providers: [MarkdownPipe],
   host: { class: 'flex min-h-0 flex-1' },
   template: `
@@ -44,7 +45,9 @@ interface RenderedMessage {
           <div class="min-w-0">
             <div class="flex items-center gap-2">
               <span class="text-lg font-black tracking-tight text-slate-950">
-                @if (ch.type === 'private') {
+                @if (ch.icon) {
+                  <span aria-hidden="true">{{ ch.icon }}</span>
+                } @else if (ch.type === 'private') {
                   <i class="pi pi-lock text-xs text-slate-500" aria-hidden="true"></i>
                 } @else if (ch.type === 'dm') {
                   <i class="pi pi-user text-xs text-slate-500" aria-hidden="true"></i>
@@ -79,6 +82,17 @@ interface RenderedMessage {
               ></span>
               {{ realtimeConnected() ? 'Live' : 'Reconnecting' }}
             </span>
+            @if (canEditChannel()) {
+              <button
+                type="button"
+                (click)="openEditPanel()"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                aria-label="Edit channel"
+                [attr.aria-expanded]="editPanelOpen()"
+              >
+                <i class="pi pi-cog text-sm" aria-hidden="true"></i>
+              </button>
+            }
           </div>
         } @else {
           <div class="text-sm text-slate-500">Loading channel…</div>
@@ -292,6 +306,12 @@ interface RenderedMessage {
         </aside>
       }
     </section>
+
+    <jt-edit-channel-panel
+      [channelId]="channelId()"
+      [open]="editPanelOpen()"
+      (closed)="editPanelOpen.set(false)"
+    />
   `,
 })
 export class ChatChannelViewComponent implements OnInit, OnDestroy {
@@ -306,12 +326,15 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
   private readonly markdown = inject(MarkdownPipe);
 
   private readonly _channelId = signal<string | null>(null);
+  /** Public read-only handle for the active channel id (used by template). */
+  readonly channelId = this._channelId.asReadonly();
   readonly scroller = viewChild<ElementRef<HTMLDivElement>>('scroller');
 
   readonly loadingInitial = signal(false);
   readonly loadingMore = signal(false);
   readonly showNewPill = signal(false);
   readonly activeThreadRoot = signal<ChatMessage | null>(null);
+  readonly editPanelOpen = signal(false);
   private _isAtBottom = true;
   private _readTimer: ReturnType<typeof setTimeout> | null = null;
   private _disposers: Array<() => void> = [];
@@ -388,6 +411,24 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
 
   readonly realtimeConnected = computed(() => this.realtime.connected());
 
+  /**
+   * The cog button is visible to workspace admins/owners and to the user
+   * who originally created the channel. DM channels are never editable
+   * (they have no real name/icon to update).
+   */
+  readonly canEditChannel = computed<boolean>(() => {
+    const ch = this.channel();
+    if (!ch) return false;
+    if (ch.type === 'dm') return false;
+    const user = this.auth.currentUser();
+    if (!user) return false;
+    if (ch.createdByUserId && ch.createdByUserId === user.id) return true;
+    // Workspace signal may not exist in some test contexts — be defensive.
+    const workspace = this.auth.currentWorkspace?.();
+    const role = workspace?.role;
+    return role === 'admin' || role === 'owner';
+  });
+
   constructor() {
     // Keep scroll anchored to bottom on new messages when user was at bottom.
     effect(() => {
@@ -432,6 +473,8 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
     this.realtime.joinChannel(id);
     this._isAtBottom = true;
     this.showNewPill.set(false);
+    // Close the edit panel if it was open on a previous channel.
+    this.editPanelOpen.set(false);
     if (!this.channelStore.byId()[id]) {
       try {
         const ch = await this.chatApi.getChannel(id);
@@ -465,6 +508,10 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
         void this.messageStore.loadMore(id).finally(() => this.loadingMore.set(false));
       }
     }
+  }
+
+  openEditPanel(): void {
+    this.editPanelOpen.set(true);
   }
 
   scrollToBottom(): void {
