@@ -95,8 +95,16 @@ export class WorkspaceMemberStore {
   }
 
   avatarColorFor(userId: string | null | undefined): string {
-    if (!userId) return 'hsl(220, 10%, 60%)';
-    return `hsl(${hashHue(userId)}, 65%, 45%)`;
+    // Pastel fill — high lightness + moderate saturation. Pair this with
+    // `avatarForegroundFor` for the matching deeper-tone text/initials.
+    if (!userId) return 'hsl(220, 18%, 92%)';
+    return `hsl(${hashHue(userId)}, 55%, 88%)`;
+  }
+
+  /** Matching deeper tone for initials/icons rendered on top of avatarColorFor. */
+  avatarForegroundFor(userId: string | null | undefined): string {
+    if (!userId) return 'hsl(220, 12%, 38%)';
+    return `hsl(${hashHue(userId)}, 35%, 35%)`;
   }
 
   /**

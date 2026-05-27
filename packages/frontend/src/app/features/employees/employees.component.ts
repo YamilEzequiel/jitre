@@ -1,12 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   OnInit,
   computed,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
@@ -108,8 +106,9 @@ function initials(name: string | null | undefined): string {
                       tabindex="0"
                       role="button">
                     <td class="px-4 py-2.5">
-                      <span class="flex h-9 w-9 items-center justify-center rounded-full text-white text-[11px] font-bold shadow-sm"
-                            [style.background]="avatarBg(emp.id)">
+                      <span class="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold"
+                            [style.background]="avatarBg(emp.id)"
+                            [style.color]="avatarFg(emp.id)">
                         @if (emp.avatarUrl) {
                           <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-full object-cover" />
                         } @else {
@@ -164,8 +163,9 @@ function initials(name: string | null | undefined): string {
               [attr.aria-label]="'Abrir perfil de ' + emp.displayName"
             >
               <div class="flex items-start gap-4">
-                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white text-lg font-bold shadow-md"
-                      [style.background]="avatarBg(emp.id)">
+                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold"
+                      [style.background]="avatarBg(emp.id)"
+                      [style.color]="avatarFg(emp.id)">
                   @if (emp.avatarUrl) {
                     <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-2xl object-cover" />
                   } @else {
@@ -210,8 +210,9 @@ function initials(name: string | null | undefined): string {
             <header class="mb-5 flex items-start justify-between gap-4">
               <div class="flex items-center gap-4">
                 <span
-                  class="flex h-16 w-16 items-center justify-center rounded-2xl text-white text-xl font-bold shadow-md"
+                  class="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold"
                   [style.background]="avatarBg(emp.id)"
+                  [style.color]="avatarFg(emp.id)"
                 >
                   @if (emp.avatarUrl) {
                     <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-2xl object-cover" />
@@ -373,8 +374,6 @@ export class EmployeesComponent implements OnInit {
   readonly search = signal('');
   readonly viewMode = signal<'list' | 'grid'>('list');
 
-  protected readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
-
   protected readonly statusOptions = [
     { label: 'Activo', value: 'active' },
     { label: 'Deshabilitado', value: 'disabled' },
@@ -463,7 +462,8 @@ export class EmployeesComponent implements OnInit {
   }
 
   async onAvatarSelected(event: Event, emp: Employee): Promise<void> {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) return;
     try {
       await this.api.uploadAvatar(emp.id, file);
@@ -472,19 +472,32 @@ export class EmployeesComponent implements OnInit {
       // Refresh the selected reference so the new avatar appears in the panel.
       const fresh = this.employees().find((e) => e.id === emp.id);
       if (fresh) this.selected.set(fresh);
-    } catch {
-      this.toast.error('No pudimos subir la foto');
+    } catch (err) {
+      const msg = (err as { error?: { detail?: string } })?.error?.detail ?? 'No pudimos subir la foto';
+      this.toast.error(msg);
+    } finally {
+      // Clear the input so picking the same file again fires `change`.
+      input.value = '';
     }
   }
 
   avatarBg(id: string): string {
-    return `hsl(${hashHue(id)}, 65%, 45%)`;
+    // Pastel-ish — high lightness + moderate saturation gives a soft fill
+    // that pairs well with dark initials on top. Hue is hashed so each user
+    // gets a stable but different color.
+    return `hsl(${hashHue(id)}, 55%, 88%)`;
+  }
+
+  avatarFg(id: string): string {
+    // Matching deeper tone for the initials/text inside the pastel circle.
+    return `hsl(${hashHue(id)}, 35%, 35%)`;
   }
 
   roleBadgeClass(role: string): string {
-    if (role === 'owner') return 'bg-violet-100 text-violet-800';
-    if (role === 'admin') return 'bg-indigo-100 text-indigo-800';
-    if (role === 'guest') return 'bg-slate-100 text-slate-600';
-    return 'bg-emerald-50 text-emerald-700';
+    // Soft pastel chips — same palette family as the avatars.
+    if (role === 'owner') return 'bg-violet-50 text-violet-700 border border-violet-100';
+    if (role === 'admin') return 'bg-indigo-50 text-indigo-700 border border-indigo-100';
+    if (role === 'guest') return 'bg-slate-50 text-slate-500 border border-slate-200';
+    return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
   }
 }

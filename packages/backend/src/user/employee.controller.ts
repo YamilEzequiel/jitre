@@ -130,7 +130,7 @@ export class EmployeeController {
     if (!isAdmin && !isSelf) {
       throw new ForbiddenException('EMPLOYEE_EDIT_FORBIDDEN');
     }
-    return this.attachmentService.replaceAvatar({
+    const attachment = await this.attachmentService.replaceAvatar({
       file: {
         buffer: file.buffer,
         originalname: file.originalname,
@@ -142,5 +142,14 @@ export class EmployeeController {
       uploaderUserId: req.user!.id,
       workspaceId: req.workspace!.id,
     });
+    // Inline the uploaded bytes as a data URL on users.avatarUrl. Why not the
+    // attachment download endpoint? It returns a signed URL JSON envelope, not
+    // raw bytes, and `<img src>` can't carry the JWT header to authenticate.
+    // For avatar-sized payloads (<2MB validated in attachment.service) the
+    // base64 hit on the row is fine and avoids a whole signed-URL plumbing.
+    const avatarUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    const updated = await this.userService.updateEmployee(id, { avatarUrl });
+    const { passwordHash: _, ...safe } = updated as unknown as Record<string, unknown>;
+    return { attachment, user: safe };
   }
 }

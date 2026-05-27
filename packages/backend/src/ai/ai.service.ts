@@ -65,11 +65,22 @@ export class AiService {
       );
     }
 
+    // 2.b Resolve the model from workspace settings — overrides the provider's
+    // default model and the request's caller-supplied model when present.
+    const settingsModel = await this.settings.getAiSetting<string | undefined>(
+      opts.workspaceId,
+      'ai.gemini.model',
+      undefined,
+    );
+
     const start = Date.now();
 
     try {
-      // 3. Provider call
-      const response = await provider.generateCompletion(opts.request);
+      // 3. Provider call — merge in the resolved model so the provider uses it.
+      const requestWithModel = settingsModel
+        ? { ...opts.request, model: opts.request.model ?? settingsModel }
+        : opts.request;
+      const response = await provider.generateCompletion(requestWithModel);
       const costUsd = calculateCost(
         provider.name,
         response.model,

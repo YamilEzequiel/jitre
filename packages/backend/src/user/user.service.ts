@@ -7,6 +7,7 @@ import { WorkspaceMembershipEntity } from '../workspace/workspace-membership.ent
 export interface EmployeePatch {
   displayName?: string;
   email?: string;
+  avatarUrl?: string | null;
   phone?: string | null;
   position?: string | null;
   department?: string | null;
