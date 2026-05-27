@@ -34,8 +34,14 @@ const RELEASES: Release[] = [
     version: 'Unreleased',
     date: null,
     unreleased: true,
+    summary: 'Next round of work — items will land here before the next tagged release.',
+    sections: [],
+  },
+  {
+    version: '0.2.0',
+    date: '2026-05-27',
     summary:
-      'Multi-provider AI, configurable prompt templates, proactive daily digest + auto-prioritize, one-command Docker demo, and a ton of UX polish on top of the 0.1.0 baseline.',
+      'The "AI is actually the selling point" release. Multi-provider AI, configurable prompt templates per workspace, proactive daily digest + auto-prioritize, one-command Docker demo, and a ton of UX polish on top of the 0.1.0 baseline.',
     sections: [
       {
         type: 'Added',

@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-> Untagged work accumulated since 0.1.0. Will be cut as **0.2.0** when ready.
+### Added
+
+- _(nothing yet — next round goes here)_
+
+---
+
+## [0.2.0] — 2026-05-27
+
+The "AI is actually the selling point" release. Multi-provider, configurable prompts, proactive features, and a Docker demo so anyone can try Jitre in 60 seconds.
 
 ### Added
 
@@ -123,5 +131,6 @@ First tagged baseline. Snapshot of the auth & dashboard polish that landed in th
 - **Each release** must list a `## [X.Y.Z] — YYYY-MM-DD` heading. The `/changelog` page parses this format.
 - **Unreleased section** at the top accumulates work that has merged but not yet been tagged.
 
-[Unreleased]: https://github.com/YamilEzequiel/jitre/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/YamilEzequiel/jitre/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/YamilEzequiel/jitre/releases/tag/v0.2.0
 [0.1.0]: https://github.com/YamilEzequiel/jitre/releases/tag/v0.1.0

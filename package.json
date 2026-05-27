@@ -1,7 +1,7 @@
 {
   "name": "@jitre/monorepo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Jitre — AI-first project management platform",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/YamilEzequiel/jitre",
