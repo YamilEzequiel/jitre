@@ -21,4 +21,21 @@ describe('MarkdownPipe', () => {
     expect(result).not.toContain('<script>');
     expect(result).toContain('Hello');
   });
+
+  it('inline mode does not wrap output in <p>', () => {
+    const result = pipe.transform('hello world', 'inline');
+    expect(result.startsWith('<p>')).toBe(false);
+    expect(result).toContain('hello world');
+  });
+
+  it('inline mode does not render block syntax (blockquote, headers)', () => {
+    expect(pipe.transform('> quoted', 'inline')).not.toContain('<blockquote>');
+    expect(pipe.transform('# heading', 'inline')).not.toContain('<h1>');
+  });
+
+  it('inline mode still renders bold, italic and code', () => {
+    expect(pipe.transform('**b**', 'inline')).toContain('<strong>b</strong>');
+    expect(pipe.transform('_i_', 'inline')).toContain('<em>i</em>');
+    expect(pipe.transform('`x`', 'inline')).toContain('<code>x</code>');
+  });
 });

@@ -179,7 +179,7 @@ function rankChannel(channel: ChatChannel): number {
         </div>
       </aside>
 
-      <div class="flex flex-1 min-w-0 flex-col bg-[#f8faff]">
+      <div class="flex flex-1 min-h-0 min-w-0 flex-col bg-[#f8faff]">
         @if (!selectedId()) {
           <section class="flex flex-1 items-center justify-center p-8" aria-label="Chat welcome">
             <div class="max-w-md rounded-3xl border border-slate-200 bg-white px-10 py-9 text-center shadow-sm shadow-slate-200/70">

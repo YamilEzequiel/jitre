@@ -33,6 +33,7 @@ interface RenderedMessage {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MessageInputComponent],
   providers: [MarkdownPipe],
+  host: { class: 'flex min-h-0 flex-1' },
   template: `
     <section class="relative flex h-full min-h-0 flex-1 bg-white">
       <div class="flex min-h-0 flex-1 flex-col">
@@ -339,14 +340,15 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
 
   readonly renderedMessages = computed<RenderedMessage[]>(() => {
     const msgs = this.messages();
+    const roots = msgs.filter(m => !m.parentMessageId);
     const out: RenderedMessage[] = [];
     let prev: ChatMessage | null = null;
-    for (const m of msgs) {
+    for (const m of roots) {
       const grouped = shouldGroupWith(prev, m);
       out.push({
         message: m,
         showHeader: !grouped,
-        indent: !!m.parentMessageId,
+        indent: false,
       });
       prev = m;
     }
@@ -587,7 +589,7 @@ export class ChatChannelViewComponent implements OnInit, OnDestroy {
       } as Record<string, string>)[ch]!);
       return `<span class="inline-flex items-center gap-1 rounded bg-indigo-50 px-1.5 py-0.5 text-[12px] font-semibold text-indigo-700">@${escaped}</span>`;
     });
-    return this.markdown.transform(withMentions);
+    return this.markdown.transform(withMentions, 'inline');
   }
 
   threadReplyCount(message: ChatMessage): number {

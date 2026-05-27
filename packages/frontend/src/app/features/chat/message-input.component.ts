@@ -11,6 +11,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { EmojiPickerComponent } from './emoji-picker.component';
 
+type FormatKind = 'bold' | 'italic' | 'code' | 'link';
+
 type WrapToken =
   | { kind: 'wrap'; prefix: string; suffix: string }
   | { kind: 'link' };
@@ -22,70 +24,108 @@ type WrapToken =
   template: `
     <div class="relative">
       <div
-        class="flex items-end gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3
+        class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50
                focus-within:border-violet-400 focus-within:bg-white focus-within:shadow-sm"
       >
-        <textarea
-          #textarea
-          [(ngModel)]="value"
-          (input)="onInput()"
-          (keydown)="onKeydown($event)"
-          rows="1"
-          [attr.aria-label]="placeholder()"
-          [placeholder]="placeholder()"
-          class="flex-1 max-h-48 resize-none bg-transparent text-sm text-slate-700 outline-none
-                 placeholder:text-slate-400"
-        ></textarea>
-
-        <button
-          type="button"
-          (click)="toggleEmojiPicker()"
-          [attr.aria-expanded]="showEmojiPicker()"
-          aria-label="Insert emoji"
-          class="flex h-9 w-9 items-center justify-center rounded-full text-base
-                 transition hover:bg-violet-100"
-          [class.bg-violet-100]="showEmojiPicker()"
+        <div
+          class="flex items-center gap-0.5 border-b border-slate-200/70 px-2 py-1"
+          role="toolbar"
+          aria-label="Formatting options"
         >
-          😊
-        </button>
+          <button
+            type="button"
+            (click)="format('bold')"
+            [title]="'Bold (' + modKey + '+B)'"
+            aria-label="Bold"
+            class="flex h-7 w-7 items-center justify-center rounded text-xs font-bold
+                   text-slate-600 transition hover:bg-violet-100 hover:text-violet-700
+                   focus:outline-none focus:ring-2 focus:ring-violet-300"
+          >
+            B
+          </button>
+          <button
+            type="button"
+            (click)="format('italic')"
+            [title]="'Italic (' + modKey + '+I)'"
+            aria-label="Italic"
+            class="flex h-7 w-7 items-center justify-center rounded font-serif text-sm
+                   italic text-slate-600 transition hover:bg-violet-100 hover:text-violet-700
+                   focus:outline-none focus:ring-2 focus:ring-violet-300"
+          >
+            I
+          </button>
+          <button
+            type="button"
+            (click)="format('code')"
+            [title]="'Inline code (' + modKey + '+E)'"
+            aria-label="Inline code"
+            class="flex h-7 w-7 items-center justify-center rounded font-mono text-[10px]
+                   text-slate-600 transition hover:bg-violet-100 hover:text-violet-700
+                   focus:outline-none focus:ring-2 focus:ring-violet-300"
+          >
+            &lt;/&gt;
+          </button>
+          <button
+            type="button"
+            (click)="format('link')"
+            [title]="'Link (' + modKey + '+K)'"
+            aria-label="Link"
+            class="flex h-7 w-7 items-center justify-center rounded text-slate-600 transition
+                   hover:bg-violet-100 hover:text-violet-700 focus:outline-none focus:ring-2
+                   focus:ring-violet-300"
+          >
+            <i class="pi pi-link text-xs" aria-hidden="true"></i>
+          </button>
 
-        <button
-          type="button"
-          [disabled]="!canSend()"
-          (click)="send()"
-          class="inline-flex h-9 w-9 items-center justify-center rounded-full text-white
-                 bg-gradient-to-br from-indigo-600 to-violet-600
-                 disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Send message"
-        >
-          <i class="pi pi-send text-xs" aria-hidden="true"></i>
-        </button>
+          <div class="mx-1 h-4 w-px bg-slate-200" aria-hidden="true"></div>
+
+          <button
+            type="button"
+            (click)="toggleEmojiPicker()"
+            [attr.aria-expanded]="showEmojiPicker()"
+            aria-label="Insert emoji"
+            title="Emoji"
+            class="flex h-7 w-7 items-center justify-center rounded text-sm
+                   transition hover:bg-violet-100 focus:outline-none focus:ring-2
+                   focus:ring-violet-300"
+            [class.bg-violet-100]="showEmojiPicker()"
+          >
+            😊
+          </button>
+        </div>
+
+        <div class="flex items-end gap-2 px-4 py-3">
+          <textarea
+            #textarea
+            [(ngModel)]="value"
+            (input)="onInput()"
+            (keydown)="onKeydown($event)"
+            rows="1"
+            [attr.aria-label]="placeholder()"
+            [placeholder]="placeholder()"
+            class="flex-1 max-h-48 resize-none bg-transparent text-sm text-slate-700 outline-none
+                   placeholder:text-slate-400"
+          ></textarea>
+
+          <button
+            type="button"
+            [disabled]="!canSend()"
+            (click)="send()"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full text-white
+                   bg-gradient-to-br from-indigo-600 to-violet-600
+                   disabled:opacity-40 disabled:cursor-not-allowed
+                   transition hover:shadow-md hover:shadow-violet-500/30"
+            aria-label="Send message"
+          >
+            <i class="pi pi-send text-xs" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
 
-      <div
-        class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[10px] text-slate-400"
-      >
-        <span class="inline-flex items-center gap-1">
-          <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9px] text-slate-600">{{ modKey }}+B</kbd>
-          <span><strong class="text-slate-600">bold</strong></span>
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9px] text-slate-600">{{ modKey }}+I</kbd>
-          <span><em class="text-slate-600">italic</em></span>
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9px] text-slate-600">{{ modKey }}+E</kbd>
-          <span><code class="rounded bg-slate-100 px-1 text-slate-600">code</code></span>
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9px] text-slate-600">{{ modKey }}+K</kbd>
-          <span>link</span>
-        </span>
-        <span class="ml-auto text-slate-400">
-          <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9px] text-slate-600">Shift+Enter</kbd>
-          newline
-        </span>
-      </div>
+      <p class="mt-1.5 px-1 text-[10px] text-slate-400">
+        <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9px] text-slate-600">Shift+Enter</kbd>
+        for new line · Markdown supported
+      </p>
 
       @if (showEmojiPicker()) {
         <div class="absolute bottom-full right-0 z-20 mb-2">
@@ -147,21 +187,31 @@ export class MessageInputComponent implements OnDestroy {
     switch (key) {
       case 'b':
         event.preventDefault();
-        this._applyToken({ kind: 'wrap', prefix: '**', suffix: '**' });
+        this.format('bold');
         return;
       case 'i':
         event.preventDefault();
-        this._applyToken({ kind: 'wrap', prefix: '_', suffix: '_' });
+        this.format('italic');
         return;
       case 'e':
         event.preventDefault();
-        this._applyToken({ kind: 'wrap', prefix: '`', suffix: '`' });
+        this.format('code');
         return;
       case 'k':
         event.preventDefault();
-        this._applyToken({ kind: 'link' });
+        this.format('link');
         return;
     }
+  }
+
+  format(kind: FormatKind): void {
+    if (kind === 'link') {
+      this._applyToken({ kind: 'link' });
+      return;
+    }
+    const pairs = { bold: '**', italic: '_', code: '`' } as const;
+    const sym = pairs[kind];
+    this._applyToken({ kind: 'wrap', prefix: sym, suffix: sym });
   }
 
   send(): void {

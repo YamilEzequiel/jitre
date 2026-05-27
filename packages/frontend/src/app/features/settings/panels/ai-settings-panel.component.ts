@@ -316,10 +316,12 @@ export class AiSettingsPanelComponent implements OnInit {
       })
       .catch(() => this.callsByDay.set([]));
 
-    // Per-operation breakdown.
+    // Per-operation breakdown. AnalyticsPeriodDto requires `period` even
+    // though by-operation aggregates across the whole range — pass 'day' as
+    // a no-op granularity so validation passes.
     void firstValueFrom(
       this.http.get<AiUsageByOperationResponse[]>('/api/v1/analytics/workspace/ai-usage/by-operation', {
-        params: { from: range.from, to: range.to },
+        params: { from: range.from, to: range.to, period: 'day' },
       }),
     )
       .then(rows => {
@@ -333,7 +335,7 @@ export class AiSettingsPanelComponent implements OnInit {
     // for non-admins and we render the empty state).
     void firstValueFrom(
       this.http.get<AiUsageByUserResponse[]>('/api/v1/analytics/workspace/ai-usage/by-user', {
-        params: { from: range.from, to: range.to },
+        params: { from: range.from, to: range.to, period: 'day' },
       }),
     )
       .then(rows => {
