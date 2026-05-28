@@ -10,8 +10,13 @@ import { AppModule } from './app.module';
 import type { AppConfig } from './config/app.config';
 import { RedisIoAdapter } from './realtime/adapters/redis-io.adapter';
 import type { RedisConfig } from './config/redis.config';
+import { bootstrapSentry } from './observability/sentry.bootstrap';
 
 async function bootstrap(): Promise<void> {
+  // Sentry first so it can wrap the rest of the boot pipeline. No-op
+  // when SENTRY_DSN is unset or the SDK isn't installed.
+  await bootstrapSentry();
+
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });

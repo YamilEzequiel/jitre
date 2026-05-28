@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **GitHub Actions CI** — `.github/workflows/ci.yml` runs lint + build on every PR plus backend tests against real Postgres + Redis service containers and frontend Vitest. PR + bug + feature templates under `.github/`. CI badge in README.
+- **Readiness probe checks Redis** — `/api/v1/readyz` now pings Redis (PING under 2s timeout) on top of the existing DB + memory checks. Liveness (`/healthz`) stays minimal so a transient downstream hiccup never causes an orchestrator restart loop.
+- **Sentry bootstrap (opt-in)** — backend `observability/sentry.bootstrap.ts` and frontend `core/observability/sentry.bootstrap.ts` dynamically import `@sentry/nestjs` / `@sentry/angular` if installed and DSN is set. No hard dependency added — install when you want it:
+  - Backend: `npm i @sentry/nestjs @sentry/profiling-node -w @jitre/backend` + `SENTRY_DSN` env var
+  - Frontend: `npm i @sentry/angular -w @jitre/frontend` + `window.__SENTRY_DSN__` in `index.html`
+- `env.example` has the new `SENTRY_*` variables documented.
 - **i18n keys** for the surfaces shipped in 0.2.0: navigation (Changelog / License / AI Prompts), dashboard widgets (daily digest + priority suggestions), task detail (back / prev-next / comments / AI describe), settings → AI Prompts panel, and time-tracking duration helper text. Both `es` and `en` cover the same tree.
 - Sidebar Changelog and License entries now translate.
 - Dashboard daily-digest and priority-suggestions widgets fully translated (badges, titles, metric labels, empty states, toasts).
