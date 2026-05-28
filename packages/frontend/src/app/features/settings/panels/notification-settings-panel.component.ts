@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ToastService } from '../../../core/toast/toast.service';
 import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
@@ -22,16 +23,18 @@ interface MySettingsResponse {
 @Component({
   selector: 'jt-notification-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CheckboxComponent],
+  imports: [CheckboxComponent, TranslatePipe],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
              shadow-sm shadow-slate-200/70"
     >
-      <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-6">Notifications</h2>
+      <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-6">
+        {{ 'settings.notifications.heading' | translate }}
+      </h2>
       @if (prefs()) {
         <div class="space-y-2 max-w-md">
-          @for (pref of prefKeys; track pref.key) {
+          @for (pref of prefKeys(); track pref.key) {
             <label
               class="flex items-center gap-3 cursor-pointer rounded-lg
                      border border-slate-200 bg-white backdrop-blur-sm
@@ -47,7 +50,7 @@ interface MySettingsResponse {
           }
         </div>
       } @else {
-        <p class="text-sm text-slate-500">Loading preferences...</p>
+        <p class="text-sm text-slate-500">{{ 'settings.notifications.loading' | translate }}</p>
       }
     </section>
   `,
@@ -55,24 +58,32 @@ interface MySettingsResponse {
 export class NotificationSettingsPanelComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
 
   readonly prefs = signal<NotificationPrefs | null>(null);
 
-  readonly prefKeys: { key: keyof NotificationPrefs; label: string }[] = [
-    { key: 'in_app', label: 'In-app notifications' },
-    { key: 'email', label: 'Email notifications' },
-    { key: 'task_assigned', label: 'Task assigned to me' },
-    { key: 'task_due_soon', label: 'Task due soon' },
-    { key: 'task_completed', label: 'Task completed' },
-    { key: 'task_status_changed', label: 'Task status changed' },
-    { key: 'project_member_added', label: 'Project member added' },
-    { key: 'ai_quota_warning', label: 'AI quota warning' },
+  private readonly prefKeyMap: { key: keyof NotificationPrefs; labelKey: string }[] = [
+    { key: 'in_app', labelKey: 'settings.notifications.inApp' },
+    { key: 'email', labelKey: 'settings.notifications.email' },
+    { key: 'task_assigned', labelKey: 'settings.notifications.taskAssigned' },
+    { key: 'task_due_soon', labelKey: 'settings.notifications.taskDueSoon' },
+    { key: 'task_completed', labelKey: 'settings.notifications.taskCompleted' },
+    { key: 'task_status_changed', labelKey: 'settings.notifications.taskStatusChanged' },
+    { key: 'project_member_added', labelKey: 'settings.notifications.projectMemberAdded' },
+    { key: 'ai_quota_warning', labelKey: 'settings.notifications.aiQuotaWarning' },
   ];
+
+  readonly prefKeys = computed(() =>
+    this.prefKeyMap.map(p => ({
+      key: p.key,
+      label: this.translate.instant(p.labelKey),
+    })),
+  );
 
   ngOnInit(): void {
     firstValueFrom(this.http.get<MySettingsResponse>('/api/v1/settings/me'))
       .then(settings => this.prefs.set(settings.notifications))
-      .catch(() => this.toast.error('Failed to load preferences'));
+      .catch(() => this.toast.error(this.translate.instant('settings.notifications.errors.loadFailed')));
   }
 
   toggle(key: keyof NotificationPrefs): void {
@@ -90,7 +101,7 @@ export class NotificationSettingsPanelComponent implements OnInit {
       }),
     ).catch(() => {
       this.prefs.update(prefs => prefs ? { ...prefs, [key]: previous } : prefs);
-      this.toast.error('Failed to save preference');
+      this.toast.error(this.translate.instant('settings.notifications.errors.saveFailed'));
     });
   }
 }

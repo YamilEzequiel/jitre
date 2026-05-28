@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ToastService } from '../../../core/toast/toast.service';
 import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
 
@@ -21,15 +22,17 @@ type PrefKey = 'emailMentions' | 'emailAssignments' | 'emailDueDates';
 @Component({
   selector: 'jt-email-prefs-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CheckboxComponent],
+  imports: [CheckboxComponent, TranslatePipe],
   template: `
     <section class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm shadow-slate-200/70">
-      <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-1">Email</h2>
-      <p class="text-sm text-slate-500 mb-6">Cuándo querés recibir un email además de la notificación in-app.</p>
+      <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-1">
+        {{ 'settings.email.heading' | translate }}
+      </h2>
+      <p class="text-sm text-slate-500 mb-6">{{ 'settings.email.description' | translate }}</p>
 
       @if (loaded()) {
         <div class="space-y-2 max-w-md">
-          @for (pref of prefKeys; track pref.key) {
+          @for (pref of prefKeys(); track pref.key) {
             <label class="flex items-center gap-3 cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-3 hover:bg-violet-50 hover:border-violet-200 transition-colors">
               <jt-checkbox
                 [checked]="value(pref.key)"
@@ -44,7 +47,7 @@ type PrefKey = 'emailMentions' | 'emailAssignments' | 'emailDueDates';
           }
         </div>
       } @else {
-        <p class="text-sm text-slate-500">Cargando preferencias…</p>
+        <p class="text-sm text-slate-500">{{ 'settings.email.loading' | translate }}</p>
       }
     </section>
   `,
@@ -52,29 +55,38 @@ type PrefKey = 'emailMentions' | 'emailAssignments' | 'emailDueDates';
 export class EmailPrefsPanelComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
 
   readonly loaded = signal(false);
   readonly emailMentions = signal(true);
   readonly emailAssignments = signal(true);
   readonly emailDueDates = signal(true);
 
-  readonly prefKeys: { key: PrefKey; label: string; help: string }[] = [
+  private readonly prefKeyMap: { key: PrefKey; labelKey: string; helpKey: string }[] = [
     {
       key: 'emailMentions',
-      label: 'Cuando me mencionan',
-      help: 'Comentarios, menciones @usuario y respuestas.',
+      labelKey: 'settings.email.mentions.label',
+      helpKey: 'settings.email.mentions.help',
     },
     {
       key: 'emailAssignments',
-      label: 'Cuando me asignan una tarea',
-      help: 'Notifica por email cada vez que pasás a ser responsable.',
+      labelKey: 'settings.email.assignments.label',
+      helpKey: 'settings.email.assignments.help',
     },
     {
       key: 'emailDueDates',
-      label: 'Cuando una tarea está por vencer',
-      help: 'Recordatorios cuando el due date se acerca.',
+      labelKey: 'settings.email.dueDates.label',
+      helpKey: 'settings.email.dueDates.help',
     },
   ];
+
+  readonly prefKeys = computed(() =>
+    this.prefKeyMap.map(p => ({
+      key: p.key,
+      label: this.translate.instant(p.labelKey),
+      help: this.translate.instant(p.helpKey),
+    })),
+  );
 
   async ngOnInit(): Promise<void> {
     try {
@@ -83,7 +95,7 @@ export class EmailPrefsPanelComponent implements OnInit {
       this.emailAssignments.set(me.emailAssignments !== false);
       this.emailDueDates.set(me.emailDueDates !== false);
     } catch {
-      this.toast.error('No pudimos cargar las preferencias');
+      this.toast.error(this.translate.instant('settings.email.errors.loadFailed'));
     } finally {
       this.loaded.set(true);
     }
@@ -103,7 +115,7 @@ export class EmailPrefsPanelComponent implements OnInit {
       await firstValueFrom(this.http.patch('/api/v1/users/me', { [key]: next }));
     } catch {
       this.set(key, prev);
-      this.toast.error('No pudimos guardar la preferencia');
+      this.toast.error(this.translate.instant('settings.email.errors.saveFailed'));
     }
   }
 

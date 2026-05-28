@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -15,13 +16,15 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 @Component({
   selector: 'jt-user-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
              shadow-sm shadow-slate-200/70"
     >
-      <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-6">Profile</h2>
+      <h2 class="text-xl font-bold tracking-tight text-slate-950 mb-6">
+        {{ 'settings.profile.heading' | translate }}
+      </h2>
 
       <div class="flex items-center gap-5 mb-7">
         <div class="relative">
@@ -63,9 +66,9 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
                    disabled:cursor-not-allowed disabled:opacity-60"
           >
             <i class="pi pi-camera text-xs" aria-hidden="true"></i>
-            {{ uploading() ? 'Subiendo…' : avatarUrl() ? 'Cambiar foto' : 'Subir foto' }}
+            {{ avatarButtonLabel() | translate }}
           </button>
-          <p class="text-[11px] text-slate-400">PNG, JPG, WebP o GIF · máx. 2&nbsp;MB</p>
+          <p class="text-[11px] text-slate-400">{{ 'settings.profile.photoHint' | translate }}</p>
         </div>
 
         <input
@@ -83,7 +86,7 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
             for="user-name"
             class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2"
           >
-            Name <span class="text-rose-400">*</span>
+            {{ 'settings.profile.nameLabel' | translate }} <span class="text-rose-400">*</span>
           </label>
           <input
             id="user-name"
@@ -100,7 +103,7 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
             for="user-email"
             class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2"
           >
-            Email <span class="text-rose-400">*</span>
+            {{ 'settings.profile.emailLabel' | translate }} <span class="text-rose-400">*</span>
           </label>
           <input
             id="user-email"
@@ -128,9 +131,9 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
             </svg>
-            Saving…
+            {{ 'settings.profile.saving' | translate }}
           } @else {
-            Save Changes
+            {{ 'settings.profile.saveButton' | translate }}
           }
         </button>
       </form>
@@ -142,6 +145,7 @@ export class UserSettingsPanelComponent {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
 
   readonly saving = signal(false);
   readonly uploading = signal(false);
@@ -150,6 +154,11 @@ export class UserSettingsPanelComponent {
     const name = this.auth.currentUser()?.displayName ?? '';
     const parts = name.split(/\s+/).filter(Boolean).slice(0, 2);
     return parts.map((p) => p[0]!.toUpperCase()).join('') || '?';
+  });
+
+  readonly avatarButtonLabel = computed(() => {
+    if (this.uploading()) return 'settings.profile.uploading';
+    return this.avatarUrl() ? 'settings.profile.changePhoto' : 'settings.profile.uploadPhoto';
   });
 
   readonly form = this.fb.group({
@@ -162,9 +171,9 @@ export class UserSettingsPanelComponent {
     this.saving.set(true);
     try {
       await firstValueFrom(this.http.patch('/api/v1/users/me', this.form.value));
-      this.toast.success('Profile updated');
+      this.toast.success(this.translate.instant('settings.profile.successToast'));
     } catch {
-      this.toast.error('Failed to save profile');
+      this.toast.error(this.translate.instant('settings.profile.errors.saveFailed'));
     } finally {
       this.saving.set(false);
     }
@@ -176,11 +185,11 @@ export class UserSettingsPanelComponent {
     input.value = '';
     if (!file) return;
     if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
-      this.toast.error('Formato inválido. Usá PNG, JPG, WebP o GIF.');
+      this.toast.error(this.translate.instant('settings.profile.errors.invalidFormat'));
       return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      this.toast.error('La imagen supera el límite de 2 MB.');
+      this.toast.error(this.translate.instant('settings.profile.errors.fileTooLarge'));
       return;
     }
     this.uploading.set(true);
@@ -191,9 +200,9 @@ export class UserSettingsPanelComponent {
         this.http.post<AvatarUploadResponse>('/api/v1/users/me/avatar', fd),
       );
       this.auth.updateCurrentUser({ avatarUrl: res.user.avatarUrl });
-      this.toast.success('Foto actualizada');
+      this.toast.success(this.translate.instant('settings.profile.successPhotoToast'));
     } catch {
-      this.toast.error('No pudimos subir la foto');
+      this.toast.error(this.translate.instant('settings.profile.errors.uploadFailed'));
     } finally {
       this.uploading.set(false);
     }

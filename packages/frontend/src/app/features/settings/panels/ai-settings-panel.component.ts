@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../core/toast/toast.service';
@@ -81,54 +82,51 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
 @Component({
   selector: 'jt-ai-settings-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SelectModule, CheckboxComponent],
+  imports: [ReactiveFormsModule, SelectModule, CheckboxComponent, TranslatePipe],
   template: `
     <section
       class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7
              shadow-sm shadow-slate-200/70 space-y-7"
     >
       <header>
-        <h2 class="text-xl font-bold tracking-tight text-slate-950">IA & Cuota</h2>
-        <p class="mt-1 text-sm text-slate-500">
-          Configurá el proveedor de IA, el presupuesto diario y habilitá las funciones generativas
-          (borradores de tareas, sub-tareas asistidas, resúmenes y búsqueda semántica).
-        </p>
+        <h2 class="text-xl font-bold tracking-tight text-slate-950">{{ 'settings.ai.heading' | translate }}</h2>
+        <p class="mt-1 text-sm text-slate-500">{{ 'settings.ai.description' | translate }}</p>
       </header>
 
       <!-- ── Usage at-a-glance ──────────────────────────────────────────── -->
       <section class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <article class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Hoy</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{{ 'settings.ai.today' | translate }}</p>
           <p class="mt-1 text-2xl font-black text-slate-950 tabular-nums">USD {{ spentToday() ?? '0.0000' }}</p>
           <div class="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
             <div class="h-full transition-all" [class]="budgetColor()" [style.width.%]="budgetPct()"></div>
           </div>
-          <p class="mt-1 text-[11px] text-slate-400">{{ budgetPct() }}% del presupuesto diario</p>
+          <p class="mt-1 text-[11px] text-slate-400">{{ 'settings.ai.budgetPct' | translate: { pct: budgetPct() } }}</p>
         </article>
         <article class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Últimos 30 días</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{{ 'settings.ai.last30Days' | translate }}</p>
           <p class="mt-1 text-2xl font-black text-slate-950 tabular-nums">USD {{ usage30Days() ?? '0.00' }}</p>
-          <p class="mt-1 text-[11px] text-slate-400">Costo total acumulado</p>
+          <p class="mt-1 text-[11px] text-slate-400">{{ 'settings.ai.totalCost' | translate }}</p>
         </article>
         <article class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Llamadas (30d)</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{{ 'settings.ai.calls30d' | translate }}</p>
           <p class="mt-1 text-2xl font-black text-slate-950 tabular-nums">{{ totalCallsFor(callsByDay()) }}</p>
-          <p class="mt-1 text-[11px] text-slate-400">Total de requests a la IA</p>
+          <p class="mt-1 text-[11px] text-slate-400">{{ 'settings.ai.totalRequests' | translate }}</p>
         </article>
       </section>
 
       <!-- ── Breakdown por operación + usuario ────────────────────────── -->
       <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <article class="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-3">Por operación · 30 días</h3>
+          <h3 class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-3">{{ 'settings.ai.byOperation' | translate }}</h3>
           @if (callsByOperation().length === 0) {
-            <p class="text-xs italic text-slate-400">Sin datos.</p>
+            <p class="text-xs italic text-slate-400">{{ 'settings.ai.noData' | translate }}</p>
           } @else {
             <ul class="space-y-2">
               @for (b of callsByOperation(); track b.bucket) {
                 <li class="flex items-center justify-between gap-3 text-xs">
                   <span class="rounded bg-violet-50 px-2 py-0.5 font-mono text-[11px] text-violet-700">{{ b.bucket }}</span>
-                  <span class="text-slate-400">{{ b.count }} llamada{{ b.count === 1 ? '' : 's' }}</span>
+                  <span class="text-slate-400">{{ 'settings.ai.callCount' | translate: { count: b.count } }}</span>
                   <span class="font-semibold text-slate-900 tabular-nums">USD {{ b.totalCost }}</span>
                 </li>
               }
@@ -136,9 +134,9 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
           }
         </article>
         <article class="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-3">Por usuario · 30 días</h3>
+          <h3 class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-3">{{ 'settings.ai.byUser' | translate }}</h3>
           @if (callsByUser().length === 0) {
-            <p class="text-xs italic text-slate-400">Sin datos.</p>
+            <p class="text-xs italic text-slate-400">{{ 'settings.ai.noData' | translate }}</p>
           } @else {
             <ul class="space-y-2">
               @for (b of callsByUser(); track b.bucket) {
@@ -155,7 +153,7 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
 
       @if (errorMessage()) {
         <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          <p class="font-semibold">No pudimos guardar la configuración</p>
+          <p class="font-semibold">{{ 'settings.ai.errors.saveFailedHeading' | translate }}</p>
           <p class="text-xs">{{ errorMessage() }}</p>
         </div>
       }
@@ -163,7 +161,7 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
       <form [formGroup]="form" (ngSubmit)="save()" class="space-y-5 max-w-md" novalidate>
         <div>
           <label for="ai-provider" class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
-            Proveedor de IA
+            {{ 'settings.ai.providerLabel' | translate }}
           </label>
           <p-select
             inputId="ai-provider"
@@ -174,17 +172,12 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
             appendTo="body"
             styleClass="w-full"
           />
-          <p class="mt-2 text-xs text-slate-500">
-            Los 3 proveedores est&aacute;n activos. Cada uno requiere su API key configurada como variable de entorno
-            (<code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">GEMINI_API_KEY</code> /
-            <code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">ANTHROPIC_API_KEY</code> /
-            <code class="rounded bg-slate-100 px-1 py-0.5 text-[10px]">OPENAI_API_KEY</code>).
-          </p>
+          <p class="mt-2 text-xs text-slate-500">{{ 'settings.ai.providerNote' | translate }}</p>
         </div>
 
         <div>
           <label for="ai-model" class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
-            Modelo
+            {{ 'settings.ai.modelLabel' | translate }}
           </label>
           <p-select
             inputId="ai-model"
@@ -195,14 +188,12 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
             appendTo="body"
             styleClass="w-full"
           />
-          <p class="mt-2 text-xs text-slate-500">
-            Flash es más rápido y barato (~$0.075/M tokens). Pro es más capaz pero ~16× más caro (~$1.25/M tokens). El backend respeta esta elección en cada request.
-          </p>
+          <p class="mt-2 text-xs text-slate-500">{{ 'settings.ai.modelNote' | translate }}</p>
         </div>
 
         <div>
           <label for="ai-budget" class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2">
-            Presupuesto diario (USD)
+            {{ 'settings.ai.budgetLabel' | translate }}
           </label>
           <input
             id="ai-budget"
@@ -212,19 +203,14 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
             step="0.01"
             class="w-full rounded-lg bg-white border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
           />
-          <p class="mt-2 text-xs text-slate-500">
-            Tope de gasto por día. Cuando se supera, las llamadas de IA devuelven 429 hasta el corte de día siguiente.
-          </p>
+          <p class="mt-2 text-xs text-slate-500">{{ 'settings.ai.budgetNote' | translate }}</p>
         </div>
 
         <label class="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 bg-white p-4 hover:border-violet-300 transition">
-          <jt-checkbox formControlName="enabled" ariaLabel="Habilitar funciones de IA" />
+          <jt-checkbox formControlName="enabled" [ariaLabel]="'settings.ai.enableLabel' | translate" />
           <span>
-            <span class="block text-sm font-semibold text-slate-900">Habilitar funciones de IA</span>
-            <span class="block text-xs text-slate-500 mt-0.5">
-              Cuando está habilitado, el botón “Crear con IA” aparece en la UI y las acciones de IA en tareas/comentarios funcionan.
-              Si lo desactivás, los endpoints de IA devuelven 403 hasta volver a habilitarlo.
-            </span>
+            <span class="block text-sm font-semibold text-slate-900">{{ 'settings.ai.enableLabel' | translate }}</span>
+            <span class="block text-xs text-slate-500 mt-0.5">{{ 'settings.ai.enableNote' | translate }}</span>
           </span>
         </label>
         <button
@@ -243,9 +229,9 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
             </svg>
-            Guardando…
+            {{ 'common.saving' | translate }}
           } @else {
-            Guardar configuración
+            {{ 'settings.ai.saveButton' | translate }}
           }
         </button>
       </form>
@@ -259,6 +245,7 @@ export class AiSettingsPanelComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly memberStore = inject(WorkspaceMemberStore);
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
 
   /** Resolve a UUID → display name via the workspace member store. */
   protected userLabel(userId: string): string {
@@ -436,7 +423,7 @@ export class AiSettingsPanelComponent implements OnInit {
     if (this.form.invalid) return;
     const workspaceId = this.auth.currentWorkspace()?.id;
     if (!workspaceId) {
-      this.toast.error('No hay workspace activo');
+      this.toast.error(this.translate.instant('settings.ai.errors.noWorkspace'));
       return;
     }
     this.saving.set(true);
@@ -457,14 +444,14 @@ export class AiSettingsPanelComponent implements OnInit {
       await firstValueFrom(this.http.patch('/api/v1/settings/ai', {
         workspaceId, key: 'ai.enabled', value: values.enabled,
       }));
-      this.toast.success('Configuración de IA guardada');
+      this.toast.success(this.translate.instant('settings.ai.successToast'));
       this.loadUsageBreakdown();
     } catch (err) {
       const detail =
         (err as { error?: { detail?: string } })?.error?.detail ??
-        (err instanceof Error ? err.message : 'Error desconocido');
+        (err instanceof Error ? err.message : this.translate.instant('settings.ai.errors.unknown'));
       this.errorMessage.set(detail);
-      this.toast.error(`No pudimos guardar: ${detail}`);
+      this.toast.error(this.translate.instant('settings.ai.errors.saveFailed', { detail }));
     } finally {
       this.saving.set(false);
     }

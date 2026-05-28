@@ -13,6 +13,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
@@ -44,7 +45,7 @@ interface Page<T> {
 @Component({
   selector: 'jt-audit-log',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, TranslatePipe],
   host: {
     '(document:keydown.escape)': 'onEscape()',
   },
@@ -53,30 +54,28 @@ interface Page<T> {
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70">
         <div class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1">
           <i class="pi pi-shield text-violet-600" aria-hidden="true"></i>
-          <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700">Auditoría</span>
+          <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-700">{{ 'audit.badge' | translate }}</span>
         </div>
         <h1 class="mt-3 text-3xl font-black tracking-tight bg-gradient-to-b from-slate-950 via-slate-900 to-slate-700 bg-clip-text text-transparent">
-          Audit log
+          {{ 'audit.title' | translate }}
         </h1>
-        <p class="mt-1 text-sm text-slate-500">
-          Cambios sensibles del workspace · {{ total() }} eventos
-        </p>
+        <p class="mt-1 text-sm text-slate-500">{{ 'audit.subtitle' | translate: { count: total() } }}</p>
       </header>
 
       <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
         @if (loading()) {
-          <p class="px-4 py-8 text-center text-sm text-slate-400">Cargando…</p>
+          <p class="px-4 py-8 text-center text-sm text-slate-400">{{ 'common.loading' | translate }}</p>
         } @else if (items().length === 0) {
-          <p class="px-4 py-8 text-center text-sm text-slate-400 italic">Sin eventos.</p>
+          <p class="px-4 py-8 text-center text-sm text-slate-400 italic">{{ 'audit.empty' | translate }}</p>
         } @else {
           <table class="w-full text-sm">
             <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.18em] text-slate-500">
               <tr>
-                <th class="px-4 py-3 text-left font-bold">Cuándo</th>
-                <th class="px-4 py-3 text-left font-bold">Actor</th>
-                <th class="px-4 py-3 text-left font-bold">Acción</th>
-                <th class="px-4 py-3 text-left font-bold">Sujeto</th>
-                <th class="px-4 py-3 text-left font-bold">Cambios</th>
+                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.when' | translate }}</th>
+                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.actor' | translate }}</th>
+                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.action' | translate }}</th>
+                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.subject' | translate }}</th>
+                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.changes' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -97,7 +96,7 @@ interface Page<T> {
                               (click)="openDiff(entry, $event)"
                               class="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-700 hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-400">
                         <i class="pi pi-code text-[10px]" aria-hidden="true"></i>
-                        ver diff
+                        {{ 'audit.viewDiff' | translate }}
                       </button>
                     } @else {
                       <span class="text-[11px] text-slate-400">—</span>
@@ -109,12 +108,12 @@ interface Page<T> {
           </table>
 
           <footer class="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500">
-            <span>Página {{ page() }} · {{ items().length }} de {{ total() }}</span>
+            <span>{{ 'audit.pageInfo' | translate: { page: page(), shown: items().length, total: total() } }}</span>
             <div class="flex gap-1">
               <button type="button" (click)="prev()" [disabled]="page() <= 1"
-                      class="rounded px-2 py-1 hover:bg-white disabled:opacity-50">‹ Anterior</button>
+                      class="rounded px-2 py-1 hover:bg-white disabled:opacity-50">‹ {{ 'common.previous' | translate }}</button>
               <button type="button" (click)="next()" [disabled]="!hasMore()"
-                      class="rounded px-2 py-1 hover:bg-white disabled:opacity-50">Siguiente ›</button>
+                      class="rounded px-2 py-1 hover:bg-white disabled:opacity-50">{{ 'common.next' | translate }} ›</button>
             </div>
           </footer>
         }
@@ -141,18 +140,18 @@ interface Page<T> {
             </h2>
             <button #closeBtn type="button"
                     (click)="closeDiff()"
-                    aria-label="Cerrar"
+                    [attr.aria-label]="'common.close' | translate"
                     class="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-400">
               <i class="pi pi-times text-xs" aria-hidden="true"></i>
             </button>
           </header>
 
           <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-b border-slate-800 bg-slate-900/60 px-4 py-3 font-mono text-[11px]">
-            <dt class="text-slate-500">actor</dt>
+            <dt class="text-slate-500">{{ 'audit.diff.actor' | translate }}</dt>
             <dd class="text-slate-200">{{ actorName(active.actorUserId) }}</dd>
-            <dt class="text-slate-500">subject</dt>
+            <dt class="text-slate-500">{{ 'audit.diff.subject' | translate }}</dt>
             <dd class="text-slate-200">{{ active.subjectType }} <span class="text-slate-500">#{{ shortId(active.subjectId) }}</span></dd>
-            <dt class="text-slate-500">when</dt>
+            <dt class="text-slate-500">{{ 'audit.diff.when' | translate }}</dt>
             <dd class="text-slate-200 tabular-nums">{{ active.createdAt | date:'medium' }}</dd>
           </dl>
 
@@ -164,12 +163,12 @@ interface Page<T> {
                     (click)="copyDiff()"
                     class="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400">
               <i class="pi pi-copy text-[10px]" aria-hidden="true"></i>
-              Copiar
+              {{ 'audit.diff.copy' | translate }}
             </button>
             <button type="button"
                     (click)="closeDiff()"
                     class="rounded-md bg-violet-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-400">
-              Cerrar
+              {{ 'common.close' | translate }}
             </button>
           </footer>
         </div>
@@ -184,6 +183,7 @@ export class AuditLogComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly translate = inject(TranslateService);
 
   readonly items = signal<AuditLogEntry[]>([]);
   readonly total = signal(0);
@@ -235,7 +235,7 @@ export class AuditLogComponent implements OnInit {
       this.items.set(res.items ?? []);
       this.total.set(res.total ?? 0);
     } catch {
-      this.toast.error('No pudimos cargar el audit log');
+      this.toast.error(this.translate.instant('audit.errors.loadFailed'));
       this.items.set([]);
     } finally {
       this.loading.set(false);
@@ -282,14 +282,14 @@ export class AuditLogComponent implements OnInit {
     if (!entry?.diff) return;
     try {
       await navigator.clipboard.writeText(JSON.stringify(entry.diff, null, 2));
-      this.toast.success('Copiado al portapapeles');
+      this.toast.success(this.translate.instant('audit.diff.copiedToast'));
     } catch {
-      this.toast.error('No pudimos copiar');
+      this.toast.error(this.translate.instant('audit.diff.copyFailed'));
     }
   }
 
   actorName(actorId: string | null): string {
-    if (!actorId) return 'Sistema';
+    if (!actorId) return this.translate.instant('audit.systemActor');
     return this.memberStore.displayNameFor(actorId, this.shortId(actorId));
   }
 

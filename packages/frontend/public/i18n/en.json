@@ -228,6 +228,100 @@
       "ai": "AI & Quota",
       "aiTemplates": "AI Prompts"
     },
+    "profile": {
+      "heading": "Profile",
+      "nameLabel": "Name",
+      "emailLabel": "Email",
+      "saveButton": "Save Changes",
+      "saving": "Saving…",
+      "uploading": "Uploading…",
+      "changePhoto": "Change photo",
+      "uploadPhoto": "Upload photo",
+      "photoHint": "PNG, JPG, WebP or GIF · max. 2 MB",
+      "successToast": "Profile updated",
+      "successPhotoToast": "Photo updated",
+      "errors": {
+        "saveFailed": "Failed to save profile",
+        "invalidFormat": "Invalid format. Use PNG, JPG, WebP or GIF.",
+        "fileTooLarge": "Image exceeds the 2 MB limit.",
+        "uploadFailed": "Could not upload the photo"
+      }
+    },
+    "notifications": {
+      "heading": "Notifications",
+      "loading": "Loading preferences…",
+      "inApp": "In-app notifications",
+      "email": "Email notifications",
+      "taskAssigned": "Task assigned to me",
+      "taskDueSoon": "Task due soon",
+      "taskCompleted": "Task completed",
+      "taskStatusChanged": "Task status changed",
+      "projectMemberAdded": "Project member added",
+      "aiQuotaWarning": "AI quota warning",
+      "errors": {
+        "loadFailed": "Failed to load preferences",
+        "saveFailed": "Failed to save preference"
+      }
+    },
+    "email": {
+      "heading": "Email",
+      "description": "When you want an email on top of the in-app notification.",
+      "loading": "Loading preferences…",
+      "mentions": {
+        "label": "When I am mentioned",
+        "help": "Comments, @user mentions, and replies."
+      },
+      "assignments": {
+        "label": "When a task is assigned to me",
+        "help": "Notifies you by email whenever you become the assignee."
+      },
+      "dueDates": {
+        "label": "When a task is about to be due",
+        "help": "Reminders when the due date is close."
+      },
+      "errors": {
+        "loadFailed": "Could not load preferences",
+        "saveFailed": "Could not save the preference"
+      }
+    },
+    "workspace": {
+      "heading": "Workspace",
+      "nameLabel": "Workspace name",
+      "successToast": "Workspace updated",
+      "errors": {
+        "saveFailed": "Failed to save workspace settings"
+      }
+    },
+    "ai": {
+      "heading": "AI & Quota",
+      "description": "Configure the AI provider, daily budget, and enable generative features (task drafts, AI-assisted subtasks, summaries, and semantic search).",
+      "today": "Today",
+      "budgetPct": "{{pct}}% of the daily budget",
+      "last30Days": "Last 30 days",
+      "totalCost": "Cumulative total cost",
+      "calls30d": "Calls (30d)",
+      "totalRequests": "Total AI requests",
+      "byOperation": "By operation · 30 days",
+      "byUser": "By user · 30 days",
+      "noData": "No data.",
+      "callCount": "{{count}} call(s)",
+      "providerLabel": "AI provider",
+      "providerNote": "All 3 providers are active. Each requires its API key set as an environment variable (GEMINI_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY).",
+      "modelLabel": "Model",
+      "modelNote": "Flash is faster and cheaper (~$0.075/M tokens). Pro is more capable but ~16× pricier (~$1.25/M tokens). The backend honors this choice per request.",
+      "budgetLabel": "Daily budget (USD)",
+      "budgetNote": "Spend cap per day. Once exceeded, AI calls return 429 until the next day boundary.",
+      "enableLabel": "Enable AI features",
+      "enableNote": "When enabled, the “AI create” button appears and AI actions on tasks/comments work. If you disable it, AI endpoints return 403 until you re-enable.",
+      "saveButton": "Save configuration",
+      "successToast": "AI configuration saved",
+      "errors": {
+        "noWorkspace": "No active workspace",
+        "saveFailedHeading": "Could not save configuration",
+        "saveFailed": "Could not save: {{detail}}",
+        "unknown": "Unknown error"
+      }
+    },
     "aiPrompts": {
       "badge": "Prompts",
       "title": "AI Prompt Templates",
@@ -268,6 +362,33 @@
           "loadFailed": "Failed to load templates"
         }
       }
+    }
+  },
+  "audit": {
+    "badge": "Audit",
+    "title": "Audit log",
+    "subtitle": "Sensitive workspace changes · {{count}} events",
+    "empty": "No events.",
+    "viewDiff": "view diff",
+    "pageInfo": "Page {{page}} · {{shown}} of {{total}}",
+    "systemActor": "System",
+    "headers": {
+      "when": "When",
+      "actor": "Actor",
+      "action": "Action",
+      "subject": "Subject",
+      "changes": "Changes"
+    },
+    "diff": {
+      "actor": "actor",
+      "subject": "subject",
+      "when": "when",
+      "copy": "Copy",
+      "copiedToast": "Copied to clipboard",
+      "copyFailed": "Could not copy"
+    },
+    "errors": {
+      "loadFailed": "Could not load the audit log"
     }
   },
   "timeTracking": {

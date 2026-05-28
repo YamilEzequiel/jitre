@@ -228,6 +228,100 @@
       "ai": "IA y Cuota",
       "aiTemplates": "Prompts de IA"
     },
+    "profile": {
+      "heading": "Perfil",
+      "nameLabel": "Nombre",
+      "emailLabel": "Email",
+      "saveButton": "Guardar cambios",
+      "saving": "Guardando…",
+      "uploading": "Subiendo…",
+      "changePhoto": "Cambiar foto",
+      "uploadPhoto": "Subir foto",
+      "photoHint": "PNG, JPG, WebP o GIF · máx. 2 MB",
+      "successToast": "Perfil actualizado",
+      "successPhotoToast": "Foto actualizada",
+      "errors": {
+        "saveFailed": "No pudimos guardar el perfil",
+        "invalidFormat": "Formato inválido. Usá PNG, JPG, WebP o GIF.",
+        "fileTooLarge": "La imagen supera el límite de 2 MB.",
+        "uploadFailed": "No pudimos subir la foto"
+      }
+    },
+    "notifications": {
+      "heading": "Notificaciones",
+      "loading": "Cargando preferencias…",
+      "inApp": "Notificaciones in-app",
+      "email": "Notificaciones por email",
+      "taskAssigned": "Tarea asignada a mí",
+      "taskDueSoon": "Tarea por vencer",
+      "taskCompleted": "Tarea completada",
+      "taskStatusChanged": "Cambio de estado",
+      "projectMemberAdded": "Miembro agregado al proyecto",
+      "aiQuotaWarning": "Aviso de cuota IA",
+      "errors": {
+        "loadFailed": "No pudimos cargar las preferencias",
+        "saveFailed": "No pudimos guardar la preferencia"
+      }
+    },
+    "email": {
+      "heading": "Email",
+      "description": "Cuándo querés recibir un email además de la notificación in-app.",
+      "loading": "Cargando preferencias…",
+      "mentions": {
+        "label": "Cuando me mencionan",
+        "help": "Comentarios, menciones @usuario y respuestas."
+      },
+      "assignments": {
+        "label": "Cuando me asignan una tarea",
+        "help": "Notifica por email cada vez que pasás a ser responsable."
+      },
+      "dueDates": {
+        "label": "Cuando una tarea está por vencer",
+        "help": "Recordatorios cuando el due date se acerca."
+      },
+      "errors": {
+        "loadFailed": "No pudimos cargar las preferencias",
+        "saveFailed": "No pudimos guardar la preferencia"
+      }
+    },
+    "workspace": {
+      "heading": "Workspace",
+      "nameLabel": "Nombre del workspace",
+      "successToast": "Workspace actualizado",
+      "errors": {
+        "saveFailed": "No pudimos guardar la configuración del workspace"
+      }
+    },
+    "ai": {
+      "heading": "IA y Cuota",
+      "description": "Configurá el proveedor de IA, el presupuesto diario y habilitá las funciones generativas (borradores de tareas, sub-tareas asistidas, resúmenes y búsqueda semántica).",
+      "today": "Hoy",
+      "budgetPct": "{{pct}}% del presupuesto diario",
+      "last30Days": "Últimos 30 días",
+      "totalCost": "Costo total acumulado",
+      "calls30d": "Llamadas (30d)",
+      "totalRequests": "Total de requests a la IA",
+      "byOperation": "Por operación · 30 días",
+      "byUser": "Por usuario · 30 días",
+      "noData": "Sin datos.",
+      "callCount": "{{count}} llamada(s)",
+      "providerLabel": "Proveedor de IA",
+      "providerNote": "Los 3 proveedores están activos. Cada uno requiere su API key configurada como variable de entorno (GEMINI_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY).",
+      "modelLabel": "Modelo",
+      "modelNote": "Flash es más rápido y barato (~$0.075/M tokens). Pro es más capaz pero ~16× más caro (~$1.25/M tokens). El backend respeta esta elección en cada request.",
+      "budgetLabel": "Presupuesto diario (USD)",
+      "budgetNote": "Tope de gasto por día. Cuando se supera, las llamadas de IA devuelven 429 hasta el corte de día siguiente.",
+      "enableLabel": "Habilitar funciones de IA",
+      "enableNote": "Cuando está habilitado, el botón “Crear con IA” aparece en la UI y las acciones de IA en tareas/comentarios funcionan. Si lo desactivás, los endpoints de IA devuelven 403 hasta volver a habilitarlo.",
+      "saveButton": "Guardar configuración",
+      "successToast": "Configuración de IA guardada",
+      "errors": {
+        "noWorkspace": "No hay workspace activo",
+        "saveFailedHeading": "No pudimos guardar la configuración",
+        "saveFailed": "No pudimos guardar: {{detail}}",
+        "unknown": "Error desconocido"
+      }
+    },
     "aiPrompts": {
       "badge": "Prompts",
       "title": "Templates de IA",
@@ -268,6 +362,33 @@
           "loadFailed": "No pudimos cargar los templates"
         }
       }
+    }
+  },
+  "audit": {
+    "badge": "Auditoría",
+    "title": "Audit log",
+    "subtitle": "Cambios sensibles del workspace · {{count}} eventos",
+    "empty": "Sin eventos.",
+    "viewDiff": "ver diff",
+    "pageInfo": "Página {{page}} · {{shown}} de {{total}}",
+    "systemActor": "Sistema",
+    "headers": {
+      "when": "Cuándo",
+      "actor": "Actor",
+      "action": "Acción",
+      "subject": "Sujeto",
+      "changes": "Cambios"
+    },
+    "diff": {
+      "actor": "actor",
+      "subject": "subject",
+      "when": "when",
+      "copy": "Copiar",
+      "copiedToast": "Copiado al portapapeles",
+      "copyFailed": "No pudimos copiar"
+    },
+    "errors": {
+      "loadFailed": "No pudimos cargar el audit log"
     }
   },
   "timeTracking": {
