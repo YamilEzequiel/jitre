@@ -14,6 +14,7 @@ import { ProjectModule } from '../../project/project.module';
 import { CaslAbilityFactory } from '../../auth/casl/ability.factory';
 import { AbilityGuard } from '../../auth/guards/ability.guard';
 import { AiModule } from '../ai.module';
+import { SettingsModule } from '../../settings/settings.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AiModule } from '../ai.module';
     // ProjectMembershipService; pull in the modules that export them.
     WorkspaceModule,
     ProjectModule,
+    SettingsModule,
     forwardRef(() => AiModule),
   ],
   providers: [AiDailyDigestService, AiDailyDigestScheduler, CaslAbilityFactory, AbilityGuard],

@@ -10,6 +10,7 @@ import { TimeEntryEntity } from '../../time-tracking/time-entry.entity';
 import { WorkspaceEntity } from '../../workspace/workspace.entity';
 import { WorkspaceMembershipEntity } from '../../workspace/workspace-membership.entity';
 import { SYSTEM_USER_ID } from '../../common/constants/system-user.constant';
+import { SettingsService } from '../../settings/settings.service';
 
 interface ActivitySnapshot {
   workspaceId: string;
@@ -43,6 +44,7 @@ export class AiDailyDigestService {
     @InjectRepository(WorkspaceMembershipEntity)
     private readonly membershipRepo: Repository<WorkspaceMembershipEntity>,
     private readonly aiService: AiService,
+    private readonly settings: SettingsService,
   ) {}
 
   async getForToday(workspaceId: string): Promise<AiDailyDigestEntity | null> {
@@ -67,6 +69,7 @@ export class AiDailyDigestService {
   async generateFor(workspaceId: string, targetDateUtc?: string): Promise<AiDailyDigestEntity> {
     const digestDate = targetDateUtc ?? this.yesterdayUtc();
     const { dayStart, dayEnd } = this.dayRange(digestDate);
+    const locale = await this.resolveWorkspaceLocale(workspaceId);
 
     const snapshot = await this.collectActivity(workspaceId, dayStart, dayEnd);
 
@@ -80,7 +83,7 @@ export class AiDailyDigestService {
       return this.upsertDigest({
         workspaceId,
         digestDate,
-        summary: '_(No activity to summarise on this day.)_',
+        summary: this.emptySummaryFor(locale),
         tasksCreated: 0,
         tasksCompleted: 0,
         commentsPosted: 0,
@@ -89,17 +92,7 @@ export class AiDailyDigestService {
       });
     }
 
-    const systemPrompt = `You are an upbeat but precise team-update writer. Produce a markdown digest of yesterday's workspace activity. Use exactly these headings (omit any that have zero data): ### Highlights, ### Shipped, ### Conversation, ### Time. Keep it under 250 words. Mention concrete numbers from the data; never invent metrics.`;
-    const userPrompt = `Date: ${digestDate}
-Tasks created: ${snapshot.tasksCreated}
-Tasks completed: ${snapshot.tasksCompleted}
-Comments posted: ${snapshot.commentsPosted}
-Time logged (hours): ${(snapshot.timeLoggedMinutes / 60).toFixed(1)}
-Top contributors (by tasks touched): ${snapshot.topAssignees
-      .map((a) => `${a.userId.slice(0, 8)}=${a.tasks}`)
-      .join(', ') || 'n/a'}
-
-Write the markdown digest.`;
+    const { systemPrompt, userPrompt } = this.buildPrompts(locale, digestDate, snapshot);
 
     try {
       const completion = await this.aiService.generateCompletion({
@@ -127,6 +120,65 @@ Write the markdown digest.`;
       );
       throw err;
     }
+  }
+
+  private buildPrompts(
+    locale: string,
+    digestDate: string,
+    snapshot: ActivitySnapshot,
+  ): { systemPrompt: string; userPrompt: string } {
+    if (this.isSpanish(locale)) {
+      return {
+        systemPrompt:
+          "Sos un redactor preciso y claro de actualizaciones de equipo. Producí un resumen en markdown de la actividad del workspace de ayer. Usá exactamente estos encabezados (omití los que no tengan datos): ### Destacados, ### Entregado, ### Conversación, ### Tiempo. Mantenelo por debajo de 250 palabras. Mencioná números concretos de los datos; no inventes métricas. Produce el resumen en español.",
+        userPrompt: `Fecha: ${digestDate}
+Tareas creadas: ${snapshot.tasksCreated}
+Tareas completadas: ${snapshot.tasksCompleted}
+Comentarios publicados: ${snapshot.commentsPosted}
+Tiempo registrado (horas): ${(snapshot.timeLoggedMinutes / 60).toFixed(1)}
+Principales contribuidores (por tareas tocadas): ${snapshot.topAssignees
+          .map((a) => `${a.userId.slice(0, 8)}=${a.tasks}`)
+          .join(', ') || 'n/a'}
+
+Escribí el resumen en markdown en español.`,
+      };
+    }
+
+    return {
+      systemPrompt:
+        "You are an upbeat but precise team-update writer. Produce a markdown digest of yesterday's workspace activity. Use exactly these headings (omit any that have zero data): ### Highlights, ### Shipped, ### Conversation, ### Time. Keep it under 250 words. Mention concrete numbers from the data; never invent metrics.",
+      userPrompt: `Date: ${digestDate}
+Tasks created: ${snapshot.tasksCreated}
+Tasks completed: ${snapshot.tasksCompleted}
+Comments posted: ${snapshot.commentsPosted}
+Time logged (hours): ${(snapshot.timeLoggedMinutes / 60).toFixed(1)}
+Top contributors (by tasks touched): ${snapshot.topAssignees
+      .map((a) => `${a.userId.slice(0, 8)}=${a.tasks}`)
+      .join(', ') || 'n/a'}
+
+Write the markdown digest.`,
+    };
+  }
+
+  private async resolveWorkspaceLocale(workspaceId: string): Promise<string> {
+    try {
+      return await this.settings.getWorkspaceSetting<string>(
+        workspaceId,
+        'workspace.default_locale',
+      );
+    } catch {
+      return 'en';
+    }
+  }
+
+  private emptySummaryFor(locale: string): string {
+    return this.isSpanish(locale)
+      ? '_(No hubo actividad para resumir en este día.)_'
+      : '_(No activity to summarise on this day.)_';
+  }
+
+  private isSpanish(locale: string): boolean {
+    return locale.toLowerCase().startsWith('es');
   }
 
   /** Iterate every workspace and generate yesterday's digest. */
