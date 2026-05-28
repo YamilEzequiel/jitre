@@ -19,6 +19,7 @@ import { ToastService } from '../../core/toast/toast.service';
 @Component({
   selector: 'jt-daily-digest-widget',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' },
   imports: [TranslatePipe],
   template: `
     <section

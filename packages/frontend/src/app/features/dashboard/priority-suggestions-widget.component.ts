@@ -27,6 +27,7 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
 @Component({
   selector: 'jt-priority-suggestions-widget',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' },
   imports: [RouterLink, TranslatePipe],
   template: `
     <section
