@@ -11,6 +11,7 @@ import { allConfigs, envValidationSchema } from './config';
 import { RequestContextModule } from './request-context/request-context.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { MetricsModule } from './observability/metrics/metrics.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HttpLoggerInterceptor } from './common/interceptors/http-logger.interceptor';
 import { AuthModule } from './auth/auth.module';
@@ -114,6 +115,7 @@ import { AreaModule } from './area/area.module';
     RequestContextModule,
     DatabaseModule,
     HealthModule,
+    MetricsModule,
     AuthModule,
     UserModule,
     WorkspaceModule,
