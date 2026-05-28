@@ -31,7 +31,7 @@ async function bootstrap(): Promise<void> {
   // Helmet — Content-Security-Policy is intentionally only enabled in
   // production. Dev CSP fights live-reload / Angular HMR; readers in
   // prod get the tightened policy without a flag flip in dev.
-  const isProd = appConfig.env === 'production';
+  const isProd = appConfig.isProduction;
   app.use(
     helmet({
       crossOriginEmbedderPolicy: false,
