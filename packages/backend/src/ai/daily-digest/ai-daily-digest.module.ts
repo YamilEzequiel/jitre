@@ -9,6 +9,8 @@ import { Comment } from '../../comment/comment.entity';
 import { TimeEntryEntity } from '../../time-tracking/time-entry.entity';
 import { WorkspaceEntity } from '../../workspace/workspace.entity';
 import { WorkspaceMembershipEntity } from '../../workspace/workspace-membership.entity';
+import { WorkspaceModule } from '../../workspace/workspace.module';
+import { ProjectModule } from '../../project/project.module';
 import { CaslAbilityFactory } from '../../auth/casl/ability.factory';
 import { AbilityGuard } from '../../auth/guards/ability.guard';
 import { AiModule } from '../ai.module';
@@ -23,6 +25,10 @@ import { AiModule } from '../ai.module';
       WorkspaceEntity,
       WorkspaceMembershipEntity,
     ]),
+    // AbilityGuard's constructor pulls WorkspaceService +
+    // ProjectMembershipService; pull in the modules that export them.
+    WorkspaceModule,
+    ProjectModule,
     forwardRef(() => AiModule),
   ],
   providers: [AiDailyDigestService, AiDailyDigestScheduler, CaslAbilityFactory, AbilityGuard],
