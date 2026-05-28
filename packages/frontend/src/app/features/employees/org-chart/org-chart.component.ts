@@ -41,6 +41,15 @@ function initials(name: string | null | undefined): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+function visibleCanvasHeightPx(
+  canvasTop: number,
+  viewportHeight: number,
+  minHeight = 448,
+  bottomGap = 24,
+): number {
+  return Math.max(minHeight, Math.floor(viewportHeight - canvasTop - bottomGap));
+}
+
 /** Card geometry — extracted so layout + render math stays in sync. */
 const CARD_W = 220;
 const CARD_H = 100;
@@ -61,6 +70,13 @@ interface PositionedNode extends OrgGraphNode {
    * `EmployeeApiService.list()`. NULL when the user has no area.
    */
   areaId: string | null;
+}
+
+interface GraphBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 }
 
 @Component({
@@ -154,12 +170,19 @@ interface PositionedNode extends OrgGraphNode {
            [class.z-50]="fullscreen()"
            [class.rounded-none]="fullscreen()"
            [style.height]="fullscreen() ? '100vh' : null"
+           [style.minHeight.px]="fullscreen() ? null : canvasHeightPx()"
+           [style.height.px]="fullscreen() ? null : canvasHeightPx()"
            (wheel)="onWheel($event)"
            (mousedown)="onCanvasMouseDown($event)"
            (mousemove)="onMouseMove($event)"
            (mouseup)="onMouseUp()"
            (mouseleave)="onMouseUp()">
-        <svg width="100%" height="100%" style="cursor: grab" [attr.aria-label]="'Organigrama con ' + nodeCount() + ' empleados'">
+        <svg width="100%"
+             height="100%"
+             style="cursor: grab"
+             [attr.viewBox]="svgViewBox()"
+             preserveAspectRatio="xMidYMid meet"
+             [attr.aria-label]="'Organigrama con ' + nodeCount() + ' empleados'">
           <defs>
             <marker id="org-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M0 0L10 5L0 10z" fill="#94a3b8" />
@@ -384,6 +407,8 @@ export class OrgChartComponent implements OnInit, OnDestroy {
    *  fighting the user's manual zoom/pan on every reload. */
   private hasInitialFit = false;
   private resizeObserver: ResizeObserver | null = null;
+  /** Once the user pans/zooms manually, stop auto-refitting on resize. */
+  private userAdjustedView = false;
   /**
    * Side-loaded user → areaId map. The org-graph endpoint doesn't expose area
    * yet, so we resolve it via `EmployeeApiService.list()` and merge in the
@@ -393,6 +418,8 @@ export class OrgChartComponent implements OnInit, OnDestroy {
   readonly userAreaIds = signal<Map<string, string | null>>(new Map());
   /** Areas selected in the toolbar multiselect (empty = no filter). */
   readonly selectedAreas = signal<string[]>([]);
+  readonly canvasHeightPx = signal<number>(448);
+  readonly canvasWidthPx = signal<number>(800);
 
   /** Filters the raw graph by the area selection. Edges between hidden nodes are also dropped. */
   readonly visibleGraph = computed<OrgGraph>(() => {
@@ -425,8 +452,8 @@ export class OrgChartComponent implements OnInit, OnDestroy {
   // Pan + zoom kept as signals so child computed (e.g. edge highlighting) and
   // tests can observe them. mousedown/up/move all flow through these.
   readonly zoom = signal(1);
-  readonly panX = signal(40);
-  readonly panY = signal(40);
+  readonly panX = signal(0);
+  readonly panY = signal(0);
   private isPanning = false;
   private panMoved = false;
   private lastMouse = { x: 0, y: 0 };
@@ -605,6 +632,68 @@ export class OrgChartComponent implements OnInit, OnDestroy {
     return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
   });
 
+  readonly graphBounds = computed<GraphBounds | null>(() => {
+    const nodes = this.positioned();
+    if (nodes.length === 0) return null;
+
+    let minX = Math.min(...nodes.map((n) => n.x));
+    let minY = Math.min(...nodes.map((n) => n.y));
+    let maxX = Math.max(...nodes.map((n) => n.x + CARD_W));
+    let maxY = Math.max(...nodes.map((n) => n.y + CARD_H));
+
+    for (const band of this.areaBands()) {
+      minX = Math.min(minX, band.x - 12);
+      minY = Math.min(minY, band.y - 32);
+      maxX = Math.max(maxX, band.x - 12 + band.w + 24);
+      maxY = Math.max(maxY, band.y - 32 + band.h + 44);
+    }
+
+    const isolated = this.isolatedBounds();
+    if (isolated) {
+      minX = Math.min(minX, isolated.x - 16);
+      minY = Math.min(minY, isolated.y - 32);
+      maxX = Math.max(maxX, isolated.x - 16 + isolated.w + 32);
+      maxY = Math.max(maxY, isolated.y - 32 + isolated.h + 48);
+    }
+
+    const padding = 40;
+    return {
+      minX: minX - padding,
+      minY: minY - padding,
+      maxX: maxX + padding,
+      maxY: maxY + padding,
+    };
+  });
+
+  readonly svgViewBox = computed(() => {
+    const bounds = this.graphBounds();
+    if (!bounds) return '0 0 100 100';
+
+    let width = Math.max(1, bounds.maxX - bounds.minX);
+    let height = Math.max(1, bounds.maxY - bounds.minY);
+    let minX = bounds.minX;
+    let minY = bounds.minY;
+
+    const canvasW = Math.max(1, this.canvasWidthPx());
+    const canvasH = Math.max(1, this.canvasHeightPx());
+    const targetAspect = canvasW / canvasH;
+    const graphAspect = width / height;
+
+    if (graphAspect > targetAspect) {
+      const fittedHeight = width / targetAspect;
+      const extra = fittedHeight - height;
+      minY -= extra / 2;
+      height = fittedHeight;
+    } else {
+      const fittedWidth = height * targetAspect;
+      const extra = fittedWidth - width;
+      minX -= extra / 2;
+      width = fittedWidth;
+    }
+
+    return `${minX} ${minY} ${width} ${height}`;
+  });
+
   private readonly positionsById = computed(() => {
     const map = new Map<string, PositionedNode>();
     for (const n of this.positioned()) map.set(n.id, n);
@@ -647,13 +736,16 @@ export class OrgChartComponent implements OnInit, OnDestroy {
       this.graph.set(graph);
       // Reset the fit-flag so the next graph triggers another auto-fit.
       this.hasInitialFit = false;
-      // The canvas may not have its final clientWidth/Height yet (the tab
-      // just became visible). Schedule via rAF + retry until it does.
-      this.attemptFit();
+      this.userAdjustedView = false;
     } catch {
       this.toast.error('No pudimos cargar el organigrama');
     } finally {
       this.loading.set(false);
+      // IMPORTANT: the canvas only exists in the non-loading branch. If we try
+      // to fit while `loading=true`, `canvasRef()` is undefined and the graph
+      // can remain at the default pan/zoom, clipping the lower nodes.
+      // Re-schedule once loading flips false so the real canvas is measurable.
+      requestAnimationFrame(() => this.attemptFit());
     }
   }
 
@@ -681,6 +773,7 @@ export class OrgChartComponent implements OnInit, OnDestroy {
   onWheel(e: WheelEvent): void {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    this.userAdjustedView = true;
     this.zoom.update(z => Math.min(3, Math.max(0.3, z * factor)));
   }
 
@@ -694,7 +787,10 @@ export class OrgChartComponent implements OnInit, OnDestroy {
     if (!this.isPanning) return;
     const dx = e.clientX - this.lastMouse.x;
     const dy = e.clientY - this.lastMouse.y;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) this.panMoved = true;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+      this.panMoved = true;
+      this.userAdjustedView = true;
+    }
     this.lastMouse = { x: e.clientX, y: e.clientY };
     this.panX.update(v => v + dx);
     this.panY.update(v => v + dy);
@@ -735,16 +831,33 @@ export class OrgChartComponent implements OnInit, OnDestroy {
     // tab becomes visible AFTER reload() ran.
     if (!this.resizeObserver) {
       this.resizeObserver = new ResizeObserver(() => {
-        if (!this.hasInitialFit) this.fitToView();
+        this.updateCanvasHeight();
+        if (!this.userAdjustedView) this.scheduleFitToView();
       });
       this.resizeObserver.observe(canvas);
     }
 
     if (canvas.clientWidth >= 40 && canvas.clientHeight >= 40) {
-      this.fitToView();
+      this.updateCanvasHeight();
+      this.scheduleFitToView();
     } else if (retries > 0) {
       requestAnimationFrame(() => this.attemptFit(retries - 1));
     }
+  }
+
+  private scheduleFitToView(): void {
+    requestAnimationFrame(() => this.fitToView());
+  }
+
+  private updateCanvasHeight(): void {
+    if (this.fullscreen()) return;
+    const canvas = this.canvasRef()?.nativeElement;
+    if (!canvas) return;
+    const viewportHeight = this.document.defaultView?.innerHeight ?? 0;
+    if (viewportHeight <= 0) return;
+    const top = canvas.getBoundingClientRect().top;
+    this.canvasWidthPx.set(Math.max(1, canvas.clientWidth));
+    this.canvasHeightPx.set(visibleCanvasHeightPx(top, viewportHeight));
   }
 
   /**
@@ -758,42 +871,22 @@ export class OrgChartComponent implements OnInit, OnDestroy {
 
     const canvas = this.canvasRef()?.nativeElement;
     if (!canvas) return;
-    const containerW = canvas.clientWidth;
-    const containerH = canvas.clientHeight;
-    if (containerW < 40 || containerH < 40) return;
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const n of nodes) {
-      minX = Math.min(minX, n.x);
-      minY = Math.min(minY, n.y);
-      maxX = Math.max(maxX, n.x + this.cardW);
-      maxY = Math.max(maxY, n.y + this.cardH);
-    }
-
-    const graphW = Math.max(1, maxX - minX);
-    const graphH = Math.max(1, maxY - minY);
-    const padding = 40;
-    const scaleX = (containerW - padding * 2) / graphW;
-    const scaleY = (containerH - padding * 2) / graphH;
-    // Cap at 1 so small graphs don't get blown up unnaturally.
-    const nextZoom = Math.min(1, Math.max(0.25, Math.min(scaleX, scaleY)));
-
-    this.zoom.set(nextZoom);
-    // Center the graph: pan so the midpoint of the bounding box lands on
-    // the midpoint of the container.
-    const graphMidX = (minX + maxX) / 2;
-    const graphMidY = (minY + maxY) / 2;
-    this.panX.set(containerW / 2 - graphMidX * nextZoom);
-    this.panY.set(containerH / 2 - graphMidY * nextZoom);
+    if (canvas.clientWidth < 40 || canvas.clientHeight < 40) return;
+    this.canvasWidthPx.set(Math.max(1, canvas.clientWidth));
+    this.zoom.set(1);
+    this.panX.set(0);
+    this.panY.set(0);
 
     this.hasInitialFit = true;
   }
 
   zoomIn(): void {
+    this.userAdjustedView = true;
     this.zoom.update(z => Math.min(3, z * 1.15));
   }
 
   zoomOut(): void {
+    this.userAdjustedView = true;
     this.zoom.update(z => Math.max(0.3, z / 1.15));
   }
 
@@ -801,11 +894,15 @@ export class OrgChartComponent implements OnInit, OnDestroy {
     // Re-fit the graph to view instead of hardcoded pan/zoom values.
     // Reset the flag so fitToView actually runs.
     this.hasInitialFit = false;
-    this.fitToView();
+    this.userAdjustedView = false;
+    this.scheduleFitToView();
   }
 
   toggleFullscreen(): void {
     this.fullscreen.update(v => !v);
+    this.hasInitialFit = false;
+    this.userAdjustedView = false;
+    requestAnimationFrame(() => this.attemptFit());
   }
 
   // ── Hover relationships ─────────────────────────────────────────────────

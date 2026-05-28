@@ -151,4 +151,73 @@ describe('OrgChartComponent', () => {
     const maxLayeredY = Math.max(...layered.map(p => p.y));
     expect(u3!.y).toBeGreaterThan(maxLayeredY);
   });
+
+  it('retries auto-fit after loading finishes so the real canvas can be measured', async () => {
+    configure(buildGraph(3, [[1, 2], [2, 3]]));
+    const attemptFitSpy = vi.spyOn(
+      OrgChartComponent.prototype as unknown as { attemptFit: () => void },
+      'attemptFit',
+    );
+    attemptFitSpy.mockImplementation(() => undefined);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // First call happens while loading=true (spinner branch, no canvas yet).
+    // We want a second call after loading=false so the actual canvas exists.
+    expect(attemptFitSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-fits after toggling fullscreen', async () => {
+    vi.useFakeTimers();
+    configure(buildGraph(3, [[1, 2], [2, 3]]));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const c = fixture.componentInstance;
+    const attemptFitSpy = vi.spyOn(
+      OrgChartComponent.prototype as unknown as { attemptFit: () => void },
+      'attemptFit',
+    );
+
+    c.toggleFullscreen();
+    vi.runAllTimers();
+
+    expect(c.fullscreen()).toBe(true);
+    expect(attemptFitSpy).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('caps canvas height to the visible viewport, not the full page flow', async () => {
+    configure(buildGraph(3, [[1, 2], [2, 3]]));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const c = fixture.componentInstance;
+    const canvas = c.canvasRef()?.nativeElement as HTMLDivElement | undefined;
+    expect(canvas).toBeTruthy();
+    if (!canvas) return;
+
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      top: 300,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      width: 0,
+      height: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    Object.defineProperty(document.defaultView, 'innerHeight', {
+      value: 900,
+      configurable: true,
+    });
+
+    (c as unknown as { updateCanvasHeight: () => void }).updateCanvasHeight();
+
+    expect(c.canvasHeightPx()).toBe(576);
+  });
 });
