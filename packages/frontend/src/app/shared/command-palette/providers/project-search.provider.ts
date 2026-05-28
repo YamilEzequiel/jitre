@@ -5,9 +5,20 @@ import { firstValueFrom } from 'rxjs';
 import type { CommandProvider } from '../command-palette.service';
 import type { CommandResult } from '../recent-items.helper';
 
-interface ProjectSearchResult {
-  id: string;
-  name: string;
+interface SearchHit {
+  entityType: 'project';
+  entityId: string;
+  workspaceId: string;
+  rank: number;
+  snippet: string;
+  occurredAt: string;
+}
+
+interface SearchResponse {
+  items: SearchHit[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -16,16 +27,21 @@ export class ProjectSearchProvider implements CommandProvider {
   private readonly router = inject(Router);
 
   async search(query: string): Promise<CommandResult[]> {
-    const results = await firstValueFrom(
-      this.http.get<ProjectSearchResult[]>('/api/v1/search', {
+    const res = await firstValueFrom(
+      this.http.get<SearchResponse>('/api/v1/search', {
         params: { type: 'project', q: query },
       }),
     );
-    return results.map(p => ({
-      id: p.id,
-      label: p.name,
+    return (res.items ?? []).map(h => ({
+      id: h.entityId,
+      label: stripHighlights(h.snippet) || 'Project',
       type: 'project' as const,
-      action: () => this.router.navigate(['/projects', p.id]),
+      description: h.snippet,
+      action: () => this.router.navigate(['/projects', h.entityId]),
     }));
   }
+}
+
+function stripHighlights(snippet: string): string {
+  return snippet.replace(/<\/?b>/g, '').trim();
 }

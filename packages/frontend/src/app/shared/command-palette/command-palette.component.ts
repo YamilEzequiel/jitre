@@ -82,7 +82,18 @@ import type { CommandResult } from './recent-items.helper';
                   "
                   aria-hidden="true"
                 ></span>
-                <span class="flex-1 truncate">{{ result.label }}</span>
+                <span class="flex-1 min-w-0">
+                  <span class="block truncate">{{ result.label }}</span>
+                  @if (result.description && result.description !== result.label) {
+                    <span class="block truncate text-[11px] text-gray-400">
+                      {{ stripHtml(result.description) }}
+                    </span>
+                  }
+                </span>
+                <span
+                  class="ml-2 flex-none text-[10px] uppercase tracking-wide text-gray-500"
+                  aria-hidden="true"
+                >{{ result.type }}</span>
               </li>
             } @empty {
               <li class="px-4 py-6 text-center text-sm text-gray-500">
@@ -209,5 +220,9 @@ export class CommandPaletteComponent {
     result.action();
     this.paletteService.recents.add(result);
     this.paletteService.close();
+  }
+
+  stripHtml(value: string): string {
+    return value.replace(/<[^>]*>/g, '').trim();
   }
 }

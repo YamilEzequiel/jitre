@@ -27,6 +27,7 @@ import { CommandPaletteService } from './shared/command-palette/command-palette.
 import { NavigationProvider } from './shared/command-palette/providers/navigation.provider';
 import { TaskSearchProvider } from './shared/command-palette/providers/task-search.provider';
 import { ProjectSearchProvider } from './shared/command-palette/providers/project-search.provider';
+import { DocumentSearchProvider } from './shared/command-palette/providers/document-search.provider';
 import { AiActionProvider } from './shared/command-palette/providers/ai-action.provider';
 import { SettingsProvider } from './shared/command-palette/providers/settings.provider';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -81,6 +82,7 @@ export const appConfig: ApplicationConfig = {
       palette.registerProvider(inject(NavigationProvider));
       palette.registerProvider(inject(TaskSearchProvider));
       palette.registerProvider(inject(ProjectSearchProvider));
+      palette.registerProvider(inject(DocumentSearchProvider));
       palette.registerProvider(inject(AiActionProvider));
       palette.registerProvider(inject(SettingsProvider));
     }),

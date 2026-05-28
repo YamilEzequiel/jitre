@@ -6,7 +6,7 @@ import type { CommandProvider } from '../command-palette.service';
 import type { CommandResult } from '../recent-items.helper';
 
 interface SearchHit {
-  entityType: 'task';
+  entityType: 'document';
   entityId: string;
   workspaceId: string;
   rank: number;
@@ -22,22 +22,22 @@ interface SearchResponse {
 }
 
 @Injectable({ providedIn: 'root' })
-export class TaskSearchProvider implements CommandProvider {
+export class DocumentSearchProvider implements CommandProvider {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
   async search(query: string): Promise<CommandResult[]> {
     const res = await firstValueFrom(
       this.http.get<SearchResponse>('/api/v1/search', {
-        params: { type: 'task', q: query },
+        params: { type: 'document', q: query },
       }),
     );
     return (res.items ?? []).map(h => ({
       id: h.entityId,
-      label: stripHighlights(h.snippet) || 'Task',
-      type: 'task' as const,
+      label: stripHighlights(h.snippet) || 'Document',
+      type: 'document' as const,
       description: h.snippet,
-      action: () => this.router.navigate(['/tasks', h.entityId]),
+      action: () => this.router.navigate(['/docs', h.entityId]),
     }));
   }
 }

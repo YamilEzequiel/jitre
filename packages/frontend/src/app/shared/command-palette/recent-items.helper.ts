@@ -1,7 +1,7 @@
 export interface CommandResult {
   id: string;
   label: string;
-  type: 'task' | 'project' | 'navigation' | 'ai' | 'settings';
+  type: 'task' | 'project' | 'document' | 'comment' | 'navigation' | 'ai' | 'settings';
   icon?: string;
   description?: string;
   action: () => void;
