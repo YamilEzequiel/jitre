@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added (continued)
 
+- **E2E suite for AI prompt templates** — `test/ai-prompt-template.e2e-spec.ts` boots a real AppModule + Postgres, registers a user that lands as workspace OWNER, then exercises the full CRUD: create, list (with operation filter), reject invalid operation, default-swap invariant within an operation, and the "cannot delete the current default" 409.
 - **i18n keys** for the surfaces shipped in 0.2.0: navigation (Changelog / License / AI Prompts), dashboard widgets (daily digest + priority suggestions), task detail (back / prev-next / comments / AI describe), settings → AI Prompts panel, and time-tracking duration helper text. Both `es` and `en` cover the same tree.
 - Sidebar Changelog and License entries now translate.
 - Dashboard daily-digest and priority-suggestions widgets fully translated (badges, titles, metric labels, empty states, toasts).
