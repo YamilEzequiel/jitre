@@ -54,7 +54,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
             (change)="onToggle($event)"
             (blur)="onBlur()"
             [attr.aria-label]="ariaLabel() || label() || null"
-            class="allow-native peer absolute inset-0 h-full w-full m-0 p-0 cursor-inherit appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40 disabled:cursor-not-allowed"
+            class="allow-native peer absolute inset-0 h-full w-full m-0 p-0 cursor-inherit appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-emerald-500 checked:bg-white hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40 disabled:cursor-not-allowed"
           />
           <svg
             viewBox="0 0 16 16"
@@ -64,7 +64,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
             stroke-linecap="round"
             stroke-linejoin="round"
             aria-hidden="true"
-            class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-white opacity-0 transition-opacity peer-checked:opacity-100"
+            class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-emerald-500 opacity-0 transition-opacity peer-checked:opacity-100"
           >
             <path d="M3 8.5 6.5 12 13 5" />
           </svg>
@@ -95,7 +95,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           (change)="onToggle($event)"
           (blur)="onBlur()"
           [attr.aria-label]="ariaLabel() || null"
-          class="allow-native peer absolute inset-0 h-full w-full m-0 p-0 cursor-inherit appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40 disabled:cursor-not-allowed"
+          class="allow-native peer absolute inset-0 h-full w-full m-0 p-0 cursor-inherit appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-emerald-500 checked:bg-white hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40 disabled:cursor-not-allowed"
         />
         <svg
           viewBox="0 0 16 16"
@@ -105,7 +105,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           stroke-linecap="round"
           stroke-linejoin="round"
           aria-hidden="true"
-          class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-white opacity-0 transition-opacity peer-checked:opacity-100"
+          class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-emerald-500 opacity-0 transition-opacity peer-checked:opacity-100"
         >
           <path d="M3 8.5 6.5 12 13 5" />
         </svg>
@@ -172,3 +172,4 @@ export class CheckboxComponent implements ControlValueAccessor {
     this.internalDisabled.set(isDisabled);
   }
 }
+

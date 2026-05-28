@@ -76,6 +76,17 @@ describe('CheckboxComponent', () => {
       expect(inputEl(fixture).checked).toBe(true);
     });
 
+    it('renders checked state as an unfilled box with a green checkmark', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      const input = inputEl(fixture);
+      const checkIcon = host.querySelector('svg')!;
+
+      expect(input.className).toContain('checked:bg-white');
+      expect(input.className).toContain('checked:border-emerald-500');
+      expect(input.className).not.toContain('checked:bg-gradient-to-br');
+      expect(checkIcon.className.baseVal).toContain('text-emerald-500');
+    });
+
     it('does NOT render an inner <label> when no [label] input is set', () => {
       // Regression: nested labels (consumer wraps jt-checkbox in <label>)
       // cause double-toggle on text-click in browsers. The settings panels
