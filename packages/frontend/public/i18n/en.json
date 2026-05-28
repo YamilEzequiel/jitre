@@ -59,6 +59,16 @@
     "openCommandPalette": "Open command palette",
     "openAccountMenu": "Open account menu",
     "closeAccountMenu": "Close account menu",
+    "openMenuAria": "Open menu",
+    "closeMenuAria": "Close menu",
+    "closeWorkspacesAria": "Close workspaces",
+    "workspacesHeading": "Workspaces",
+    "noWorkspacesEmpty": "No workspaces.",
+    "workspaceLoadError": "Could not load workspaces",
+    "githubLinkAria": "Open Jitre on GitHub",
+    "currentVersionAria": "Current version v{{version}}",
+    "aiCreateButton": "AI create",
+    "aiCreateDialogAria": "Open AI create dialog",
     "settings": "Settings",
     "logout": "Log out",
     "timer": {
@@ -93,6 +103,53 @@
         "invalidCredentials": "Invalid email or password.",
         "userInactive": "Your account is disabled. Contact support.",
         "generic": "Login failed. Please try again."
+      }
+    },
+    "register": {
+      "badge": "Get started",
+      "title1": "Create your",
+      "title2": "account.",
+      "subtitle": "Create your account and get started with projects, boards, and time tracking.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@email.com",
+      "nameLabel": "Display name",
+      "namePlaceholder": "Maya Rodríguez",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "8+ characters",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat password",
+      "acceptTermsAria": "Accept terms",
+      "termsPrefix": "I agree to Jitre's",
+      "termsLink": "Terms of Service",
+      "termsAnd": "and",
+      "privacyLink": "Privacy Policy",
+      "creatingAccount": "Creating account…",
+      "continueButton": "Continue",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Log in",
+      "errors": {
+        "minPassword": "Password must be at least 8 characters",
+        "passwordMismatch": "Passwords do not match",
+        "checkFields": "Please check the highlighted fields.",
+        "generic": "Registration failed. Please try again.",
+        "emailTaken": "That email is already registered. Try logging in.",
+        "weakPassword": "Password is too weak. Use at least 8 characters."
+      }
+    },
+    "resetPassword": {
+      "badge": "Recover",
+      "title1": "Reset your",
+      "title2": "password.",
+      "subtitle": "Enter your email and we'll send you a secure link to get back in.",
+      "emailLabel": "Email",
+      "sending": "Sending…",
+      "sendButton": "Send reset link",
+      "successTitle": "Check your inbox",
+      "successMessage": "If that email exists, a reset link is on its way.",
+      "backToLogin": "Back to login",
+      "successToast": "Reset link sent!",
+      "errors": {
+        "sendFailed": "Could not send reset link. Please try again."
       }
     }
   },
@@ -161,6 +218,16 @@
     }
   },
   "settings": {
+    "title": "Settings",
+    "preferencesBadge": "Preferences",
+    "tabs": {
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "email": "Email",
+      "workspace": "Workspace",
+      "ai": "AI & Quota",
+      "aiTemplates": "AI Prompts"
+    },
     "aiPrompts": {
       "badge": "Prompts",
       "title": "AI Prompt Templates",

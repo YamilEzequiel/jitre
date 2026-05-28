@@ -59,6 +59,16 @@
     "openCommandPalette": "Abrir paleta de comandos",
     "openAccountMenu": "Abrir menú de cuenta",
     "closeAccountMenu": "Cerrar menú de cuenta",
+    "openMenuAria": "Abrir menú",
+    "closeMenuAria": "Cerrar menú",
+    "closeWorkspacesAria": "Cerrar workspaces",
+    "workspacesHeading": "Workspaces",
+    "noWorkspacesEmpty": "Sin workspaces.",
+    "workspaceLoadError": "No pudimos cargar los workspaces",
+    "githubLinkAria": "Abrir Jitre en GitHub",
+    "currentVersionAria": "Versión actual v{{version}}",
+    "aiCreateButton": "Crear con IA",
+    "aiCreateDialogAria": "Abrir diálogo de creación con IA",
     "settings": "Configuración",
     "logout": "Cerrar sesión",
     "timer": {
@@ -93,6 +103,53 @@
         "invalidCredentials": "Email o contraseña incorrectos.",
         "userInactive": "Tu cuenta está deshabilitada. Contactá soporte.",
         "generic": "No pudimos ingresar. Intentá de nuevo."
+      }
+    },
+    "register": {
+      "badge": "Empezar",
+      "title1": "Creá tu",
+      "title2": "cuenta.",
+      "subtitle": "Creá tu cuenta y arrancá con proyectos, tableros y registro de tiempo.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@email.com",
+      "nameLabel": "Nombre visible",
+      "namePlaceholder": "Maya Rodríguez",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "8+ caracteres",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Repetir contraseña",
+      "acceptTermsAria": "Aceptar términos",
+      "termsPrefix": "Acepto los",
+      "termsLink": "Términos de Servicio",
+      "termsAnd": "y la",
+      "privacyLink": "Política de Privacidad",
+      "creatingAccount": "Creando cuenta…",
+      "continueButton": "Continuar",
+      "haveAccount": "¿Ya tenés cuenta?",
+      "loginLink": "Ingresá",
+      "errors": {
+        "minPassword": "La contraseña debe tener al menos 8 caracteres",
+        "passwordMismatch": "Las contraseñas no coinciden",
+        "checkFields": "Revisá los campos marcados.",
+        "generic": "No pudimos registrarte. Intentá de nuevo.",
+        "emailTaken": "Ese email ya está registrado. Probá iniciar sesión.",
+        "weakPassword": "La contraseña es muy débil. Usá al menos 8 caracteres."
+      }
+    },
+    "resetPassword": {
+      "badge": "Recuperar",
+      "title1": "Recuperá tu",
+      "title2": "contraseña.",
+      "subtitle": "Ingresá tu email y te mandamos un link seguro para volver a entrar.",
+      "emailLabel": "Email",
+      "sending": "Enviando…",
+      "sendButton": "Enviar link",
+      "successTitle": "Revisá tu inbox",
+      "successMessage": "Si ese email existe, el link de reseteo está en camino.",
+      "backToLogin": "Volver al login",
+      "successToast": "¡Link enviado!",
+      "errors": {
+        "sendFailed": "No pudimos enviar el link. Intentá de nuevo."
       }
     }
   },
@@ -161,6 +218,16 @@
     }
   },
   "settings": {
+    "title": "Configuración",
+    "preferencesBadge": "Preferencias",
+    "tabs": {
+      "profile": "Perfil",
+      "notifications": "Notificaciones",
+      "email": "Email",
+      "workspace": "Workspace",
+      "ai": "IA y Cuota",
+      "aiTemplates": "Prompts de IA"
+    },
     "aiPrompts": {
       "badge": "Prompts",
       "title": "Templates de IA",

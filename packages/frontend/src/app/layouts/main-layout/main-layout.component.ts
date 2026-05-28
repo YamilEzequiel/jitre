@@ -71,7 +71,7 @@ interface NavItem {
           type="button"
           class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm md:hidden"
           (click)="closeMobileNav()"
-          aria-label="Close menu"
+          [attr.aria-label]="'layout.closeMenuAria' | translate"
         ></button>
       }
 
@@ -128,9 +128,9 @@ interface NavItem {
             <i class="pi pi-angle-down text-[10px] text-slate-400 shrink-0" aria-hidden="true"></i>
           </button>
           @if (workspaceMenuOpen()) {
-            <button type="button" class="fixed inset-0 z-30 cursor-default bg-transparent" (click)="closeWorkspaceMenu()" aria-label="Close workspaces"></button>
+            <button type="button" class="fixed inset-0 z-30 cursor-default bg-transparent" (click)="closeWorkspaceMenu()" [attr.aria-label]="'layout.closeWorkspacesAria' | translate"></button>
             <div class="absolute left-0 right-0 top-full z-40 mt-1 rounded-lg border border-white/10 bg-[#0a0f24] py-1 shadow-2xl">
-              <p class="px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">Workspaces</p>
+              <p class="px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">{{ 'layout.workspacesHeading' | translate }}</p>
               @for (ws of availableWorkspaces(); track ws.id) {
                 <button
                   type="button"
@@ -146,7 +146,7 @@ interface NavItem {
                   }
                 </button>
               } @empty {
-                <p class="px-3 py-2 text-xs italic text-slate-500">Sin workspaces.</p>
+                <p class="px-3 py-2 text-xs italic text-slate-500">{{ 'layout.noWorkspacesEmpty' | translate }}</p>
               }
             </div>
           }
@@ -207,7 +207,7 @@ interface NavItem {
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-1.5 transition hover:text-white"
-              aria-label="Open Jitre on GitHub"
+              [attr.aria-label]="'layout.githubLinkAria' | translate"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.57.11.78-.25.78-.55v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.95.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.45.11-3.03 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.74.11 3.03.74.81 1.18 1.84 1.18 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.07.78 2.16v3.2c0 .31.21.67.79.55A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/>
@@ -217,7 +217,7 @@ interface NavItem {
             <a
               routerLink="/changelog"
               class="font-mono tracking-tight text-slate-400 transition hover:text-white"
-              [attr.aria-label]="'Current version v' + appVersion"
+              [attr.aria-label]="'layout.currentVersionAria' | translate: { version: appVersion }"
             >
               v{{ appVersion }}
             </a>
@@ -235,7 +235,7 @@ interface NavItem {
             (click)="toggleMobileNav()"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 md:hidden
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-            [attr.aria-label]="mobileNavOpen() ? 'Close menu' : 'Open menu'"
+            [attr.aria-label]="(mobileNavOpen() ? 'layout.closeMenuAria' : 'layout.openMenuAria') | translate"
             [attr.aria-expanded]="mobileNavOpen()"
           >
             <i [class]="'pi text-base ' + (mobileNavOpen() ? 'pi-times' : 'pi-bars')" aria-hidden="true"></i>
@@ -284,11 +284,11 @@ interface NavItem {
                    hover:shadow-lg hover:shadow-violet-500/40
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60
                    focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-            aria-label="Open AI create dialog"
+            [attr.aria-label]="'layout.aiCreateDialogAria' | translate"
             data-testid="ai-create-trigger"
           >
             <i class="pi pi-sparkles text-[10px]" aria-hidden="true"></i>
-            AI create
+            {{ 'layout.aiCreateButton' | translate }}
             <kbd class="ml-1 inline-flex items-center rounded bg-white/20 px-1 py-0.5 text-[9px] font-semibold tracking-wide">
               ⌘I
             </kbd>
@@ -602,7 +602,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         );
         this.availableWorkspaces.set(list ?? []);
       } catch {
-        this.toast.error('No pudimos cargar los workspaces');
+        this.toast.error(this.translate.instant('layout.workspaceLoadError'));
       }
     }
   }

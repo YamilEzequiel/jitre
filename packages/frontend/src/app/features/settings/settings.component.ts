@@ -5,6 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserSettingsPanelComponent } from './panels/user-settings-panel.component';
 import { NotificationSettingsPanelComponent } from './panels/notification-settings-panel.component';
@@ -17,14 +18,14 @@ type SettingsTab = 'profile' | 'notifications' | 'email' | 'workspace' | 'ai' | 
 
 interface TabDef {
   value: SettingsTab;
-  label: string;
+  labelKey: string;
   adminOnly: boolean;
 }
 
 @Component({
   selector: 'jt-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UserSettingsPanelComponent, NotificationSettingsPanelComponent, EmailPrefsPanelComponent, WorkspaceSettingsPanelComponent, AiSettingsPanelComponent, AiPromptTemplatesPanelComponent],
+  imports: [TranslatePipe, UserSettingsPanelComponent, NotificationSettingsPanelComponent, EmailPrefsPanelComponent, WorkspaceSettingsPanelComponent, AiSettingsPanelComponent, AiPromptTemplatesPanelComponent],
   template: `
     <div class="max-w-6xl space-y-6">
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 space-y-3">
@@ -36,12 +37,12 @@ interface TabDef {
             class="text-[10px] font-bold uppercase tracking-[0.18em]
                    text-violet-700"
           >
-            Preferences
+            {{ 'settings.preferencesBadge' | translate }}
           </span>
         </div>
         <h1 class="text-3xl sm:text-4xl font-black tracking-tight">
           <span class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-700 bg-clip-text text-transparent">
-            Settings
+            {{ 'settings.title' | translate }}
           </span>
         </h1>
       </header>
@@ -72,7 +73,7 @@ interface TabDef {
                     "
                     aria-hidden="true"
                   ></span>
-                  {{ tab.label }}
+                  {{ tab.labelKey | translate }}
                 </button>
               </li>
             }
@@ -117,12 +118,12 @@ export class SettingsComponent {
   });
 
   private readonly allTabs: TabDef[] = [
-    { value: 'profile', label: 'Profile', adminOnly: false },
-    { value: 'notifications', label: 'Notifications', adminOnly: false },
-    { value: 'email', label: 'Email', adminOnly: false },
-    { value: 'workspace', label: 'Workspace', adminOnly: true },
-    { value: 'ai', label: 'AI & Quota', adminOnly: true },
-    { value: 'ai-templates', label: 'AI Prompts', adminOnly: true },
+    { value: 'profile', labelKey: 'settings.tabs.profile', adminOnly: false },
+    { value: 'notifications', labelKey: 'settings.tabs.notifications', adminOnly: false },
+    { value: 'email', labelKey: 'settings.tabs.email', adminOnly: false },
+    { value: 'workspace', labelKey: 'settings.tabs.workspace', adminOnly: true },
+    { value: 'ai', labelKey: 'settings.tabs.ai', adminOnly: true },
+    { value: 'ai-templates', labelKey: 'settings.tabs.aiTemplates', adminOnly: true },
   ];
 
   readonly visibleTabs = computed<TabDef[]>(() =>

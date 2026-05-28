@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChi
 import { AfterViewInit } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { FieldErrorComponent } from '../../shared/auth/field-error.component';
@@ -9,7 +10,7 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
 @Component({
   selector: 'jt-reset-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, FieldErrorComponent],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, FieldErrorComponent],
   template: `
     <div class="space-y-8">
       @if (!submitted()) {
@@ -23,19 +24,19 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
                      bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-600
                      bg-clip-text text-transparent"
             >
-              Recover
+              {{ 'auth.resetPassword.badge' | translate }}
             </span>
           </div>
           <h2 class="text-3xl sm:text-4xl font-black tracking-tight leading-[1.05]">
             <span class="block bg-gradient-to-b from-slate-950 via-slate-900 to-slate-700 bg-clip-text text-transparent">
-              Reset your
+              {{ 'auth.resetPassword.title1' | translate }}
             </span>
             <span class="block bg-gradient-to-r from-blue-700 via-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-              password.
+              {{ 'auth.resetPassword.title2' | translate }}
             </span>
           </h2>
           <p class="text-sm text-slate-600">
-            Ingresá tu email y te mandamos un link seguro para volver a entrar.
+            {{ 'auth.resetPassword.subtitle' | translate }}
           </p>
         </header>
 
@@ -45,7 +46,7 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
               for="reset-email"
               class="block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 mb-2"
             >
-              Email <span class="text-rose-400">*</span>
+              {{ 'auth.resetPassword.emailLabel' | translate }} <span class="text-rose-400">*</span>
             </label>
             <input
               #emailInput
@@ -78,9 +79,9 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
               </svg>
-              Sending…
+              {{ 'auth.resetPassword.sending' | translate }}
             } @else {
-              Send Reset Link
+              {{ 'auth.resetPassword.sendButton' | translate }}
               <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
@@ -115,11 +116,11 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
           <div class="space-y-2">
             <h2 class="text-2xl font-black tracking-tight">
               <span class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-700 bg-clip-text text-transparent">
-                Check your inbox
+                {{ 'auth.resetPassword.successTitle' | translate }}
               </span>
             </h2>
             <p class="text-sm text-slate-600">
-              If that email exists, a reset link is on its way.
+              {{ 'auth.resetPassword.successMessage' | translate }}
             </p>
           </div>
         </div>
@@ -134,7 +135,7 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          Back to login
+          {{ 'auth.resetPassword.backToLogin' | translate }}
         </a>
       </p>
     </div>
@@ -143,6 +144,7 @@ import { FieldErrorComponent } from '../../shared/auth/field-error.component';
 export class ResetPasswordComponent implements AfterViewInit {
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
 
   private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
 
@@ -167,9 +169,9 @@ export class ResetPasswordComponent implements AfterViewInit {
     try {
       await this.auth.requestReset(email!);
       this.submitted.set(true);
-      this.toast.success('Reset link sent!');
+      this.toast.success(this.translate.instant('auth.resetPassword.successToast'));
     } catch {
-      this.toast.error('Could not send reset link. Please try again.');
+      this.toast.error(this.translate.instant('auth.resetPassword.errors.sendFailed'));
     } finally {
       this.loading.set(false);
     }

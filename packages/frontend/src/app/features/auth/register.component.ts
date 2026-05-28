@@ -9,6 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { ProjectStore } from '../../stores/project.store';
@@ -33,6 +34,7 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    TranslatePipe,
     PasswordInputComponent,
     PasswordStrengthMeterComponent,
     FieldErrorComponent,
@@ -43,19 +45,19 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
       <header class="space-y-2.5">
         <div class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1">
           <span class="text-[9px] font-extrabold uppercase tracking-[0.18em] text-indigo-600">
-            Get started
+            {{ 'auth.register.badge' | translate }}
           </span>
         </div>
         <h2 class="text-[1.85rem] font-black tracking-[-0.05em] leading-[1.08] sm:text-[2.1rem]">
           <span class="block text-slate-950">
-            Create your
+            {{ 'auth.register.title1' | translate }}
           </span>
           <span class="block bg-gradient-to-r from-indigo-600 to-violet-500 bg-clip-text text-transparent">
-            account.
+            {{ 'auth.register.title2' | translate }}
           </span>
         </h2>
         <p class="text-sm leading-relaxed text-slate-500">
-          Cre&aacute; tu cuenta y arranc&aacute; con proyectos, tableros y registro de tiempo.
+          {{ 'auth.register.subtitle' | translate }}
         </p>
       </header>
 
@@ -63,14 +65,14 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label for="reg-email" class="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-            Email <span class="text-rose-400">*</span>
+            {{ 'auth.register.emailLabel' | translate }} <span class="text-rose-400">*</span>
           </label>
           <input
             id="reg-email"
             type="email"
             formControlName="email"
             autocomplete="email"
-            placeholder="yamil@gmail.com"
+            [placeholder]="'auth.register.emailPlaceholder' | translate"
             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 aria-[invalid=true]:border-rose-400"
           />
           <jt-field-error controlName="email" />
@@ -78,7 +80,7 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
 
         <div>
           <label for="name" class="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-            Display Name <span class="text-rose-400">*</span>
+            {{ 'auth.register.nameLabel' | translate }} <span class="text-rose-400">*</span>
           </label>
           <input
             #nameInput
@@ -86,7 +88,7 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
             type="text"
             formControlName="name"
             autocomplete="name"
-            placeholder="Maya Rodríguez"
+            [placeholder]="'auth.register.namePlaceholder' | translate"
             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 aria-[invalid=true]:border-rose-400"
           />
           <jt-field-error controlName="name" />
@@ -96,18 +98,18 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label for="reg-password" class="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-            Password <span class="text-rose-400">*</span>
+            {{ 'auth.register.passwordLabel' | translate }} <span class="text-rose-400">*</span>
           </label>
-          <jt-password-input id="reg-password" controlName="password" autocomplete="new-password" placeholder="8+ caracteres" />
+          <jt-password-input id="reg-password" controlName="password" autocomplete="new-password" [placeholder]="'auth.register.passwordPlaceholder' | translate" />
           <jt-password-strength-meter [value]="passwordValue() ?? ''" />
-          <jt-field-error controlName="password" [messages]="{ minlength: 'Password must be at least 8 characters' }" />
+          <jt-field-error controlName="password" [messages]="passwordErrorMessages()" />
         </div>
 
         <div>
           <label for="confirm-password" class="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-            Confirm Password <span class="text-rose-400">*</span>
+            {{ 'auth.register.confirmPasswordLabel' | translate }} <span class="text-rose-400">*</span>
           </label>
-          <jt-password-input id="confirm-password" controlName="confirmPassword" autocomplete="new-password" placeholder="Repetir clave" />
+          <jt-password-input id="confirm-password" controlName="confirmPassword" autocomplete="new-password" [placeholder]="'auth.register.confirmPasswordPlaceholder' | translate" />
           @if (form.errors?.['passwordMismatch'] && form.get('confirmPassword')?.touched) {
             <p class="mt-1.5 flex items-center gap-1.5 text-xs text-rose-400" role="alert">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -115,19 +117,19 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              Passwords do not match
+              {{ 'auth.register.errors.passwordMismatch' | translate }}
             </p>
           }
         </div>
         </div>
 
         <div class="flex items-start gap-2.5 text-xs leading-relaxed text-slate-600">
-          <jt-checkbox formControlName="acceptTerms" ariaLabel="Accept terms" />
+          <jt-checkbox formControlName="acceptTerms" [ariaLabel]="'auth.register.acceptTermsAria' | translate" />
           <span>
-            I agree to Jitre's
-            <a href="/terms" class="font-semibold text-indigo-600 transition hover:text-violet-700">Terms of Service</a>
-            and
-            <a href="/privacy" class="font-semibold text-indigo-600 transition hover:text-violet-700">Privacy Policy</a>
+            {{ 'auth.register.termsPrefix' | translate }}
+            <a href="/terms" class="font-semibold text-indigo-600 transition hover:text-violet-700">{{ 'auth.register.termsLink' | translate }}</a>
+            {{ 'auth.register.termsAnd' | translate }}
+            <a href="/privacy" class="font-semibold text-indigo-600 transition hover:text-violet-700">{{ 'auth.register.privacyLink' | translate }}</a>
           </span>
         </div>
 
@@ -146,9 +148,9 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
             </svg>
-            Creating account&hellip;
+            {{ 'auth.register.creatingAccount' | translate }}
           } @else {
-            Continue
+            {{ 'auth.register.continueButton' | translate }}
             <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
@@ -157,8 +159,8 @@ function passwordMatch(group: AbstractControl): ValidationErrors | null {
         </button>
 
         <p class="pt-1 text-center text-xs text-slate-500">
-          Already have an account?
-          <a routerLink="/login" class="font-bold text-indigo-600 transition hover:text-violet-700">Log in</a>
+          {{ 'auth.register.haveAccount' | translate }}
+          <a routerLink="/login" class="font-bold text-indigo-600 transition hover:text-violet-700">{{ 'auth.register.loginLink' | translate }}</a>
         </p>
       </form>
     </div>
@@ -171,6 +173,7 @@ export class RegisterComponent implements AfterViewInit {
   private readonly projects = inject(ProjectStore);
   private readonly tasks = inject(TaskStore);
   private readonly notifications = inject(NotificationStore);
+  private readonly translate = inject(TranslateService);
 
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
 
@@ -199,6 +202,10 @@ export class RegisterComponent implements AfterViewInit {
     () => this.loading() || this.formStatus() !== 'VALID',
   );
 
+  readonly passwordErrorMessages = computed(() => ({
+    minlength: this.translate.instant('auth.register.errors.minPassword'),
+  }));
+
   ngAfterViewInit(): void {
     queueMicrotask(() => this.nameInput()?.nativeElement.focus());
   }
@@ -206,7 +213,7 @@ export class RegisterComponent implements AfterViewInit {
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.toast.error('Revisá los campos marcados.');
+      this.toast.error(this.translate.instant('auth.register.errors.checkFields'));
       return;
     }
     const { name, email, password } = this.form.getRawValue();
@@ -226,9 +233,9 @@ export class RegisterComponent implements AfterViewInit {
     } catch (err: unknown) {
       const e = (err as { error?: { detail?: string; title?: string } })?.error;
       const detail = e?.detail ?? '';
-      let msg = 'Registration failed. Please try again.';
-      if (detail === 'EMAIL_TAKEN') msg = 'Ese email ya está registrado. Probá iniciar sesión.';
-      else if (detail === 'WEAK_PASSWORD') msg = 'La contraseña es muy débil. Usá al menos 8 caracteres.';
+      let msg = this.translate.instant('auth.register.errors.generic');
+      if (detail === 'EMAIL_TAKEN') msg = this.translate.instant('auth.register.errors.emailTaken');
+      else if (detail === 'WEAK_PASSWORD') msg = this.translate.instant('auth.register.errors.weakPassword');
       else if (detail) msg = detail;
       else if (e?.title) msg = e.title;
       this.toast.error(msg);

@@ -5,6 +5,10 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { Router, provideRouter } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
+import { provideTranslateService, TranslateLoader, TranslateNoOpLoader } from '@ngx-translate/core';
+import { ProjectStore } from '../../stores/project.store';
+import { TaskStore } from '../../stores/task.store';
+import { NotificationStore } from '../../stores/notification.store';
 
 describe('RegisterComponent', () => {
   let fixture: ComponentFixture<RegisterComponent>;
@@ -20,8 +24,14 @@ describe('RegisterComponent', () => {
       imports: [ReactiveFormsModule],
       providers: [
         provideRouter([]),
+        provideTranslateService({
+          loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+        }),
         { provide: AuthService, useValue: { register: registerMock, login: loginMock, currentWorkspace: () => null } },
         { provide: ToastService, useValue: { error: vi.fn(), success: vi.fn() } },
+        { provide: ProjectStore, useValue: { onWorkspaceSwitch: vi.fn().mockResolvedValue(undefined) } },
+        { provide: TaskStore, useValue: { onWorkspaceSwitch: vi.fn().mockResolvedValue(undefined) } },
+        { provide: NotificationStore, useValue: { onWorkspaceSwitch: vi.fn().mockResolvedValue(undefined) } },
       ],
     });
 
@@ -40,12 +50,10 @@ describe('RegisterComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders readable register copy without broken characters', () => {
+  it('renders the i18n keys for register copy', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Creá tu cuenta y arrancá');
-    expect(text).toContain('Terms of Service');
-    expect(text).not.toContain('Ã');
-    expect(text).not.toContain('â');
+    expect(text).toContain('auth.register.subtitle');
+    expect(text).toContain('auth.register.termsLink');
   });
 
   it('auto-logins and redirects after successful registration', async () => {

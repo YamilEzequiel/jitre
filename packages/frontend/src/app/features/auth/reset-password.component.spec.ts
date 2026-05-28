@@ -5,6 +5,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { ReactiveFormsModule } from '@angular/forms';
 import { provideRouter } from '@angular/router';
+import { provideTranslateService, TranslateLoader, TranslateNoOpLoader } from '@ngx-translate/core';
 
 describe('ResetPasswordComponent', () => {
   let fixture: ComponentFixture<ResetPasswordComponent>;
@@ -17,6 +18,9 @@ describe('ResetPasswordComponent', () => {
       imports: [ReactiveFormsModule],
       providers: [
         provideRouter([]),
+        provideTranslateService({
+          loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+        }),
         { provide: AuthService, useValue: { requestReset: requestResetMock } },
         { provide: ToastService, useValue: { success: vi.fn(), error: vi.fn() } },
       ],

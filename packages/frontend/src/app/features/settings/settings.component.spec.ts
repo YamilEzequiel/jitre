@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideTranslateService, TranslateLoader, TranslateNoOpLoader } from '@ngx-translate/core';
 import { ToastService } from '../../core/toast/toast.service';
 
 describe('SettingsComponent', () => {
@@ -32,6 +33,9 @@ describe('SettingsComponent', () => {
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
+          provideTranslateService({
+            loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+          }),
           { provide: ToastService, useValue: { success: vi.fn(), error: vi.fn() } },
           { provide: AuthService, useValue: makeAuth('admin') },
         ],
@@ -62,6 +66,9 @@ describe('SettingsComponent', () => {
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
+          provideTranslateService({
+            loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+          }),
           { provide: ToastService, useValue: { success: vi.fn(), error: vi.fn() } },
           { provide: AuthService, useValue: makeAuth('owner') },
         ],
@@ -84,6 +91,9 @@ describe('SettingsComponent', () => {
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
+          provideTranslateService({
+            loader: { provide: TranslateLoader, useClass: TranslateNoOpLoader },
+          }),
           { provide: ToastService, useValue: { success: vi.fn(), error: vi.fn() } },
           { provide: AuthService, useValue: makeAuth('member') },
         ],
