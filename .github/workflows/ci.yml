@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same ref so the build queue doesn't
+# pile up while someone is force-pushing fixes to a PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-build:
+    name: Lint + Build (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --workspaces --include-workspace-root
+
+      - name: Build shared
+        run: npm run build:shared
+
+      - name: Build backend
+        run: npm run build:backend
+
+      - name: Build frontend (production)
+        run: npm run build:frontend
+
+      - name: Lint
+        run: npm run lint --if-present
+
+  test-backend:
+    name: Test backend (Node 20)
+    runs-on: ubuntu-latest
+
+    # The backend test suite touches Postgres + Redis via the e2e specs,
+    # so we bring them up as service containers. Unit specs that mock
+    # those don't pay any extra cost.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jitre
+          POSTGRES_PASSWORD: jitre_ci
+          POSTGRES_DB: jitre_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jitre -d jitre_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: jitre
+      POSTGRES_PASSWORD: jitre_ci
+      POSTGRES_DB: jitre_test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: ci_access_secret_change_me_change_me
+      JWT_REFRESH_SECRET: ci_refresh_secret_change_me_change_me
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_ROOT: /tmp/jitre-uploads
+      LOG_LEVEL: warn
+      LOG_PRETTY: 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --workspaces --include-workspace-root
+
+      - name: Build shared (backend imports its dist)
+        run: npm run build:shared
+
+      - name: Run migrations
+        run: npm run db:migration:run
+
+      - name: Unit tests
+        run: npm run test -w @jitre/backend
+
+  test-frontend:
+    name: Test frontend (Node 20)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --workspaces --include-workspace-root
+
+      - name: Build shared
+        run: npm run build:shared
+
+      - name: Vitest
+        run: npm run test -w @jitre/frontend

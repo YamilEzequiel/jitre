@@ -4,6 +4,7 @@
 
 **Plataforma de gestión de proyectos AI-first — moderna, minimalista, lista para producción.**
 
+[![CI](https://github.com/YamilEzequiel/jitre/actions/workflows/ci.yml/badge.svg)](https://github.com/YamilEzequiel/jitre/actions/workflows/ci.yml)
 [![Angular](https://img.shields.io/badge/Angular-21-DD0031?style=flat&logo=angular&logoColor=white)](https://angular.dev)
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
