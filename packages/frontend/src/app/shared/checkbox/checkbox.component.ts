@@ -93,10 +93,18 @@ export class CheckboxComponent implements ControlValueAccessor {
   /** Internal signal for forms-driven value. */
   private readonly internalChecked = signal<boolean>(false);
   private readonly internalDisabled = signal<boolean>(false);
-  private formAttached = false;
+  /**
+   * Tracks whether a ReactiveForms binding has attached (via writeValue).
+   * MUST be a signal: if it were a plain boolean, the `checkedState`
+   * computed would only track whichever signal it read on its first
+   * evaluation, so the branch never switched when forms wired up
+   * afterwards and the checkbox stayed visually unchecked even when the
+   * FormControl held `true`.
+   */
+  private readonly formAttached = signal(false);
 
   protected readonly checkedState = computed(() =>
-    this.formAttached ? this.internalChecked() : this.checked(),
+    this.formAttached() ? this.internalChecked() : this.checked(),
   );
   protected readonly disabledState = computed(() => this.internalDisabled());
 
@@ -116,7 +124,7 @@ export class CheckboxComponent implements ControlValueAccessor {
 
   // ControlValueAccessor
   writeValue(value: boolean | null | undefined): void {
-    this.formAttached = true;
+    this.formAttached.set(true);
     this.internalChecked.set(!!value);
   }
 
