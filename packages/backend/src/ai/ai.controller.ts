@@ -31,6 +31,7 @@ import {
 import { buildSummaryPrompt } from './prompts/summary.prompt';
 import { buildExplainTaskPrompt } from './prompts/explain-task.prompt';
 import { AiPromptTemplateService } from './prompt-template/ai-prompt-template.service';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('ai')
 @ApiBearerAuth('access-token')
@@ -75,7 +76,11 @@ export class AiController {
     status: 403,
     description: 'Feature disabled or no use_ai permission.',
   })
-  @ApiResponse({ status: 429, description: 'Quota exceeded.' })
+  @ApiResponse({ status: 429, description: 'Quota / rate limit exceeded.' })
+  // Tighter throttle on top of the global tiers + the AI quota guard:
+  // 10 AI describe / 10s / IP and 30 / minute / IP. Real cost protection
+  // still lives in AiQuotaGuard (per-workspace + per-user budget).
+  @Throttle({ medium: { limit: 10, ttl: 10_000 }, long: { limit: 30, ttl: 60_000 } })
   @Post('tasks/:taskId/describe')
   async describeTask(
     @Param('taskId') taskId: string,

@@ -28,11 +28,40 @@ async function bootstrap(): Promise<void> {
 
   app.use(cookieParser());
 
+  // Helmet — Content-Security-Policy is intentionally only enabled in
+  // production. Dev CSP fights live-reload / Angular HMR; readers in
+  // prod get the tightened policy without a flag flip in dev.
+  const isProd = appConfig.env === 'production';
   app.use(
     helmet({
-      contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: isProd
+        ? {
+            useDefaults: true,
+            directives: {
+              defaultSrc: ["'self'"],
+              // Angular emits inline event handlers it generates at runtime;
+              // 'unsafe-inline' is required to keep the SPA functional. If
+              // you put nginx in front and ship a CSP nonce there, remove
+              // 'unsafe-inline' here.
+              scriptSrc: ["'self'", "'unsafe-inline'"],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+              fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+              imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+              connectSrc: ["'self'", 'https:', 'wss:'],
+              frameAncestors: ["'none'"],
+              objectSrc: ["'none'"],
+              baseUri: ["'self'"],
+              formAction: ["'self'"],
+            },
+          }
+        : false,
+      // referrer-policy / X-Frame-Options / X-Content-Type-Options /
+      // Strict-Transport-Security come on by default via helmet defaults
+      // — explicit here just to document the surface.
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      hsts: isProd ? { maxAge: 15552000, includeSubDomains: true } : false,
     }),
   );
 

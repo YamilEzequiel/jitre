@@ -16,6 +16,7 @@ import {
   ApiCookieAuth,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -101,6 +102,10 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'ACCOUNT_DISABLED' })
   @Post('login')
   @Public()
+  // 10 attempts per minute per IP. Throttler ships an IP-based tracker
+  // out of the box; this is the explicit guardrail against credential
+  // stuffing, layered on top of the global throttler.
+  @Throttle({ short: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
