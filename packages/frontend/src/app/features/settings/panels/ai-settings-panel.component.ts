@@ -189,7 +189,7 @@ const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
           <p-select
             inputId="ai-model"
             formControlName="model"
-            [options]="modelOptions"
+            [options]="modelOptions()"
             optionLabel="label"
             optionValue="value"
             appendTo="body"

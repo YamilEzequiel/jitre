@@ -13,7 +13,6 @@ import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
 import { WorkspaceMemberStore } from '../../../stores/workspace-member.store';
 import { CheckboxComponent } from '../../../shared/checkbox/checkbox.component';
-import { AiExplainPopoverComponent } from '../../../shared/ai-explain/ai-explain-popover.component';
 
 export type TaskCardVariant = 'row' | 'tile';
 
@@ -71,7 +70,7 @@ function hashHue(input: string): number {
 @Component({
   selector: 'jt-task-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CheckboxComponent, AiExplainPopoverComponent],
+  imports: [CheckboxComponent],
   template: `
     @if (variant() === 'tile') {
       <div
