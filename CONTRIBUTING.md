@@ -154,9 +154,31 @@ Abrí un issue con:
 
 ---
 
-## Licencia
+## Licencia y CLA
 
-Al contribuir aceptás que tu código se distribuye bajo la [PolyForm Noncommercial License 1.0.0](./LICENSE), la misma que cubre el resto del proyecto.
+Jitre se distribuye bajo la [Elastic License 2.0](./LICENSE) y opera un modelo
+de **dual-licensing**: ELv2 para el público + licencias comerciales negociadas
+para casos de reventa / SaaS / white-label.
+
+Para sostener ese modelo, **todo contribuidor debe firmar el [Contributor
+License Agreement (CLA)](./CLA.md) una sola vez**. El CLA te otorga a vos los
+créditos como autor original y al mantenedor los derechos necesarios para
+incluir tu código tanto en la versión ELv2 como en licencias comerciales
+futuras.
+
+### Cómo funciona
+
+1. Abrís un PR como siempre.
+2. El bot **CLA-assistant** comenta automáticamente con el link al `CLA.md` y
+   la frase a copiar.
+3. Respondés en el PR: *"I have read the CLA Document and I hereby sign the CLA"*.
+4. El bot registra tu firma. Listo — todos tus PRs futuros quedan cubiertos.
+
+No hace falta firmar nada físicamente ni enviar mail. La firma queda asociada a
+tu cuenta de GitHub.
+
+Si tenés dudas sobre el CLA antes de firmar, abrí un issue o contactame por
+[LinkedIn](https://www.linkedin.com/in/yamil-lazzari/).
 
 ---
 

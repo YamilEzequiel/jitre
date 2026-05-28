@@ -11,5 +11,5 @@ export const REPO_URL = 'https://github.com/YamilEzequiel/jitre';
 export const REPO_ISSUES_URL = `${REPO_URL}/issues`;
 export const REPO_RELEASES_URL = `${REPO_URL}/releases`;
 
-export const LICENSE_NAME = 'PolyForm Noncommercial 1.0.0';
-export const LICENSE_URL = 'https://polyformproject.org/licenses/noncommercial/1.0.0';
+export const LICENSE_NAME = 'Elastic License 2.0';
+export const LICENSE_URL = 'https://www.elastic.co/licensing/elastic-license';

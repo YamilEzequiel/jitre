@@ -1,0 +1,57 @@
+name: "CLA Assistant"
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+# Required so the action can post comments, add labels, and (re-)evaluate PRs.
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  CLAAssistant:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "CLA Assistant"
+        if: |
+          (github.event.comment.body == 'recheck' ||
+           github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') ||
+          github.event_name == 'pull_request_target'
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: a PAT with `repo` scope on a separate signatures repo.
+          # If unset, signatures are stored in this same repository under the
+          # branch defined below.
+          # PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_SIGNATURES_TOKEN }}
+        with:
+          path-to-signatures: 'signatures/version1/cla.json'
+          path-to-document: 'https://github.com/YamilEzequiel/jitre/blob/main/CLA.md'
+          # Branch where signatures are stored. Created automatically if missing.
+          branch: 'cla-signatures'
+          # Phrase a contributor must comment to sign.
+          custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
+          # Phrase to re-trigger CLA validation after a change.
+          custom-notsigned-prcomment: |
+            Hi $contributorName, thank you for your contribution to **Jitre**!
+
+            Before we can merge this PR, you need to read and sign our
+            [Contributor License Agreement](https://github.com/YamilEzequiel/jitre/blob/main/CLA.md).
+
+            You only need to sign once per GitHub account — all your future PRs
+            will be automatically covered.
+
+            **To sign**, please reply on this PR with the exact phrase:
+
+            > I have read the CLA Document and I hereby sign the CLA
+          custom-allsigned-prcomment: |
+            All contributors have signed the CLA :white_check_mark:
+          # Accounts that bypass the CLA check (maintainer + bots).
+          allowlist: YamilEzequiel,dependabot[bot],renovate[bot]
+          # Lock signatures file so it cannot be tampered with manually.
+          lock-pullrequest-aftermerge: true

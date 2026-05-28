@@ -32,3 +32,4 @@ makes review fast and reduces the chance we ask for splits.
 - [ ] Migration runs forward AND backward (if you added one)
 - [ ] CHANGELOG.md updated under `[Unreleased]` (if user-visible)
 - [ ] No `Co-Authored-By: AI` or model attribution in commits
+- [ ] [CLA](../blob/main/CLA.md) signed (the bot will prompt on first PR — only required once per GitHub account)

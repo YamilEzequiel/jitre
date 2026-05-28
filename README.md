@@ -10,7 +10,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io)
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Elastic%20License%202.0-005571.svg)](./LICENSE)
 
 [Demo](#capturas) · [Quick start](#quick-start) · [Arquitectura](#arquitectura) · [Contribuir](#contribuciones) · [Autor](#autor)
 
@@ -331,7 +331,7 @@ Hecho con cariño por **Yamil Lazzari** — Senior Software Architect.
 - 🐙 GitHub: [@YamilEzequiel](https://github.com/YamilEzequiel)
 - 📦 Repo: [github.com/YamilEzequiel/jitre](https://github.com/YamilEzequiel/jitre)
 
-Si querés contactarme por consultorías, mentorías de arquitectura o licenciamiento comercial de Jitre (reventa / SaaS / white-label), por LinkedIn está perfecto.
+Si querés contactarme por consultorías, mentorías de arquitectura o licenciamiento comercial de Jitre (reventa / SaaS gestionado / white-label), por LinkedIn está perfecto.
 
 ---
 
@@ -339,20 +339,21 @@ Si querés contactarme por consultorías, mentorías de arquitectura o licenciam
 
 Copyright © Yamil Lazzari. Todos los derechos reservados.
 
-Jitre se distribuye bajo la **[PolyForm Noncommercial License 1.0.0](./LICENSE)** — una licencia *source-available* (no es OSS según OSI). En una línea: podés usarlo, modificarlo y estudiarlo libremente para **uso no comercial**; no podés revenderlo, sublicenciarlo, ofrecerlo como SaaS de terceros ni integrarlo en un producto comercial.
+Jitre se distribuye bajo la **[Elastic License 2.0 (ELv2)](./LICENSE)** — una licencia *source-available* (no es OSS según OSI). En una línea: podés usarlo, modificarlo, distribuirlo y desplegarlo **dentro de tu empresa** sin pagar nada; lo que no podés hacer es **ofrecerlo como servicio gestionado a terceros**, eludir el licenciamiento ni remover los avisos de copyright.
 
 ### Permitido
-- **Uso personal:** correrlo para hobby, estudio, experimentación.
-- **Investigación y educación:** universidades, papers, cursos.
+- **Uso interno en empresas:** correrlo dentro de tu organización como herramienta operacional, incluso con fines comerciales.
+- **Uso personal y educativo:** hobby, estudio, investigación, cursos.
 - **Organizaciones sin fines de lucro:** ONGs, caridad, gobierno.
-- **Fork y modificación:** tocar el código para adaptarlo a usos no comerciales.
+- **Fork y modificación:** tocar el código y distribuir tus cambios — siempre que respetes las limitaciones.
+- **Distribución:** copiar y compartir el software con los términos adjuntos.
 
 ### No permitido
-- **Uso interno en empresas con fines comerciales:** desplegarlo dentro de una empresa como herramienta operacional para producir valor comercial.
-- **Reventa / SaaS de terceros:** vender Jitre (modificado o no), ofrecerlo como servicio gestionado, sublicenciarlo o redistribuirlo como producto comercial propio.
-- **Re-branding:** comercializarlo bajo otra marca o quitar los avisos de copyright.
+- **SaaS de terceros / managed service:** ofrecer Jitre (modificado o no) como servicio hosteado donde otros accedan a una parte sustancial de sus features. Si querés vender un Jitre-as-a-Service, hablamos.
+- **Eludir el licensing:** mover, cambiar, deshabilitar o evadir la funcionalidad de licenciamiento.
+- **Re-branding sin avisos:** remover u ofuscar los avisos de copyright, marca o licencia.
 
-Texto legal completo en [`LICENSE`](./LICENSE). Para licencias comerciales distintas contactar al autor.
+Texto legal completo en [`LICENSE`](./LICENSE). Para licencias comerciales distintas (reventa / SaaS / white-label) contactar al autor.
 
 ### Sin garantía
 

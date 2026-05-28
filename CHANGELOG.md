@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **License migrated from PolyForm Noncommercial 1.0.0 to Elastic License 2.0 (ELv2).** The previous license blocked internal commercial use by companies, which was overly restrictive. ELv2 keeps the same anti-reseller posture (no hosting Jitre as a managed/SaaS service to third parties, no circumventing the licensing, no removing notices) while explicitly allowing companies to deploy and use Jitre internally — including for commercial purposes. Updated: `LICENSE`, README badge + Licencia section, `CONTRIBUTING.md`, `packages/frontend/src/app/core/app-info.ts` (LICENSE_NAME / LICENSE_URL), `packages/frontend/src/app/features/license/license.component.ts` (in-app `/license` page rewritten to reflect ELv2 terms).
+- **Contributor License Agreement (CLA) introduced** to protect the dual-licensing model. New `CLA.md` (v1.0) grants the maintainer perpetual, sublicensable copyright + patent rights on Contributions, allowing future re-licensing and commercial sub-licenses while leaving authorship with the contributor. New `.github/workflows/cla.yml` runs `contributor-assistant/github-action` against every PR — first-time contributors are asked to comment a sign-off phrase on their PR, and signatures are stored in a `cla-signatures` branch in this repo (no external service). Allowlist covers the maintainer and bots (dependabot, renovate). `CONTRIBUTING.md` and the PR template updated with the CLA flow.
+
 ### Added
 
 - **End-to-end search** in the command palette. Backend `/search` already indexed 6 entity types but the frontend providers only covered task + project (and were unmarshalling a phantom shape that never matched the real response). Now command palette covers task + project + document + comment, each with a server-side `ts_headline` snippet displayed under the label and a type chip on the right. Comments resolve their parent task/project on the backend (new `parent_type` / `parent_id` columns + backfill migration `AddSearchDocParentContext1700000002900`) so a comment hit navigates to `/tasks/:id#comment-:cid` or `/projects/:id#comment-:cid` without a second round-trip.

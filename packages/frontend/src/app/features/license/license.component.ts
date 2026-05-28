@@ -27,9 +27,10 @@ import { LICENSE_NAME, LICENSE_URL, REPO_ISSUES_URL } from '../../core/app-info'
             target="_blank"
             rel="noopener noreferrer"
             class="font-semibold text-indigo-600 transition hover:text-violet-700"
-          >PolyForm Noncommercial 1.0.0</a>
-          terms. Personal, research, educational and noncommercial use is permitted.
-          Commercial use is not. For commercial licensing, open an
+          >Elastic License 2.0</a>
+          terms. Internal use — including commercial use within your organization — is
+          permitted. Offering Jitre as a hosted or managed service to third parties is
+          not. For a commercial / SaaS license, open an
           <a
             [href]="issuesUrl"
             target="_blank"
@@ -64,12 +65,12 @@ import { LICENSE_NAME, LICENSE_URL, REPO_ISSUES_URL } from '../../core/app-info'
             </svg>
           </span>
           <div class="space-y-1 text-sm leading-relaxed text-amber-900">
-            <p class="font-bold">Important: source-available ≠ open source</p>
+            <p class="font-bold">Important: source-available &ne; open source</p>
             <p>
-              You may read, modify and redistribute the code for noncommercial purposes,
-              but you may <strong>not</strong> sell it, host it as a paid service, or
-              integrate it into a commercial product without a separate commercial
-              agreement.
+              You may use, modify, distribute and run Jitre inside your company — even
+              for commercial purposes. You may <strong>not</strong> offer it to third
+              parties as a hosted or managed service that exposes a substantial part of
+              its functionality, nor remove the licensing notices.
             </p>
           </div>
         </div>
@@ -86,11 +87,11 @@ import { LICENSE_NAME, LICENSE_URL, REPO_ISSUES_URL } from '../../core/app-info'
             <h3 class="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Permitido</h3>
           </div>
           <ul class="space-y-1 text-sm text-emerald-900">
-            <li>Uso personal y dom&eacute;stico.</li>
-            <li>Investigaci&oacute;n y educaci&oacute;n.</li>
-            <li>Organizaciones sin fines de lucro.</li>
-            <li>Forks y modificaciones no comerciales.</li>
-            <li>Hobbies, estudio y experimentaci&oacute;n.</li>
+            <li>Uso interno en empresas (incluso comercial).</li>
+            <li>Uso personal, hobby y educativo.</li>
+            <li>Investigaci&oacute;n y organizaciones sin fines de lucro.</li>
+            <li>Forks, modificaciones y distribuci&oacute;n.</li>
+            <li>Despliegues productivos dentro de tu organizaci&oacute;n.</li>
           </ul>
         </div>
         <div class="rounded-xl border border-rose-200 bg-rose-50/50 p-4">
@@ -104,11 +105,11 @@ import { LICENSE_NAME, LICENSE_URL, REPO_ISSUES_URL } from '../../core/app-info'
             <h3 class="text-[10px] font-bold uppercase tracking-[0.14em] text-rose-700">No permitido</h3>
           </div>
           <ul class="space-y-1 text-sm text-rose-900">
-            <li>Revender el software.</li>
-            <li>Ofrecerlo como SaaS pago.</li>
-            <li>Incluirlo en productos comerciales.</li>
-            <li>Hostearlo para clientes pagos.</li>
-            <li>Cualquier uso con fin comercial.</li>
+            <li>Ofrecerlo como SaaS / managed service a terceros.</li>
+            <li>Eludir o deshabilitar el licensing.</li>
+            <li>Remover los avisos de copyright o licencia.</li>
+            <li>Re-brandear el producto bajo otra marca.</li>
+            <li>Sublicenciarlo bajo otros t&eacute;rminos.</li>
           </ul>
         </div>
       </div>
@@ -116,136 +117,117 @@ import { LICENSE_NAME, LICENSE_URL, REPO_ISSUES_URL } from '../../core/app-info'
       <article class="license-prose space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60 sm:p-8">
         <section>
           <h2>Acceptance</h2>
-          <p>
-            In order to get any license under these terms, you must agree to them as both
-            strict obligations and conditions to all your licenses.
-          </p>
+          <p>By using the software, you agree to all of the terms and conditions below.</p>
         </section>
 
         <section>
           <h2>Copyright License</h2>
           <p>
-            The licensor grants you a copyright license for the software to do everything
-            you might do with the software that would otherwise infringe the licensor's
-            copyright in it for any permitted purpose. However, you may only distribute
-            the software according to <em class="not-italic font-semibold">Distribution License</em>
-            and make changes or new works based on the software according to
-            <em class="not-italic font-semibold">Changes and New Works License</em>.
+            The licensor grants you a non-exclusive, royalty-free, worldwide,
+            non-sublicensable, non-transferable license to use, copy, distribute, make
+            available, and prepare derivative works of the software, in each case
+            subject to the limitations and conditions below.
           </p>
         </section>
 
         <section>
-          <h2>Distribution License</h2>
+          <h2>Limitations</h2>
           <p>
-            The licensor grants you an additional copyright license to distribute copies of
-            the software. Your license to distribute covers distributing the software with
-            changes and new works permitted by Changes and New Works License.
+            You may not provide the software to third parties as a hosted or managed
+            service, where the service provides users with access to any substantial
+            set of the features or functionality of the software.
+          </p>
+          <p>
+            You may not move, change, disable, or circumvent the license key
+            functionality in the software, and you may not remove or obscure any
+            functionality in the software that is protected by the license key.
+          </p>
+          <p>
+            You may not alter, remove, or obscure any licensing, copyright, or other
+            notices of the licensor in the software. Any use of the licensor's
+            trademarks is subject to applicable law.
           </p>
         </section>
 
         <section>
-          <h2>Changes and New Works License</h2>
+          <h2>Patents</h2>
           <p>
-            The licensor grants you an additional copyright license to make changes and new
-            works based on the software for any permitted purpose.
+            The licensor grants you a license, under any patent claims the licensor can
+            license, or becomes able to license, to make, have made, use, sell, offer
+            for sale, import and have imported the software, in each case subject to
+            the limitations and conditions in this license. This license does not cover
+            any patent claims that you cause to be infringed by modifications or
+            additions to the software. If you or your company make any written claim
+            that the software infringes or contributes to infringement of any patent,
+            your patent license for the software granted under these terms ends
+            immediately. If your company makes such a claim, your patent license ends
+            immediately for work on behalf of your company.
           </p>
         </section>
 
         <section>
-          <h2>Patent License</h2>
+          <h2>Notices</h2>
           <p>
-            The licensor grants you a patent license for the software that covers patent
-            claims the licensor can license, or becomes able to license, that you would
-            infringe by using the software.
+            You must ensure that anyone who gets a copy of any part of the software
+            from you also gets a copy of these terms.
+          </p>
+          <p>
+            If you modify the software, you must include in any modified copies of the
+            software prominent notices stating that you have modified the software.
           </p>
         </section>
 
         <section>
-          <h2>Noncommercial Purposes</h2>
-          <p>Any noncommercial purpose is a permitted purpose.</p>
+          <h2>No Other Rights</h2>
+          <p>These terms do not imply any licenses other than those expressly granted in these terms.</p>
         </section>
 
         <section>
-          <h2>Personal Uses</h2>
+          <h2>Termination</h2>
           <p>
-            Personal use for research, experiment, and testing for the benefit of public
-            knowledge, personal study, private entertainment, hobby projects, amateur
-            pursuits, or religious observance, without any anticipated commercial
-            application, is use for a permitted purpose.
-          </p>
-        </section>
-
-        <section>
-          <h2>Noncommercial Organizations</h2>
-          <p>
-            Use by any charitable organization, educational institution, public research
-            organization, public safety or health organization, environmental protection
-            organization, or government institution is use for a permitted purpose
-            regardless of the source of funding or obligations resulting from the funding.
-          </p>
-        </section>
-
-        <section>
-          <h2>Fair Notice</h2>
-          <p>If you use the software for a permitted purpose, you must give credit to the licensor by:</p>
-          <ol class="list-decimal space-y-1 pl-6">
-            <li>providing a copy of these terms with the software,</li>
-            <li>labeling or otherwise prominently identifying the software as licensed under these terms, and</li>
-            <li>including a notice that any other use of the software is prohibited under any other terms.</li>
-          </ol>
-        </section>
-
-        <section>
-          <h2>Patent Defense</h2>
-          <p>
-            If you make any written claim that the software infringes or contributes to
-            infringement of any patent, your patent license for the software granted under
-            these terms ends immediately. If your company makes such a claim, your patent
-            license ends immediately for work on behalf of your company.
-          </p>
-        </section>
-
-        <section>
-          <h2>Violations</h2>
-          <p>
-            The first time you are notified in writing that you have violated any of these
-            terms, or done anything with the software not covered by your license, your
-            license gives you 30 days to comply or stop using the software. If you do not,
-            your license ends immediately.
+            If you use the software in violation of these terms, such use is not
+            licensed, and your licenses will automatically terminate. If the licensor
+            provides you with a notice of your violation, and you cease all violation
+            of this license no later than 30 days after you receive that notice, your
+            licenses will be reinstated retroactively. However, if you violate these
+            terms after such reinstatement, any additional violation of these terms
+            will cause your licenses to terminate automatically and permanently.
           </p>
         </section>
 
         <section>
           <h2>No Liability</h2>
           <p class="rounded-lg border border-rose-200 bg-rose-50/60 px-4 py-3 font-semibold text-rose-900">
-            As far as the law allows, the software comes as is, without any warranty or
-            condition, and the licensor will not be liable to you for any damages arising
-            out of these terms or the use or nature of the software, under any kind of
-            legal claim.
+            As far as the law allows, the software comes as is, without any warranty
+            or condition, and the licensor will not be liable to you for any damages
+            arising out of these terms or the use or nature of the software, under any
+            kind of legal claim.
           </p>
         </section>
 
         <section>
           <h2>Definitions</h2>
           <p>
-            The <strong>licensor</strong> is the individual or entity offering these terms,
-            and the <strong>software</strong> is the software the licensor makes available
-            under these terms.
+            The <strong>licensor</strong> is the entity offering these terms, and the
+            <strong>software</strong> is the software the licensor makes available
+            under these terms, including any portion of it.
           </p>
-          <p><strong>You</strong> refers to the individual or entity agreeing to these terms.</p>
+          <p><strong>you</strong> refers to the individual or entity agreeing to these terms.</p>
           <p>
-            <strong>Your company</strong> is any legal entity, sole proprietorship, or
-            other kind of organization that you work for, plus all organizations that have
-            control over, are under the control of, or are under common control with that
-            organization. <strong>Control</strong> means ownership of substantially all the
-            assets of an entity, or the power to direct its management and policies by
-            vote, contract, or otherwise. Control can be direct or indirect.
+            <strong>your company</strong> is any legal entity, sole proprietorship, or
+            other kind of organization that you work for, plus all organizations that
+            have control over, are under the control of, or are under common control
+            with that organization. <strong>control</strong> means ownership of
+            substantially all the assets of an entity, or the power to direct its
+            management and policies by vote, contract, or otherwise. Control can be
+            direct or indirect.
           </p>
           <p>
-            <strong>Your licenses</strong> are all the licenses granted to you for the
+            <strong>your licenses</strong> are all the licenses granted to you for the
             software under these terms.
           </p>
-          <p><strong>Use</strong> means anything you do with the software requiring one of your licenses.</p>
+          <p><strong>use</strong> means anything you do with the software requiring one of your licenses.</p>
+          <p><strong>trademark</strong> means trademarks, service marks, and similar rights.</p>
         </section>
 
         <hr class="border-slate-200" />
@@ -259,7 +241,7 @@ import { LICENSE_NAME, LICENSE_URL, REPO_ISSUES_URL } from '../../core/app-info'
               target="_blank"
               rel="noopener noreferrer"
               class="font-semibold text-indigo-600 hover:text-violet-700"
-            >polyformproject.org/licenses/noncommercial/1.0.0</a>
+            >elastic.co/licensing/elastic-license</a>
           </p>
         </section>
       </article>
