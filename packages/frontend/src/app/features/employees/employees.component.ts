@@ -20,6 +20,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/toast/toast.service';
 import { OrgChartComponent } from './org-chart/org-chart.component';
 import { AreasManagerComponent } from '../areas/areas-manager.component';
+import { VirtualListComponent } from '../../shared/virtual-list/virtual-list.component';
 
 function hashHue(input: string): number {
   let h = 0;
@@ -37,7 +38,7 @@ function initials(name: string | null | undefined): string {
 @Component({
   selector: 'jt-employees',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, SelectModule, TableModule, MultiSelectModule, TabsModule, DatePipe, OrgChartComponent, AreasManagerComponent],
+  imports: [FormsModule, SelectModule, TableModule, MultiSelectModule, TabsModule, DatePipe, OrgChartComponent, AreasManagerComponent, VirtualListComponent],
   template: `
     <div class="flex flex-col gap-6 max-w-7xl" [class.min-h-screen]="activeTab() === 'org'">
       <!-- Header -->
@@ -156,115 +157,120 @@ function initials(name: string | null | undefined): string {
       <!-- LIST view (default) -->
       @if (activeTab() === 'directory' && viewMode() === 'list') {
         <section class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm shadow-slate-200/70" aria-label="Employee table">
-          <div class="max-h-[calc(100vh-18rem)] overflow-auto">
-            <table class="w-full text-sm">
-              <thead class="sticky top-0 z-10 bg-slate-50 text-[10px] uppercase tracking-[0.16em] text-slate-500">
-                <tr>
-                  <th class="px-4 py-3 text-left font-bold w-12"></th>
-                  <th class="px-4 py-3 text-left font-bold">Nombre</th>
-                  <th class="px-4 py-3 text-left font-bold">Email</th>
-                  <th class="px-4 py-3 text-left font-bold">Puesto</th>
-                  <th class="px-4 py-3 text-left font-bold">Departamento</th>
-                  <th class="px-4 py-3 text-left font-bold">Área</th>
-                  <th class="px-4 py-3 text-left font-bold">Código</th>
-                  <th class="px-4 py-3 text-left font-bold">Ingreso</th>
-                  <th class="px-4 py-3 text-left font-bold">Rol</th>
-                  <th class="px-4 py-3 text-right font-bold">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (emp of filtered(); track emp.id) {
-                  <tr class="border-t border-slate-100 transition-colors hover:bg-violet-50/40 cursor-pointer"
+          @if (filtered().length === 0) {
+            <p class="px-4 py-12 text-center text-sm text-slate-400 italic">No hay empleados que coincidan con la búsqueda.</p>
+          } @else {
+            <div role="table" class="text-sm">
+              <div
+                role="row"
+                class="grid grid-cols-[3rem_minmax(0,14rem)_minmax(0,14rem)_minmax(0,12rem)_minmax(0,10rem)_minmax(0,10rem)_8rem_8rem_minmax(0,8rem)_5rem]
+                       gap-3 items-center px-4 py-3 bg-slate-50 border-b border-slate-200
+                       text-[10px] uppercase tracking-[0.16em] text-slate-500 font-bold"
+              >
+                <span role="columnheader"></span>
+                <span role="columnheader">Nombre</span>
+                <span role="columnheader">Email</span>
+                <span role="columnheader">Puesto</span>
+                <span role="columnheader">Departamento</span>
+                <span role="columnheader">Área</span>
+                <span role="columnheader">Código</span>
+                <span role="columnheader">Ingreso</span>
+                <span role="columnheader">Rol</span>
+                <span role="columnheader" class="text-right">Acciones</span>
+              </div>
+              <div role="rowgroup" class="h-[calc(100vh-18rem)] min-h-[24rem]">
+                <jt-virtual-list [items]="filtered()" [itemSize]="56" [trackByKey]="'id'">
+                  <ng-template #row let-emp>
+                    <div
+                      role="row"
+                      class="grid grid-cols-[3rem_minmax(0,14rem)_minmax(0,14rem)_minmax(0,12rem)_minmax(0,10rem)_minmax(0,10rem)_8rem_8rem_minmax(0,8rem)_5rem]
+                             gap-3 items-center px-4 py-2.5 border-b border-slate-100
+                             cursor-pointer transition-colors hover:bg-violet-50/40"
                       (click)="open(emp)"
                       (keydown.enter)="open(emp)"
                       tabindex="0"
-                      role="button">
-                    <td class="px-4 py-2.5">
-                      <span class="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold"
-                            [style.background]="avatarBg(emp.id)"
-                            [style.color]="avatarFg(emp.id)">
-                        @if (emp.avatarUrl) {
-                          <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-full object-cover" />
+                    >
+                      <span role="cell">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold"
+                              [style.background]="avatarBg(emp.id)"
+                              [style.color]="avatarFg(emp.id)">
+                          @if (emp.avatarUrl) {
+                            <img [src]="emp.avatarUrl" alt="" class="h-full w-full rounded-full object-cover" />
+                          } @else {
+                            {{ initials(emp.displayName) }}
+                          }
+                        </span>
+                      </span>
+                      <span role="cell">
+                        <p class="font-semibold text-slate-950 truncate">{{ emp.displayName }}</p>
+                      </span>
+                      <span role="cell" class="text-slate-600 truncate">{{ emp.email }}</span>
+                      <span role="cell" class="text-slate-700 truncate">{{ emp.position || '—' }}</span>
+                      <span role="cell" class="text-slate-600 truncate">{{ emp.department || '—' }}</span>
+                      <span role="cell">
+                        @if (areaOf(emp); as area) {
+                          <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                [style.background]="area.color + '20'"
+                                [style.color]="area.color">
+                            @if (isPiIcon(area.icon)) {
+                              <i [class]="'pi ' + area.icon + ' text-[9px]'" aria-hidden="true"></i>
+                            } @else if (area.icon) {
+                              <span aria-hidden="true">{{ area.icon }}</span>
+                            }
+                            <span class="truncate max-w-[8rem]">{{ area.name }}</span>
+                          </span>
                         } @else {
-                          {{ initials(emp.displayName) }}
+                          <span class="text-[11px] text-slate-300">—</span>
                         }
                       </span>
-                    </td>
-                    <td class="px-4 py-2.5">
-                      <p class="font-semibold text-slate-950 truncate max-w-[14rem]">{{ emp.displayName }}</p>
-                    </td>
-                    <td class="px-4 py-2.5 text-slate-600 truncate max-w-[14rem]">{{ emp.email }}</td>
-                    <td class="px-4 py-2.5 text-slate-700 truncate max-w-[12rem]">{{ emp.position || '—' }}</td>
-                    <td class="px-4 py-2.5 text-slate-600 truncate max-w-[10rem]">{{ emp.department || '—' }}</td>
-                    <td class="px-4 py-2.5">
-                      @if (areaOf(emp); as area) {
-                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                              [style.background]="area.color + '20'"
-                              [style.color]="area.color">
-                          @if (isPiIcon(area.icon)) {
-                            <i [class]="'pi ' + area.icon + ' text-[9px]'" aria-hidden="true"></i>
-                          } @else if (area.icon) {
-                            <span aria-hidden="true">{{ area.icon }}</span>
-                          }
-                          <span class="truncate max-w-[8rem]">{{ area.name }}</span>
-                        </span>
-                      } @else {
-                        <span class="text-[11px] text-slate-300">—</span>
-                      }
-                    </td>
-                    <td class="px-4 py-2.5 font-mono text-xs text-slate-500">{{ emp.employeeCode || '—' }}</td>
-                    <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">
-                      {{ emp.hireDate ? (emp.hireDate | date:'mediumDate') : '—' }}
-                    </td>
-                    <td class="px-4 py-2.5" (click)="$event.stopPropagation()">
-                      @if (editingRoleFor() === emp.id) {
-                        <p-select
-                          [ngModel]="emp.workspaceRole"
-                          (ngModelChange)="onRoleChange(emp, $event)"
-                          [options]="roleOptions"
-                          optionLabel="label"
-                          optionValue="value"
-                          appendTo="body"
-                          [disabled]="updatingRole()"
-                          styleClass="text-xs"
-                        />
-                      } @else {
-                        <div class="flex items-center gap-1.5">
-                          <span [class]="'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ' + roleBadgeClass(emp.workspaceRole)">
-                            <span aria-hidden="true">{{ roleBadgeIcon(emp.workspaceRole) }}</span>
-                            <span>{{ roleBadgeLabel(emp.workspaceRole) }}</span>
-                          </span>
-                          @if (canEditRoleOf(emp)) {
-                            <button type="button"
-                                    (click)="startEditRole(emp); $event.stopPropagation()"
-                                    class="rounded p-1 text-slate-400 transition hover:bg-violet-50 hover:text-violet-700"
-                                    [attr.aria-label]="'Editar rol de ' + emp.displayName">
-                              <i class="pi pi-pencil text-[10px]" aria-hidden="true"></i>
-                            </button>
-                          }
-                        </div>
-                      }
-                    </td>
-                    <td class="px-4 py-2.5 text-right">
-                      <button type="button" (click)="open(emp); $event.stopPropagation()"
-                              class="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-700"
-                              aria-label="Editar">
-                        <i class="pi pi-pencil text-xs" aria-hidden="true"></i>
-                      </button>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="10" class="px-4 py-12 text-center text-sm text-slate-400 italic">
-                      No hay empleados que coincidan con la búsqueda.
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+                      <span role="cell" class="font-mono text-xs text-slate-500 truncate">{{ emp.employeeCode || '—' }}</span>
+                      <span role="cell" class="text-xs text-slate-500 whitespace-nowrap">
+                        {{ emp.hireDate ? (emp.hireDate | date:'mediumDate') : '—' }}
+                      </span>
+                      <span role="cell" (click)="$event.stopPropagation()">
+                        @if (editingRoleFor() === emp.id) {
+                          <p-select
+                            [ngModel]="emp.workspaceRole"
+                            (ngModelChange)="onRoleChange(emp, $event)"
+                            [options]="roleOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            appendTo="body"
+                            [disabled]="updatingRole()"
+                            styleClass="text-xs"
+                          />
+                        } @else {
+                          <div class="flex items-center gap-1.5">
+                            <span [class]="'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ' + roleBadgeClass(emp.workspaceRole)">
+                              <span aria-hidden="true">{{ roleBadgeIcon(emp.workspaceRole) }}</span>
+                              <span>{{ roleBadgeLabel(emp.workspaceRole) }}</span>
+                            </span>
+                            @if (canEditRoleOf(emp)) {
+                              <button type="button"
+                                      (click)="startEditRole(emp); $event.stopPropagation()"
+                                      class="rounded p-1 text-slate-400 transition hover:bg-violet-50 hover:text-violet-700"
+                                      [attr.aria-label]="'Editar rol de ' + emp.displayName">
+                                <i class="pi pi-pencil text-[10px]" aria-hidden="true"></i>
+                              </button>
+                            }
+                          </div>
+                        }
+                      </span>
+                      <span role="cell" class="text-right">
+                        <button type="button" (click)="open(emp); $event.stopPropagation()"
+                                class="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-700"
+                                aria-label="Editar">
+                          <i class="pi pi-pencil text-xs" aria-hidden="true"></i>
+                        </button>
+                      </span>
+                    </div>
+                  </ng-template>
+                </jt-virtual-list>
+              </div>
+            </div>
+          }
         </section>
-      } @else if (activeTab() === 'directory') {
+      } @else if (activeTab() === 'directory' && viewMode() === 'grid') {
         <!-- GRID view -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Employee grid">
           @for (emp of filtered(); track emp.id) {

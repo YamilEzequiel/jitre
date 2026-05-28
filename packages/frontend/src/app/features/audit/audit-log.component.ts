@@ -14,6 +14,7 @@ import { DatePipe } from '@angular/common';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { VirtualListComponent } from '../../shared/virtual-list/virtual-list.component';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceMemberStore } from '../../stores/workspace-member.store';
@@ -45,7 +46,7 @@ interface Page<T> {
 @Component({
   selector: 'jt-audit-log',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, TranslatePipe],
+  imports: [DatePipe, TranslatePipe, VirtualListComponent],
   host: {
     '(document:keydown.escape)': 'onEscape()',
   },
@@ -68,44 +69,58 @@ interface Page<T> {
         } @else if (items().length === 0) {
           <p class="px-4 py-8 text-center text-sm text-slate-400 italic">{{ 'audit.empty' | translate }}</p>
         } @else {
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-              <tr>
-                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.when' | translate }}</th>
-                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.actor' | translate }}</th>
-                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.action' | translate }}</th>
-                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.subject' | translate }}</th>
-                <th class="px-4 py-3 text-left font-bold">{{ 'audit.headers.changes' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (entry of items(); track entry.id) {
-                <tr class="border-t border-slate-100 align-top">
-                  <td class="px-4 py-3 text-slate-700 tabular-nums whitespace-nowrap">{{ entry.createdAt | date:'short' }}</td>
-                  <td class="px-4 py-3 text-slate-700 truncate max-w-[14rem]">{{ actorName(entry.actorUserId) }}</td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700">{{ entry.action }}</span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-600">
-                    <span class="font-mono text-[11px]">{{ entry.subjectType }}</span>
-                    <span class="ml-1 text-[10px] text-slate-400">#{{ shortId(entry.subjectId) }}</span>
-                  </td>
-                  <td class="px-4 py-3">
-                    @if (entry.diff) {
-                      <button type="button"
-                              (click)="openDiff(entry, $event)"
-                              class="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-700 hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-400">
-                        <i class="pi pi-code text-[10px]" aria-hidden="true"></i>
-                        {{ 'audit.viewDiff' | translate }}
-                      </button>
-                    } @else {
-                      <span class="text-[11px] text-slate-400">—</span>
-                    }
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div role="table" class="text-sm">
+            <div
+              role="row"
+              class="grid grid-cols-[10rem_minmax(0,14rem)_minmax(0,8rem)_minmax(0,1fr)_8rem]
+                     gap-3 px-4 py-3 border-b border-slate-200 bg-slate-50
+                     text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold"
+            >
+              <span role="columnheader">{{ 'audit.headers.when' | translate }}</span>
+              <span role="columnheader">{{ 'audit.headers.actor' | translate }}</span>
+              <span role="columnheader">{{ 'audit.headers.action' | translate }}</span>
+              <span role="columnheader">{{ 'audit.headers.subject' | translate }}</span>
+              <span role="columnheader">{{ 'audit.headers.changes' | translate }}</span>
+            </div>
+
+            <div role="rowgroup" class="h-[60vh] min-h-[24rem]">
+              <jt-virtual-list [items]="items()" [itemSize]="56" [trackByKey]="'id'">
+                <ng-template #row let-entry>
+                  <div
+                    role="row"
+                    class="grid grid-cols-[10rem_minmax(0,14rem)_minmax(0,8rem)_minmax(0,1fr)_8rem]
+                           gap-3 items-center px-4 py-3 border-b border-slate-100"
+                  >
+                    <span role="cell" class="text-slate-700 tabular-nums whitespace-nowrap">
+                      {{ entry.createdAt | date:'short' }}
+                    </span>
+                    <span role="cell" class="text-slate-700 truncate">
+                      {{ actorName(entry.actorUserId) }}
+                    </span>
+                    <span role="cell">
+                      <span class="rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700">{{ entry.action }}</span>
+                    </span>
+                    <span role="cell" class="text-slate-600 truncate">
+                      <span class="font-mono text-[11px]">{{ entry.subjectType }}</span>
+                      <span class="ml-1 text-[10px] text-slate-400">#{{ shortId(entry.subjectId) }}</span>
+                    </span>
+                    <span role="cell">
+                      @if (entry.diff) {
+                        <button type="button"
+                                (click)="openDiff(entry, $event)"
+                                class="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-700 hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-400">
+                          <i class="pi pi-code text-[10px]" aria-hidden="true"></i>
+                          {{ 'audit.viewDiff' | translate }}
+                        </button>
+                      } @else {
+                        <span class="text-[11px] text-slate-400">—</span>
+                      }
+                    </span>
+                  </div>
+                </ng-template>
+              </jt-virtual-list>
+            </div>
+          </div>
 
           <footer class="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500">
             <span>{{ 'audit.pageInfo' | translate: { page: page(), shown: items().length, total: total() } }}</span>
