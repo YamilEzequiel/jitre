@@ -25,6 +25,8 @@ export class SearchService {
     entityId: string;
     content: string;
     occurredAt?: Date;
+    parentType?: SearchEntityType | null;
+    parentId?: string | null;
   }): Promise<void> {
     return this.engine.upsert(doc);
   }

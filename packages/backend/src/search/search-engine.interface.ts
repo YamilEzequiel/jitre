@@ -15,6 +15,8 @@ export interface SearchHit {
   rank: number;
   snippet: string;
   occurredAt: Date;
+  parentType: SearchEntityType | null;
+  parentId: string | null;
 }
 
 export interface SearchQuery {
@@ -39,6 +41,8 @@ export interface ISearchEngine {
     entityId: string;
     content: string;
     occurredAt?: Date;
+    parentType?: SearchEntityType | null;
+    parentId?: string | null;
   }): Promise<void>;
 
   delete(

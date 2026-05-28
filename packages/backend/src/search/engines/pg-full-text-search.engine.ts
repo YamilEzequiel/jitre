@@ -23,23 +23,36 @@ export class PgFullTextSearchEngine implements ISearchEngine {
     entityId: string;
     content: string;
     occurredAt?: Date;
+    parentType?: SearchEntityType | null;
+    parentId?: string | null;
   }): Promise<void> {
     const occurredAt =
       doc.occurredAt?.toISOString() ?? new Date().toISOString();
     await this.repo.query(
       `
       INSERT INTO search_documents
-        (id, workspace_id, entity_type, entity_id, content, tsvector, occurred_at)
+        (id, workspace_id, entity_type, entity_id, content, tsvector,
+         occurred_at, parent_type, parent_id)
       VALUES
-        (uuid_generate_v4(), $1, $2, $3, $4, to_tsvector('simple', $4), $5)
+        (uuid_generate_v4(), $1, $2, $3, $4, to_tsvector('simple', $4), $5, $6, $7)
       ON CONFLICT (workspace_id, entity_type, entity_id) WHERE deleted_at IS NULL
       DO UPDATE SET
         content      = EXCLUDED.content,
         tsvector     = EXCLUDED.tsvector,
         occurred_at  = EXCLUDED.occurred_at,
+        parent_type  = EXCLUDED.parent_type,
+        parent_id    = EXCLUDED.parent_id,
         updated_at   = NOW()
       `,
-      [doc.workspaceId, doc.entityType, doc.entityId, doc.content, occurredAt],
+      [
+        doc.workspaceId,
+        doc.entityType,
+        doc.entityId,
+        doc.content,
+        occurredAt,
+        doc.parentType ?? null,
+        doc.parentId ?? null,
+      ],
     );
   }
 
@@ -74,6 +87,8 @@ export class PgFullTextSearchEngine implements ISearchEngine {
           entity_id    AS "entityId",
           workspace_id AS "workspaceId",
           occurred_at  AS "occurredAt",
+          parent_type  AS "parentType",
+          parent_id    AS "parentId",
           ts_rank_cd(tsvector, query) * boost AS rank,
           ts_headline('simple', content, query,
             'MaxFragments=2, MinWords=3, MaxWords=12') AS snippet

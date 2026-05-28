@@ -67,6 +67,7 @@ export class IndexEntityProcessor extends WorkerHost {
     }
 
     const content = await this.buildContentAsync(entityType, entityId, entity);
+    const { parentType, parentId } = this.resolveParent(entityType, entity);
 
     await this.searchService.upsert({
       workspaceId,
@@ -74,6 +75,8 @@ export class IndexEntityProcessor extends WorkerHost {
       entityId,
       content,
       occurredAt: new Date(),
+      parentType,
+      parentId,
     });
 
     this.logger.log(`Upserted search doc: ${entityType}/${entityId}`);
@@ -163,5 +166,25 @@ export class IndexEntityProcessor extends WorkerHost {
       case 'document':
         return [entity.title, entity.contentText ?? ''].join(' ').trim();
     }
+  }
+
+  /**
+   * Comments carry a contextType/contextId pair to their owning task or
+   * project. Surface that pair through the search hit so the UI can
+   * navigate without a second round-trip.
+   */
+  private resolveParent(
+    entityType: SearchEntityType,
+    entity: Record<string, unknown>,
+  ): { parentType: SearchEntityType | null; parentId: string | null } {
+    if (entityType !== 'comment') {
+      return { parentType: null, parentId: null };
+    }
+    const contextType = entity.contextType as string | undefined;
+    const contextId = entity.contextId as string | undefined;
+    if (contextType !== 'task' && contextType !== 'project') {
+      return { parentType: null, parentId: null };
+    }
+    return { parentType: contextType, parentId: contextId ?? null };
   }
 }

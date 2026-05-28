@@ -22,6 +22,8 @@ export class ElasticsearchEngine implements ISearchEngine {
     entityId: string;
     content: string;
     occurredAt?: Date;
+    parentType?: SearchEntityType | null;
+    parentId?: string | null;
   }): Promise<void> {
     throw new NotImplementedException(NOT_IMPLEMENTED_MSG);
   }

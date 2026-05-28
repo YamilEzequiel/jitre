@@ -48,4 +48,12 @@ export class SearchDocument extends TenantEntity {
   @ApiProperty({ type: String, format: 'date-time' })
   @Column({ type: 'timestamptz', name: 'occurred_at', default: () => 'now()' })
   occurredAt!: Date;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'text', name: 'parent_type', nullable: true })
+  parentType!: string | null;
+
+  @ApiProperty({ format: 'uuid', nullable: true })
+  @Column({ type: 'uuid', name: 'parent_id', nullable: true })
+  parentId!: string | null;
 }
