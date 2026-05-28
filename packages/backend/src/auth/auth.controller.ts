@@ -73,6 +73,10 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'WEAK_PASSWORD' })
   @Post('register')
   @Public()
+  // 5 registrations per minute per IP. Account creation is cheap to fire and
+  // expensive downstream (workspace seed, AI quotas, email side-effects), so
+  // it gets a tighter cap than the global throttler.
+  @Throttle({ short: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() dto: RegisterDto,

@@ -41,11 +41,16 @@ async function bootstrap(): Promise<void> {
             useDefaults: true,
             directives: {
               defaultSrc: ["'self'"],
-              // Angular emits inline event handlers it generates at runtime;
-              // 'unsafe-inline' is required to keep the SPA functional. If
-              // you put nginx in front and ship a CSP nonce there, remove
-              // 'unsafe-inline' here.
-              scriptSrc: ["'self'", "'unsafe-inline'"],
+              // Angular AOT does NOT emit inline event handlers or inline
+              // <script> blocks — bindings compile to addEventListener and
+              // template interpolation. Keeping scriptSrc to 'self' is the
+              // real XSS line of defense. If a future change reintroduces
+              // inline scripts (rare — e.g. a third-party widget), use a
+              // per-request nonce via a middleware rather than relaxing this.
+              scriptSrc: ["'self'"],
+              // styleSrc keeps 'unsafe-inline' because Angular's [style]
+              // bindings and animations DO emit inline style attributes at
+              // runtime. Tightening this requires a nonce-aware build.
               styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
               fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
               imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
@@ -87,35 +92,42 @@ async function bootstrap(): Promise<void> {
     defaultVersion: appConfig.apiVersion,
   });
 
-  const docConfig = new DocumentBuilder()
-    .setTitle('Jitre API')
-    .setDescription(
-      'AI-first project management platform. URI-versioned under /api/v{n}.',
-    )
-    .setVersion('0.1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'access-token',
-    )
-    .addApiKey(
-      { type: 'apiKey', name: 'x-workspace-id', in: 'header' },
-      'workspace',
-    )
-    .addCookieAuth(
-      'refresh',
-      { type: 'apiKey', in: 'cookie', name: 'refresh_token' },
-      'refresh',
-    )
-    .build();
-  const document = SwaggerModule.createDocument(app, docConfig);
-  SwaggerModule.setup(
-    `${appConfig.apiPrefix}/v${appConfig.apiVersion}/docs`,
-    app,
-    document,
-    {
-      swaggerOptions: { persistAuthorization: true },
-    },
-  );
+  // Swagger is gated by ENABLE_SWAGGER (defaults to true outside production).
+  // Exposing OpenAPI in prod inflates recon surface — schemas, paths and DTOs
+  // become free intel for attackers. Flip the env var explicitly if you need
+  // it on a staging/prod box.
+  const swaggerEnabled = config.get<boolean>('ENABLE_SWAGGER') ?? !isProd;
+  if (swaggerEnabled) {
+    const docConfig = new DocumentBuilder()
+      .setTitle('Jitre API')
+      .setDescription(
+        'AI-first project management platform. URI-versioned under /api/v{n}.',
+      )
+      .setVersion('0.1.0')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        'access-token',
+      )
+      .addApiKey(
+        { type: 'apiKey', name: 'x-workspace-id', in: 'header' },
+        'workspace',
+      )
+      .addCookieAuth(
+        'refresh',
+        { type: 'apiKey', in: 'cookie', name: 'refresh_token' },
+        'refresh',
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, docConfig);
+    SwaggerModule.setup(
+      `${appConfig.apiPrefix}/v${appConfig.apiVersion}/docs`,
+      app,
+      document,
+      {
+        swaggerOptions: { persistAuthorization: true },
+      },
+    );
+  }
 
   // Fase 7 — Phase L4: wire Redis-backed Socket.IO adapter
   try {
@@ -141,10 +153,12 @@ async function bootstrap(): Promise<void> {
     `🚀 Jitre API ready at ${url}/${appConfig.apiPrefix}/v${appConfig.apiVersion}`,
     'Bootstrap',
   );
-  NestLogger.log(
-    `📘 OpenAPI at ${url}/${appConfig.apiPrefix}/v${appConfig.apiVersion}/docs`,
-    'Bootstrap',
-  );
+  if (swaggerEnabled) {
+    NestLogger.log(
+      `📘 OpenAPI at ${url}/${appConfig.apiPrefix}/v${appConfig.apiVersion}/docs`,
+      'Bootstrap',
+    );
+  }
 }
 
 bootstrap().catch((err) => {

@@ -35,9 +35,12 @@ export class WsJwtMiddleware {
         return next(new WsException('UNAUTHENTICATED'));
       }
 
-      const secret =
-        process.env.JWT_ACCESS_SECRET ??
-        'dev_access_secret_change_me_change_me';
+      const secret = process.env.JWT_ACCESS_SECRET;
+      if (!secret) {
+        throw new Error(
+          'JWT_ACCESS_SECRET not configured for WS auth middleware.',
+        );
+      }
       const payload = await this.jwtService.verifyAsync<JwtWsPayload>(token, {
         secret,
       });

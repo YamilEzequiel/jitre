@@ -28,11 +28,15 @@ import { ProjectModule } from '../project/project.module';
         const jwt = config.get<{ access: { secret: string; ttl: string } }>(
           'jwt',
         );
+        if (!jwt?.access?.secret) {
+          throw new Error(
+            'JWT access secret not loaded — check JWT_ACCESS_SECRET env var and config registration.',
+          );
+        }
         return {
-          secret:
-            jwt?.access?.secret ?? 'dev_access_secret_change_me_change_me',
+          secret: jwt.access.secret,
           signOptions: {
-            expiresIn: (jwt?.access?.ttl ?? '15m') as unknown as number,
+            expiresIn: (jwt.access.ttl ?? '15m') as unknown as number,
           },
         };
       },

@@ -2,16 +2,27 @@ import { registerAs } from '@nestjs/config';
 
 export type JwtConfig = ReturnType<typeof jwtConfigFactory>;
 
+function requireSecret(name: 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET'): string {
+  const value = process.env[name];
+  if (!value) {
+    // env.validation.ts (Joi) is the primary gate. This is a defense in depth:
+    // if config loading is ever bypassed (custom bootstrap, scripts, etc.), we
+    // refuse to sign tokens with an undefined / empty secret rather than
+    // silently falling back to a public placeholder.
+    throw new Error(
+      `${name} is not set. Configure it via environment (see env.example).`,
+    );
+  }
+  return value;
+}
+
 const jwtConfigFactory = () => ({
   access: {
-    secret:
-      process.env.JWT_ACCESS_SECRET ?? 'dev_access_secret_change_me_change_me',
+    secret: requireSecret('JWT_ACCESS_SECRET'),
     ttl: process.env.JWT_ACCESS_TTL ?? '15m',
   },
   refresh: {
-    secret:
-      process.env.JWT_REFRESH_SECRET ??
-      'dev_refresh_secret_change_me_change_me',
+    secret: requireSecret('JWT_REFRESH_SECRET'),
     ttl: process.env.JWT_REFRESH_TTL ?? '7d',
   },
   argon2: {

@@ -13,12 +13,17 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly userService: UserService,
     private readonly requestContext: RequestContextService,
   ) {
+    const secret = config.get<{ access: { secret: string } }>('jwt')?.access
+      ?.secret;
+    if (!secret) {
+      throw new Error(
+        'JWT access secret not loaded — check JWT_ACCESS_SECRET env var.',
+      );
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:
-        config.get<{ access: { secret: string } }>('jwt')?.access?.secret ??
-        'dev_access_secret_change_me_change_me',
+      secretOrKey: secret,
     });
   }
 

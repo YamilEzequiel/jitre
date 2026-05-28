@@ -26,12 +26,41 @@ export const envValidationSchema = Joi.object({
   REDIS_PASSWORD: Joi.string().allow('').default(''),
 
   // Auth (Fase 2)
+  // Secrets MUST be 32+ chars. In production, reject anything that still
+  // looks like the dev defaults committed in env.example — those are public
+  // and would let anyone mint valid tokens against the deploy.
   JWT_ACCESS_SECRET: Joi.string()
-    .min(16)
-    .default('dev_access_secret_change_me_change_me'),
+    .min(32)
+    .default('dev_access_secret_change_me_change_me_NOT_FOR_PRODUCTION')
+    .custom((value, helpers) => {
+      if (
+        process.env.NODE_ENV === 'production' &&
+        /change_me|NOT_FOR_PRODUCTION|REPLACE_BEFORE_DEPLOY/i.test(value)
+      ) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'production-secret-check')
+    .messages({
+      'any.invalid':
+        'JWT_ACCESS_SECRET still matches a dev placeholder. Generate one with `openssl rand -hex 32` before deploying.',
+    }),
   JWT_REFRESH_SECRET: Joi.string()
-    .min(16)
-    .default('dev_refresh_secret_change_me_change_me'),
+    .min(32)
+    .default('dev_refresh_secret_change_me_change_me_NOT_FOR_PRODUCTION')
+    .custom((value, helpers) => {
+      if (
+        process.env.NODE_ENV === 'production' &&
+        /change_me|NOT_FOR_PRODUCTION|REPLACE_BEFORE_DEPLOY/i.test(value)
+      ) {
+        return helpers.error('any.invalid');
+      }
+      return value;
+    }, 'production-secret-check')
+    .messages({
+      'any.invalid':
+        'JWT_REFRESH_SECRET still matches a dev placeholder. Generate one with `openssl rand -hex 32` before deploying.',
+    }),
   JWT_ACCESS_TTL: Joi.string().default('15m'),
   JWT_REFRESH_TTL: Joi.string().default('7d'),
   ARGON2_MEMORY_COST: Joi.number().default(65536),
@@ -95,4 +124,10 @@ export const envValidationSchema = Joi.object({
   BULLMQ_PREFIX: Joi.string().default('jitre'),
   JOB_LOG_RETENTION_DAYS: Joi.number().integer().min(1).default(90),
   ENABLE_BULL_BOARD: Joi.boolean().default(false),
+
+  // Swagger / OpenAPI exposure
+  // Off by default in production to reduce recon surface; on in dev/test.
+  ENABLE_SWAGGER: Joi.boolean().default(
+    process.env.NODE_ENV !== 'production',
+  ),
 });

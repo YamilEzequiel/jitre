@@ -17,6 +17,19 @@ describe('WsJwtMiddleware', () => {
   const mockJwtService = { verifyAsync: jest.fn() };
   const mockUserService = { findById: jest.fn() };
   const mockLogger = { warn: jest.fn(), log: jest.fn(), debug: jest.fn() };
+  const originalSecret = process.env.JWT_ACCESS_SECRET;
+
+  beforeAll(() => {
+    process.env.JWT_ACCESS_SECRET = 'test-secret-for-ws-jwt-middleware-spec';
+  });
+
+  afterAll(() => {
+    if (originalSecret === undefined) {
+      delete process.env.JWT_ACCESS_SECRET;
+    } else {
+      process.env.JWT_ACCESS_SECRET = originalSecret;
+    }
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
