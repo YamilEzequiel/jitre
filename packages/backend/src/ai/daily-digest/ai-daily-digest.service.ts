@@ -9,6 +9,7 @@ import { Comment } from '../../comment/comment.entity';
 import { TimeEntryEntity } from '../../time-tracking/time-entry.entity';
 import { WorkspaceEntity } from '../../workspace/workspace.entity';
 import { WorkspaceMembershipEntity } from '../../workspace/workspace-membership.entity';
+import { SYSTEM_USER_ID } from '../../common/constants/system-user.constant';
 
 interface ActivitySnapshot {
   workspaceId: string;
@@ -100,14 +101,12 @@ Top contributors (by tasks touched): ${snapshot.topAssignees
 
 Write the markdown digest.`;
 
-    // We use a system user id of '00000000-0000-0000-0000-000000000000' so
-    // the usage row is attributable to the scheduler rather than a person.
-    const SCHEDULER_USER = '00000000-0000-0000-0000-000000000000';
-
     try {
       const completion = await this.aiService.generateCompletion({
         workspaceId,
-        userId: SCHEDULER_USER,
+        // Attribute the AI usage row to the platform system user so
+        // analytics can cleanly filter human vs scheduler-driven calls.
+        userId: SYSTEM_USER_ID,
         operation: AiOperation.SUMMARY,
         request: { systemPrompt, userPrompt, maxTokens: 600 },
       });

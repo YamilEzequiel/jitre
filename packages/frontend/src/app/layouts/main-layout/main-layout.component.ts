@@ -9,7 +9,8 @@ import {
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import type { Subscription } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { KeyboardShortcutService } from '../../core/keyboard/keyboard-shortcut.service';
 import { CommandPaletteService } from '../../shared/command-palette/command-palette.service';
@@ -64,9 +65,22 @@ interface NavItem {
         aria-hidden="true"
       ></div>
 
+      @if (mobileNavOpen()) {
+        <!-- Mobile drawer backdrop. Tap closes. -->
+        <button
+          type="button"
+          class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-sm md:hidden"
+          (click)="closeMobileNav()"
+          aria-label="Close menu"
+        ></button>
+      }
+
       <nav
-        class="relative hidden w-[13.5rem] shrink-0 flex-col border-r border-white/[0.06]
-               bg-[#070b1f] text-white md:flex"
+        class="fixed inset-y-0 left-0 z-40 flex w-[13.5rem] shrink-0 flex-col border-r border-white/[0.06]
+               bg-[#070b1f] text-white transition-transform duration-200 ease-out
+               md:relative md:translate-x-0 md:flex"
+        [class.translate-x-0]="mobileNavOpen()"
+        [class.-translate-x-full]="!mobileNavOpen()"
         [attr.aria-label]="'nav.dashboard' | translate"
       >
         <a routerLink="/" class="flex items-center gap-2.5 px-5 pb-5 pt-5">
@@ -213,12 +227,24 @@ interface NavItem {
 
       <div class="relative flex flex-col flex-1 min-w-0 overflow-hidden">
         <header
-          class="relative flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 text-slate-700 sm:px-6"
+          class="relative flex h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 text-slate-700 sm:px-6"
         >
+          <!-- Hamburger — only shows below md, opens the mobile drawer. -->
+          <button
+            type="button"
+            (click)="toggleMobileNav()"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 md:hidden
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            [attr.aria-label]="mobileNavOpen() ? 'Close menu' : 'Open menu'"
+            [attr.aria-expanded]="mobileNavOpen()"
+          >
+            <i [class]="'pi text-base ' + (mobileNavOpen() ? 'pi-times' : 'pi-bars')" aria-hidden="true"></i>
+          </button>
+
           <button
             type="button"
             (click)="openCommandPalette()"
-            class="inline-flex min-w-[22rem] items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5
+            class="inline-flex flex-1 sm:min-w-[22rem] sm:flex-none items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5
                    text-xs text-slate-400 hover:border-slate-300 hover:text-slate-600
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60
                    focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950
@@ -431,10 +457,20 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   readonly chatUnread = this.chatChannelStore.totalUnread;
   readonly appVersion = APP_VERSION;
   readonly repoUrl = REPO_URL;
+  readonly mobileNavOpen = signal(false);
+
+  toggleMobileNav(): void {
+    this.mobileNavOpen.update((v) => !v);
+  }
+
+  closeMobileNav(): void {
+    this.mobileNavOpen.set(false);
+  }
 
   private _unregisterCmdK?: () => void;
   private _unregisterHelp?: () => void;
   private _unregisterAiCreate?: () => void;
+  private _unregisterRouter?: Subscription;
   private _tickHandle?: ReturnType<typeof setInterval>;
 
   private readonly http = inject(HttpClient);
@@ -520,12 +556,19 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     });
     void this.timeStore.loadActiveTimer();
     this._tickHandle = setInterval(() => this.nowMs.set(Date.now()), 1000);
+
+    // Auto-close the mobile drawer on navigation so a tap on any link
+    // doesn't leave the menu hovering over the destination page.
+    this._unregisterRouter = this.router.events.subscribe((evt) => {
+      if (evt instanceof NavigationEnd) this.mobileNavOpen.set(false);
+    });
   }
 
   ngOnDestroy(): void {
     this._unregisterCmdK?.();
     this._unregisterHelp?.();
     this._unregisterAiCreate?.();
+    this._unregisterRouter?.unsubscribe();
     if (this._tickHandle) clearInterval(this._tickHandle);
   }
 

@@ -26,8 +26,24 @@ describe('DashboardComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: TaskStore, useValue: { items: tasksSignal.asReadonly(), loading: signal(false).asReadonly() } },
-        { provide: ProjectStore, useValue: { items: projectsSignal.asReadonly(), loading: signal(false).asReadonly() } },
+        {
+          provide: TaskStore,
+          useValue: {
+            items: tasksSignal.asReadonly(),
+            loading: signal(false).asReadonly(),
+            // OnboardingCardComponent reads byId() to decide whether
+            // the workspace is empty. Provide a stub so tests don't
+            // blow up on undefined.
+            byId: signal<Record<string, unknown>>({}).asReadonly(),
+          },
+        },
+        {
+          provide: ProjectStore,
+          useValue: {
+            items: projectsSignal.asReadonly(),
+            loading: signal(false).asReadonly(),
+          },
+        },
         { provide: AnalyticsService, useValue: analyticsMock },
       ],
     });

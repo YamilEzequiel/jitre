@@ -74,10 +74,46 @@ export async function validateAvatarMime(
   return { valid: true, detectedMime: detected };
 }
 
+/**
+ * File extensions that are categorically rejected regardless of declared
+ * MIME or magic bytes — a sandbox would catch them later but failing
+ * fast at upload time is cheaper and clearer. The list is intentionally
+ * short: extensions that browsers / OS shells *execute* on download.
+ */
+export const ATTACHMENT_BLOCKED_EXTENSIONS = [
+  'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'cpl', 'pif',
+  'ps1', 'psm1', 'sh', 'bash', 'zsh',
+  'vbs', 'vbe', 'js', 'jse', 'wsh', 'wsf',
+  'jar', 'app', 'dmg',
+  'reg', 'inf',
+  'html', 'htm', 'svg', // SVG can carry inline scripts; allow via the
+  // allow-list above only if explicitly declared as image/svg+xml AND
+  // sanitised downstream. For now treat the extension as risky.
+] as const;
+
+function rejectedExtension(filename: string): string | null {
+  const dot = filename.lastIndexOf('.');
+  if (dot < 0) return null;
+  const ext = filename.slice(dot + 1).toLowerCase().trim();
+  if ((ATTACHMENT_BLOCKED_EXTENSIONS as readonly string[]).includes(ext)) return ext;
+  return null;
+}
+
 export async function validateAttachmentMime(
   buffer: Buffer,
   declaredMime: string,
+  filename?: string,
 ): Promise<MimeValidationResult> {
+  if (filename) {
+    const blocked = rejectedExtension(filename);
+    if (blocked) {
+      return {
+        valid: false,
+        reason: `File extension '.${blocked}' is blocked for security reasons`,
+      };
+    }
+  }
+
   if (!(ATTACHMENT_ALLOWED_MIMES as readonly string[]).includes(declaredMime)) {
     return {
       valid: false,
