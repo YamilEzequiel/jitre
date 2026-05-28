@@ -41,7 +41,7 @@ export class HttpMetricsInterceptor implements NestInterceptor {
     start: bigint,
     context: ExecutionContext,
   ): void {
-    if (req.path?.endsWith('/metrics')) return;
+    if (req.path === '/metrics') return;
     const durationSeconds = Number(process.hrtime.bigint() - start) / 1e9;
     this.metrics.recordRequest({
       method: req.method,

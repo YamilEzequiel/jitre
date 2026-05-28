@@ -4,7 +4,7 @@ import { Response } from 'express';
 import { MetricsService } from './metrics.service';
 
 @ApiExcludeController()
-@Controller({ path: 'metrics', version: '1' })
+@Controller('metrics')
 export class MetricsController {
   constructor(private readonly metrics: MetricsService) {}
 

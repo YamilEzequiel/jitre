@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { Logger as NestLogger, VersioningType } from '@nestjs/common';
+import { Logger as NestLogger, RequestMethod, VersioningType } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -79,7 +79,9 @@ async function bootstrap(): Promise<void> {
     exposedHeaders: ['x-request-id'],
   });
 
-  app.setGlobalPrefix(appConfig.apiPrefix);
+  app.setGlobalPrefix(appConfig.apiPrefix, {
+    exclude: [{ path: 'metrics', method: RequestMethod.GET }],
+  });
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: appConfig.apiVersion,
