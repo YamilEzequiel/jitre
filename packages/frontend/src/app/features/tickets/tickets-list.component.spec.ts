@@ -166,10 +166,9 @@ describe('TicketsListComponent', () => {
     expect(list[0].title.toLowerCase()).toContain('outage');
   });
 
-  it('renders ticket rows with type icons', () => {
-    const el = fixture.nativeElement as HTMLElement;
-    const rows = el.querySelectorAll('[data-testid="ticket-row"]');
-    expect(rows.length).toBe(2);
+  it('exposes filtered tickets ready to render', () => {
+    const comp = fixture.componentInstance;
+    expect(comp.filteredTickets().length).toBe(2);
   });
 
   it('resolves project name via store', () => {

@@ -17,6 +17,7 @@ import { WorkflowStatusStore } from '../../stores/workflow-status.store';
 import { ProjectMemberStore } from '../../stores/project-member.store';
 import { Task, TaskApiService, TaskPriority, TaskType } from '../../stores/task-api.service';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
+import { VirtualListComponent } from '../../shared/virtual-list/virtual-list.component';
 
 type ProblemType = 'all' | 'bug' | 'incident';
 
@@ -38,7 +39,7 @@ const PRIORITY_OPTS: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 @Component({
   selector: 'jt-tickets-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, SelectModule, SkeletonComponent],
+  imports: [ReactiveFormsModule, SelectModule, SkeletonComponent, VirtualListComponent],
   template: `
     <div class="flex flex-col h-full max-w-7xl">
       <!-- Header -->
@@ -170,52 +171,54 @@ const PRIORITY_OPTS: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
             <span role="columnheader">Due</span>
           </div>
 
-          <ul role="rowgroup" class="divide-y divide-slate-100">
-            @for (ticket of filteredTickets(); track ticket.id) {
-              <li
-                role="row"
-                tabindex="0"
-                (click)="openTicket(ticket)"
-                (keydown.enter)="openTicket(ticket)"
-                [attr.aria-label]="typeMeta(ticket.type).label + ': ' + ticket.title"
-                data-testid="ticket-row"
-                class="grid grid-cols-[28px_1fr_140px_90px_120px_110px_100px] gap-3 px-4 py-3 items-center
-                       cursor-pointer hover:bg-slate-50 transition-colors
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-              >
-                <i
-                  [class]="typeMeta(ticket.type).icon + ' ' + typeMeta(ticket.type).color"
-                  style="font-size: 14px;"
-                  [attr.aria-label]="typeMeta(ticket.type).label"
-                  [attr.title]="typeMeta(ticket.type).label"
-                ></i>
-                <span class="text-sm text-slate-900 font-semibold truncate">{{ ticket.title }}</span>
-                <span class="text-xs text-slate-600 truncate" [attr.title]="projectName(ticket.projectId)">
-                  {{ projectName(ticket.projectId) }}
-                </span>
-                <span class="text-[10px] font-bold uppercase tracking-wide" [class]="priorityClass(ticket.priority)">
-                  {{ ticket.priority }}
-                </span>
-                <span class="text-xs text-slate-600 truncate">
-                  {{ statusName(ticket.statusId) }}
-                </span>
-                <span class="text-xs text-slate-600 truncate">
-                  @if ((ticket.assigneeUserIds ?? []).length > 0) {
-                    {{ (ticket.assigneeUserIds ?? []).length }} assigned
-                  } @else {
-                    <span class="text-slate-400">—</span>
-                  }
-                </span>
-                <span class="text-xs text-slate-600">
-                  @if (ticket.dueDate) {
-                    {{ formatDate(ticket.dueDate) }}
-                  } @else {
-                    <span class="text-slate-400">—</span>
-                  }
-                </span>
-              </li>
-            }
-          </ul>
+          <div role="rowgroup" class="h-[60vh] min-h-[24rem]">
+            <jt-virtual-list [items]="filteredTickets()" [itemSize]="48" [trackByKey]="'id'">
+              <ng-template #row let-ticket>
+                <div
+                  role="row"
+                  tabindex="0"
+                  (click)="openTicket(ticket)"
+                  (keydown.enter)="openTicket(ticket)"
+                  [attr.aria-label]="typeMeta(ticket.type).label + ': ' + ticket.title"
+                  data-testid="ticket-row"
+                  class="grid grid-cols-[28px_1fr_140px_90px_120px_110px_100px] gap-3 px-4 py-3 items-center
+                         border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors
+                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                >
+                  <i
+                    [class]="typeMeta(ticket.type).icon + ' ' + typeMeta(ticket.type).color"
+                    style="font-size: 14px;"
+                    [attr.aria-label]="typeMeta(ticket.type).label"
+                    [attr.title]="typeMeta(ticket.type).label"
+                  ></i>
+                  <span class="text-sm text-slate-900 font-semibold truncate">{{ ticket.title }}</span>
+                  <span class="text-xs text-slate-600 truncate" [attr.title]="projectName(ticket.projectId)">
+                    {{ projectName(ticket.projectId) }}
+                  </span>
+                  <span class="text-[10px] font-bold uppercase tracking-wide" [class]="priorityClass(ticket.priority)">
+                    {{ ticket.priority }}
+                  </span>
+                  <span class="text-xs text-slate-600 truncate">
+                    {{ statusName(ticket.statusId) }}
+                  </span>
+                  <span class="text-xs text-slate-600 truncate">
+                    @if ((ticket.assigneeUserIds ?? []).length > 0) {
+                      {{ (ticket.assigneeUserIds ?? []).length }} assigned
+                    } @else {
+                      <span class="text-slate-400">—</span>
+                    }
+                  </span>
+                  <span class="text-xs text-slate-600">
+                    @if (ticket.dueDate) {
+                      {{ formatDate(ticket.dueDate) }}
+                    } @else {
+                      <span class="text-slate-400">—</span>
+                    }
+                  </span>
+                </div>
+              </ng-template>
+            </jt-virtual-list>
+          </div>
         </div>
       }
     </div>
