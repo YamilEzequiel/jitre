@@ -66,23 +66,52 @@ Las herramientas existentes están **infladas**: 30 menús para hacer 5 cosas. J
 <table>
   <tr>
     <td align="center">
-      <!-- TODO: reemplazar con captura real -->
       <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="100%" />
-      <sub><b>Dashboard</b> — vista general del workspace</sub>
+      <sub><b>Dashboard</b> — AI daily digest, sugerencias de prioridad y stats del workspace</sub>
     </td>
     <td align="center">
       <img src="docs/screenshots/board.png" alt="Board" width="100%" />
-      <sub><b>Board</b> — Jira-style workflow por proyecto</sub>
+      <sub><b>Board</b> — Kanban con tipos, prioridades, vencimientos y drag-and-drop</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="docs/screenshots/task-detail.png" alt="Task detail" width="100%" />
-      <sub><b>Task detail</b> — comentarios, attachments, time tracking</sub>
+      <sub><b>Task detail</b> — comentarios, adjuntos, subtareas, links y time tracking</sub>
     </td>
     <td align="center">
       <img src="docs/screenshots/ai-assist.png" alt="AI assist" width="100%" />
-      <sub><b>AI assist</b> — subtareas y priorización generadas con IA</sub>
+      <sub><b>AI assist</b> — generación de tareas con prompts y contexto del proyecto</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/chat.png" alt="Chat" width="100%" />
+      <sub><b>Chat</b> — canales por proyecto, DMs, threads y menciones en tiempo real</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/time-reports.png" alt="Time reports" width="100%" />
+      <sub><b>Time reports</b> — distribución por usuario/proyecto/tarea con export CSV</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/docs.png" alt="Docs" width="100%" />
+      <sub><b>Docs</b> — base de conocimiento con árbol jerárquico y autosave</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/org-chart.png" alt="Org chart" width="100%" />
+      <sub><b>Org chart</b> — organigrama por áreas con zoom, pan y filtros</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/analytics.png" alt="Analytics" width="100%" />
+      <sub><b>Analytics</b> — velocity, throughput, workload y consumo de IA</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/notification-settings.png" alt="Notification settings" width="100%" />
+      <sub><b>Notification settings</b> — control granular de notificaciones in-app y email</sub>
     </td>
   </tr>
 </table>
