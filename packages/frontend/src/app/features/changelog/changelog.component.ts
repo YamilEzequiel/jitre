@@ -34,8 +34,27 @@ const RELEASES: Release[] = [
     version: 'Unreleased',
     date: null,
     unreleased: true,
-    summary: 'Next round of work — items will land here before the next tagged release.',
-    sections: [],
+    summary:
+      'Search end-to-end, Prometheus metrics, list virtualization across long views, and i18n coverage extended to every remaining settings panel + the audit log.',
+    sections: [
+      {
+        type: 'Added',
+        items: [
+          '<strong>Search end-to-end</strong> in the command palette — task / project / document / comment results, each with a server-side <code>ts_headline</code> snippet under the label and a type chip on the right. Comments resolve their parent task or project on the backend (new <code>parent_type</code> / <code>parent_id</code> columns + backfill migration) so a comment hit navigates straight to <code>/tasks/:id#comment-:cid</code>.',
+          '<strong>Prometheus <code>/metrics</code></strong> at the root path — default Node metrics, per-route HTTP histograms, BullMQ queue-depth gauges sampled every 30s, and AI usage counters (<code>ai_requests_total</code>, <code>ai_cost_usd_total</code>, <code>ai_tokens_total</code>) labelled by provider / operation / model.',
+          '<strong>Virtual scrolling</strong> across long lists — notifications, tickets, audit log and the employees directory now use <code>*cdkVirtualFor</code>. Audit and employees tables were converted to ARIA <code>role=table/row/cell</code> grids so cdk-virtual-scroll can position rows absolutely.',
+          '<strong><code>&lt;jt-autosize-virtual-list&gt;</code></strong> (variable-height variant via <code>@angular/cdk-experimental</code>) ready for future chat-messages / kanban-cards work. Both list components now expose <code>let-i="index"</code> alongside <code>$implicit</code> for drag-target maths.',
+          '<strong>i18n</strong> for the remaining hardcoded surfaces: register, reset-password, main-layout chrome, settings tabs, the 5 settings panels (Profile / Notifications / Email / Workspace / AI) and the entire audit log — including interpolated keys for <code>{{count}}</code> calls and <code>{{page}}/{{shown}}/{{total}}</code> paginator. Both <code>es</code> and <code>en</code> stay in sync.',
+        ],
+      },
+      {
+        type: 'Fixed',
+        items: [
+          '<strong>Search providers returned nothing</strong> — task/project providers were parsing <code>/search</code> as a flat <code>[{id, title}]</code> array. The endpoint returns <code>{items: SearchHit[], …}</code> with <code>entityId</code> + <code>snippet</code>, so the old code silently produced no results. Fixed across all providers, including the new comment + document ones.',
+          '<strong>Virtual-list was not actually virtualizing</strong> — the shared component used Angular\'s <code>@for</code> inside <code>cdk-virtual-scroll-viewport</code>, which renders every row. Switched to <code>*cdkVirtualFor</code> with a real <code>trackBy</code>.',
+        ],
+      },
+    ],
   },
   {
     version: '0.2.0',
