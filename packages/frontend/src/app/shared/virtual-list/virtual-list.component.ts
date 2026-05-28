@@ -17,9 +17,9 @@ import { NgTemplateOutlet } from '@angular/common';
       [itemSize]="itemSize()"
       class="h-full w-full overflow-auto"
     >
-      <ng-container *cdkVirtualFor="let item of items(); trackBy: trackByFn">
+      <ng-container *cdkVirtualFor="let item of items(); let idx = index; trackBy: trackByFn">
         <ng-container
-          *ngTemplateOutlet="rowTemplate ?? fallback; context: { $implicit: item }"
+          *ngTemplateOutlet="rowTemplate ?? fallback; context: { $implicit: item, index: idx }"
         ></ng-container>
       </ng-container>
     </cdk-virtual-scroll-viewport>
