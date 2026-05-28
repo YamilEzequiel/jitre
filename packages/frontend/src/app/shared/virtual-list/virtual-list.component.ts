@@ -28,12 +28,13 @@ import { NgTemplateOutlet } from '@angular/common';
     </ng-template>
   `,
 })
-export class VirtualListComponent<T extends Record<string, unknown>> {
+export class VirtualListComponent<T> {
   readonly items = input<T[]>([]);
   readonly itemSize = input<number>(48);
   readonly trackByKey = input<keyof T>('id' as keyof T);
 
-  @ContentChild('row') rowTemplate?: TemplateRef<{ $implicit: T }>;
+  @ContentChild('row') rowTemplate?: TemplateRef<{ $implicit: T; index: number }>;
 
-  readonly trackByFn = (_index: number, item: T): unknown => item[this.trackByKey()];
+  readonly trackByFn = (_index: number, item: T): unknown =>
+    (item as Record<string, unknown>)[this.trackByKey() as string];
 }

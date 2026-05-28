@@ -45,13 +45,14 @@ import { NgTemplateOutlet } from '@angular/common';
     </ng-template>
   `,
 })
-export class AutosizeVirtualListComponent<T extends Record<string, unknown>> {
+export class AutosizeVirtualListComponent<T> {
   readonly items = input<T[]>([]);
   readonly trackByKey = input<keyof T>('id' as keyof T);
   readonly minBufferPx = input<number>(200);
   readonly maxBufferPx = input<number>(400);
 
-  @ContentChild('row') rowTemplate?: TemplateRef<{ $implicit: T }>;
+  @ContentChild('row') rowTemplate?: TemplateRef<{ $implicit: T; index: number }>;
 
-  readonly trackByFn = (_index: number, item: T): unknown => item[this.trackByKey()];
+  readonly trackByFn = (_index: number, item: T): unknown =>
+    (item as Record<string, unknown>)[this.trackByKey() as string];
 }
