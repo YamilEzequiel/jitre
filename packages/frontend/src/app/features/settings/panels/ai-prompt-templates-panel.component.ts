@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { SelectModule } from 'primeng/select';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
@@ -256,12 +257,19 @@ const OPERATIONS: OperationDef[] = [
 
               @if (!t.isBuiltin || isNew()) {
                 <div class="flex items-center justify-between pt-1">
-                  <p class="text-[11px] text-slate-400">
-                    {{ 'settings.aiPrompts.editor.tip' | translate: { example: '{{taskTitle}}' } }}
-                  </p>
+                  <div class="flex flex-col gap-1">
+                    <p class="text-[11px] text-slate-400">
+                      {{ 'settings.aiPrompts.editor.tip' | translate: { example: '{{taskTitle}}' } }}
+                    </p>
+                    @if (formIssues().length > 0) {
+                      <p class="text-[11px] text-rose-500" role="alert">
+                        Falta: {{ formIssues().join(', ') }}
+                      </p>
+                    }
+                  </div>
                   <button
                     type="submit"
-                    [disabled]="form.invalid || saving()"
+                    [disabled]="!canSubmit()"
                     class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-indigo-500/25 transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {{ saving()
@@ -301,9 +309,32 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     description: [''],
-    systemPrompt: ['', [Validators.required, Validators.minLength(10)]],
-    userTemplate: ['', [Validators.required, Validators.minLength(10)]],
+    systemPrompt: ['', [Validators.required, Validators.minLength(5)]],
+    userTemplate: ['', [Validators.required, Validators.minLength(5)]],
   });
+
+  /**
+   * Mirror of form.valueChanges as a signal so downstream computeds
+   * react to user typing. Without this the computed below wouldn't
+   * rerun because reactive forms emit through RxJS, not signals.
+   */
+  private readonly formValue = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
+  /** Human readable list of what's missing so the user knows why save is disabled. */
+  readonly formIssues = computed<string[]>(() => {
+    const v = this.formValue() ?? this.form.getRawValue();
+    const issues: string[] = [];
+    if (!v.name?.trim() || v.name.trim().length < 2) issues.push('nombre (mín 2)');
+    if (!v.systemPrompt?.trim() || v.systemPrompt.trim().length < 5)
+      issues.push('system prompt (mín 5)');
+    if (!v.userTemplate?.trim() || v.userTemplate.trim().length < 5)
+      issues.push('user template (mín 5)');
+    return issues;
+  });
+
+  readonly canSubmit = computed(() => this.formIssues().length === 0 && !this.saving());
 
   readonly currentList = computed<AiPromptTemplate[]>(() =>
     this.templates().filter((t) => t.operation === this.activeOperation()),

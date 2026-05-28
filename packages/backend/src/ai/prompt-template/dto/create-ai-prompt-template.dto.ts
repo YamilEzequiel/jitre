@@ -21,14 +21,14 @@ export class CreateAiPromptTemplateDto {
   @MaxLength(240)
   description?: string;
 
-  @ApiProperty({ minLength: 10 })
+  @ApiProperty({ minLength: 5 })
   @IsString()
-  @MinLength(10)
+  @MinLength(5)
   systemPrompt!: string;
 
-  @ApiProperty({ minLength: 10 })
+  @ApiProperty({ minLength: 5 })
   @IsString()
-  @MinLength(10)
+  @MinLength(5)
   userTemplate!: string;
 
   @ApiPropertyOptional({ type: [String], default: [] })
