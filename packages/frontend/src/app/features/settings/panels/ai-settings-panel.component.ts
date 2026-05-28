@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { HttpClient } from '@angular/common/http';
@@ -47,12 +48,35 @@ interface AiUsagePointResponse {
   totalTokens?: number;
 }
 
-const GEMINI_MODEL_OPTIONS = [
-  { label: 'Gemini 2.5 Flash (recomendado — rápido y económico)', value: 'gemini-2.5-flash' },
-  { label: 'Gemini 2.5 Pro (más capaz, más caro)', value: 'gemini-2.5-pro' },
-  { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
-  { label: 'Gemini 2.0 Flash Exp (experimental)', value: 'gemini-2.0-flash-exp' },
-];
+type ProviderId = 'GEMINI' | 'OPENAI' | 'ANTHROPIC';
+
+interface ModelOption {
+  label: string;
+  value: string;
+}
+
+const MODEL_OPTIONS_BY_PROVIDER: Record<ProviderId, ModelOption[]> = {
+  GEMINI: [
+    { label: 'Gemini 2.5 Flash (recomendado — rápido y económico)', value: 'gemini-2.5-flash' },
+    { label: 'Gemini 2.5 Pro (más capaz, más caro)', value: 'gemini-2.5-pro' },
+    { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
+    { label: 'Gemini 2.0 Flash Exp (experimental)', value: 'gemini-2.0-flash-exp' },
+  ],
+  OPENAI: [
+    { label: 'GPT-4o mini (recomendado — rápido y económico)', value: 'gpt-4o-mini' },
+    { label: 'GPT-4o (más capaz)', value: 'gpt-4o' },
+  ],
+  ANTHROPIC: [
+    { label: 'Claude 3.5 Haiku (rápido y económico)', value: 'claude-3-5-haiku-20241022' },
+    { label: 'Claude 3.5 Sonnet (más capaz)', value: 'claude-3-5-sonnet-20241022' },
+  ],
+};
+
+const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderId, string> = {
+  GEMINI: 'gemini-2.5-flash',
+  OPENAI: 'gpt-4o-mini',
+  ANTHROPIC: 'claude-3-5-haiku-20241022',
+};
 
 @Component({
   selector: 'jt-ai-settings-panel',
@@ -245,16 +269,26 @@ export class AiSettingsPanelComponent implements OnInit {
   readonly spentUsd = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
 
-  readonly providerOptions = [{ label: 'Gemini', value: 'GEMINI' }];
+  readonly providerOptions = [
+    { label: 'Gemini', value: 'GEMINI' },
+    { label: 'OpenAI', value: 'OPENAI' },
+    { label: 'Anthropic', value: 'ANTHROPIC' },
+  ];
 
   readonly form = this.fb.group({
-    provider: ['GEMINI', Validators.required],
+    provider: ['GEMINI' as ProviderId, Validators.required],
     model: ['gemini-2.5-flash', Validators.required],
     dailyBudget: [5, [Validators.required, Validators.min(0.01)]],
     enabled: [false],
   });
 
-  readonly modelOptions = GEMINI_MODEL_OPTIONS;
+  /** Computed list of model options scoped to the currently-selected provider. */
+  private readonly currentProvider = toSignal(this.form.controls.provider.valueChanges, {
+    initialValue: this.form.controls.provider.value ?? 'GEMINI',
+  });
+  readonly modelOptions = computed<ModelOption[]>(
+    () => MODEL_OPTIONS_BY_PROVIDER[(this.currentProvider() ?? 'GEMINI') as ProviderId],
+  );
 
   // Usage analytics
   readonly spentToday = signal<string | null>(null);
@@ -285,12 +319,24 @@ export class AiSettingsPanelComponent implements OnInit {
       }),
     )
       .then(s => this.form.patchValue({
-        provider: 'GEMINI',
+        provider: (s['ai.provider'] ?? 'GEMINI') as ProviderId,
         model: s['ai.gemini.model'] ?? 'gemini-2.5-flash',
         dailyBudget: s['ai.daily_budget_usd'] ?? 5,
         enabled: s['ai.enabled'] ?? false,
       }))
       .catch(() => undefined);
+
+    // When the provider changes, swap the model to the new provider's
+    // default UNLESS the currently-selected model is already valid for
+    // that provider (the loadable list contains it).
+    this.form.controls.provider.valueChanges.subscribe((next) => {
+      if (!next) return;
+      const allowed = MODEL_OPTIONS_BY_PROVIDER[next as ProviderId].map((m) => m.value);
+      const current = this.form.controls.model.value;
+      if (!current || !allowed.includes(current)) {
+        this.form.controls.model.setValue(DEFAULT_MODEL_BY_PROVIDER[next as ProviderId]);
+      }
+    });
 
     this.loadUsageBreakdown();
   }

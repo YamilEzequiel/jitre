@@ -474,10 +474,21 @@ export class AiPromptTemplatesPanelComponent implements OnInit {
   }
 
   private errorMessage(err: unknown): string | null {
-    const e = err as { error?: { message?: string | string[]; detail?: string } };
-    if (!e?.error) return null;
-    const m = e.error.message ?? e.error.detail;
-    if (Array.isArray(m)) return m.join(', ');
-    return m ?? null;
+    // Log the full payload so devs can pinpoint backend rejections fast.
+    // eslint-disable-next-line no-console
+    console.error('[AiPromptTemplates] request failed', err);
+    const e = err as {
+      status?: number;
+      statusText?: string;
+      error?: { message?: string | string[]; detail?: string; statusCode?: number };
+    };
+    const status = e?.status;
+    const inner = e?.error;
+    const raw = inner?.message ?? inner?.detail;
+    const text = Array.isArray(raw) ? raw.join(', ') : raw;
+    if (status && text) return `${status} · ${text}`;
+    if (text) return text;
+    if (status) return `HTTP ${status}${e?.statusText ? ' · ' + e.statusText : ''}`;
+    return null;
   }
 }
