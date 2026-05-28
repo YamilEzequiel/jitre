@@ -1,27 +1,33 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { IsNull, Repository } from 'typeorm';
 import { NotificationType } from '@jitre/shared';
 import { Notification } from '../notification/notification.entity';
 import { UserEntity } from '../user/user.entity';
+import { WorkspaceEntity } from '../workspace/workspace.entity';
 import { EmailService } from './email.service';
 import { NotificationCreatedPayload } from '../notification/events/notification-created.event';
+import { SettingsService } from '../settings/settings.service';
+import {
+  ALWAYS_EMAIL_TYPES,
+  buildEmailForNotification,
+  NOTIFICATION_TYPE_SETTING_KEY,
+} from './templates/notification-email.template';
 
 /**
  * Bridges in-app notifications to email.
  *
- * Hook order:
- * 1. Listen on `notification.created` — same event that the realtime WS uses.
- * 2. Load the recipient user; consult their per-type email preferences
- *    (email_mentions / email_assignments / email_due_dates).
- * 3. Render a minimal subject + body from the stored notification row.
- * 4. Mark `email_sent_at` on the notification row so we never double-send and
- *    the audit log shows which path the notification took.
+ * Pipeline:
+ *   1. Listen on `notification.created` (fired after the row is persisted).
+ *   2. Resolve `notification.email` master + per-type toggle via the
+ *      Settings service — the same toggles the user sees in /settings/me.
+ *   3. Render html + text using the layout + per-type templates.
+ *   4. Mark `email_sent_at` so retries don't re-send.
  *
- * EmailService is best-effort and never throws upward; this listener mirrors
- * that — a misconfigured SMTP must not impact the request that created the
- * notification.
+ * Failures are swallowed: a misconfigured SMTP or unknown type must not
+ * cascade into the request that produced the notification.
  */
 @Injectable()
 export class NotificationEmailListener {
@@ -32,7 +38,11 @@ export class NotificationEmailListener {
     private readonly notifRepo: Repository<Notification>,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    @InjectRepository(WorkspaceEntity)
+    private readonly workspaceRepo: Repository<WorkspaceEntity>,
     private readonly email: EmailService,
+    private readonly settings: SettingsService,
+    private readonly config: ConfigService,
   ) {}
 
   @OnEvent('notification.created')
@@ -43,23 +53,36 @@ export class NotificationEmailListener {
     try {
       const id = event.payload?.notificationId;
       const recipientId = event.payload?.recipientUserId;
-      if (!id || !recipientId) return;
+      const workspaceId = event.workspaceId;
+      if (!id || !recipientId || !workspaceId) return;
 
       const notif = await this.notifRepo.findOne({
         where: { id, deletedAt: IsNull() } as Record<string, unknown>,
       });
-      if (!notif || notif.emailSentAt) return; // already sent / not found
+      if (!notif || notif.emailSentAt) return;
 
       const user = await this.userRepo.findOne({ where: { id: recipientId } });
       if (!user || !user.email) return;
-      if (!this.userAllowsEmailFor(user, notif.type as NotificationType)) {
-        return;
-      }
 
-      const subject = this.subjectFor(notif);
-      const body = this.bodyFor(notif);
-      await this.email.send({ to: user.email, subject, text: body });
+      const allowed = await this.shouldEmail(
+        recipientId,
+        workspaceId,
+        notif.type as NotificationType,
+      );
+      if (!allowed) return;
 
+      const workspace = await this.workspaceRepo
+        .findOne({ where: { id: workspaceId } })
+        .catch(() => null);
+
+      const { subject, html, text } = buildEmailForNotification(notif, {
+        recipientName: user.displayName,
+        workspaceName: workspace?.name,
+        appBaseUrl:
+          this.config.get<string>('APP_URL') ?? process.env.APP_URL ?? null,
+      });
+
+      await this.email.send({ to: user.email, subject, html, text });
       await this.notifRepo.update(notif.id, { emailSentAt: new Date() });
     } catch (err) {
       this.logger.warn(
@@ -69,44 +92,38 @@ export class NotificationEmailListener {
   }
 
   /**
-   * Maps notification type to the per-user opt-out flag.
+   * Gates an email send against the user's notification settings.
    *
-   * Default = true (opt-out). Unknown types pass through — we'd rather over-
-   * notify than silently drop a new category until someone adds a flag.
+   * Precedence:
+   *   1. `notification.email` master switch — if off, drop.
+   *   2. Transactional types in `ALWAYS_EMAIL_TYPES` bypass per-event toggles.
+   *   3. Per-type setting key from NOTIFICATION_TYPE_SETTING_KEY — if off, drop.
+   *   4. Types with no mapping fall through and email.
    */
-  private userAllowsEmailFor(user: UserEntity, type: NotificationType): boolean {
-    if (this.isMention(type)) return user.emailMentions !== false;
-    if (this.isAssignment(type)) return user.emailAssignments !== false;
-    if (this.isDueDate(type)) return user.emailDueDates !== false;
-    return true;
-  }
-
-  private isMention(type: NotificationType): boolean {
-    return (
-      type === NotificationType.TASK_MENTIONED ||
-      type === NotificationType.MENTION ||
-      type === NotificationType.COMMENT_MENTIONED ||
-      type === NotificationType.COMMENT_REPLIED
+  private async shouldEmail(
+    userId: string,
+    workspaceId: string,
+    type: NotificationType,
+  ): Promise<boolean> {
+    const master = await this.settings.getNotificationSetting(
+      userId,
+      workspaceId,
+      'notification.email',
+      true,
     );
-  }
+    if (master === false) return false;
 
-  private isAssignment(type: NotificationType): boolean {
-    return type === NotificationType.TASK_ASSIGNED;
-  }
+    if (ALWAYS_EMAIL_TYPES.has(type)) return true;
 
-  private isDueDate(type: NotificationType): boolean {
-    return type === NotificationType.TASK_DUE_SOON;
-  }
+    const key = NOTIFICATION_TYPE_SETTING_KEY[type];
+    if (!key) return true;
 
-  private subjectFor(notif: Notification): string {
-    return notif.title || `Jitre — ${notif.type}`;
-  }
-
-  private bodyFor(notif: Notification): string {
-    const parts: string[] = [];
-    if (notif.title) parts.push(notif.title);
-    if (notif.body) parts.push('', notif.body);
-    parts.push('', '— Jitre');
-    return parts.join('\n');
+    const perType = await this.settings.getNotificationSetting(
+      userId,
+      workspaceId,
+      key,
+      true,
+    );
+    return perType !== false;
   }
 }
