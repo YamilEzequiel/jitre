@@ -75,5 +75,35 @@ describe('CheckboxComponent', () => {
       fixture.detectChanges();
       expect(inputEl(fixture).checked).toBe(true);
     });
+
+    it('does NOT render an inner <label> when no [label] input is set', () => {
+      // Regression: nested labels (consumer wraps jt-checkbox in <label>)
+      // cause double-toggle on text-click in browsers. The settings panels
+      // and pickers all rely on the consumer-provided outer label, so the
+      // component must skip its own label when there's no inline text to
+      // wrap.
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.querySelector('label')).toBeNull();
+      // The visual wrapper is still there as a <span>.
+      expect(host.querySelector('span input[type="checkbox"]')).toBeTruthy();
+    });
+  });
+
+  describe('label rendering', () => {
+    @Component({
+      imports: [CheckboxComponent],
+      template: `<jt-checkbox [checked]="false" label="Pick me" />`,
+    })
+    class LabeledHostComponent {}
+
+    it('DOES render an inner <label> when [label] is set (login pattern)', () => {
+      TestBed.configureTestingModule({ imports: [LabeledHostComponent] });
+      const fixture = TestBed.createComponent(LabeledHostComponent);
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      const label = host.querySelector('label');
+      expect(label).toBeTruthy();
+      expect(label?.textContent).toContain('Pick me');
+    });
   });
 });

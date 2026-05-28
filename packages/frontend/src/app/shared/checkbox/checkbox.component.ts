@@ -33,19 +33,60 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     },
   ],
   template: `
-    <label
-      class="group inline-flex select-none items-start gap-2.5 leading-relaxed"
-      [class.cursor-pointer]="!disabledState()"
-      [class.cursor-not-allowed]="disabledState()"
-      [class.opacity-60]="disabledState()"
-    >
+    @if (label()) {
+      <label
+        class="group inline-flex select-none items-start gap-2.5 leading-relaxed"
+        [class.cursor-pointer]="!disabledState()"
+        [class.cursor-not-allowed]="disabledState()"
+        [class.opacity-60]="disabledState()"
+      >
+        <span
+          class="relative inline-flex flex-none mt-0.5"
+          [class.h-3.5]="size() === 'sm'"
+          [class.w-3.5]="size() === 'sm'"
+          [class.h-4]="size() !== 'sm'"
+          [class.w-4]="size() !== 'sm'"
+        >
+          <input
+            type="checkbox"
+            [checked]="checkedState()"
+            [disabled]="disabledState()"
+            (change)="onToggle($event)"
+            (blur)="onBlur()"
+            [attr.aria-label]="ariaLabel() || label() || null"
+            class="peer absolute inset-0 h-full w-full cursor-inherit appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40 disabled:cursor-not-allowed"
+          />
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full p-[2px] text-white opacity-0 transition-opacity peer-checked:opacity-100"
+          >
+            <path d="M3 8.5 6.5 12 13 5" />
+          </svg>
+        </span>
+        <span
+          [class.text-xs]="size() === 'sm'"
+          [class.text-sm]="size() !== 'sm'"
+          class="font-medium text-slate-600 group-hover:text-slate-900"
+        >
+          {{ label() }}
+        </span>
+      </label>
+    } @else {
       <span
-        class="relative inline-flex flex-none"
+        class="relative inline-flex flex-none align-middle"
         [class.h-3.5]="size() === 'sm'"
         [class.w-3.5]="size() === 'sm'"
         [class.h-4]="size() !== 'sm'"
         [class.w-4]="size() !== 'sm'"
-        [class.mt-0.5]="!!label()"
+        [class.cursor-pointer]="!disabledState()"
+        [class.cursor-not-allowed]="disabledState()"
+        [class.opacity-60]="disabledState()"
       >
         <input
           type="checkbox"
@@ -53,7 +94,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           [disabled]="disabledState()"
           (change)="onToggle($event)"
           (blur)="onBlur()"
-          [attr.aria-label]="ariaLabel() || label() || null"
+          [attr.aria-label]="ariaLabel() || null"
           class="peer absolute inset-0 h-full w-full cursor-inherit appearance-none rounded border border-slate-300 bg-white outline-none transition checked:border-indigo-600 checked:bg-gradient-to-br checked:from-indigo-500 checked:to-violet-500 hover:border-slate-400 focus-visible:ring-2 focus-visible:ring-indigo-500/40 disabled:cursor-not-allowed"
         />
         <svg
@@ -69,16 +110,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           <path d="M3 8.5 6.5 12 13 5" />
         </svg>
       </span>
-      @if (label()) {
-        <span
-          [class.text-xs]="size() === 'sm'"
-          [class.text-sm]="size() !== 'sm'"
-          class="font-medium text-slate-600 group-hover:text-slate-900"
-        >
-          {{ label() }}
-        </span>
-      }
-    </label>
+    }
   `,
 })
 export class CheckboxComponent implements ControlValueAccessor {
