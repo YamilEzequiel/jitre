@@ -7,11 +7,12 @@ import { SlicePipe } from '@angular/common';
 import { NotificationStore } from '../../stores/notification.store';
 import { NotificationApiService } from '../../stores/notification-api.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { VirtualListComponent } from '../../shared/virtual-list/virtual-list.component';
 
 @Component({
   selector: 'jt-notification-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SlicePipe],
+  imports: [SlicePipe, VirtualListComponent],
   template: `
     <div class="flex flex-col h-full w-full">
       <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 flex items-end justify-between gap-4 mb-6">
@@ -49,49 +50,55 @@ import { AuthService } from '../../core/auth/auth.service';
         }
       </header>
 
-      <div class="flex-1 overflow-auto pr-1">
-        <div class="space-y-3">
-          @for (notification of store.items(); track notification.id) {
-            <div
-              [class]="
-                'group flex items-start gap-3 rounded-xl border backdrop-blur-sm p-4 cursor-pointer transition-colors ' +
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ' +
-                'focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ' +
-                (notification.readAt
-                  ? 'bg-white border-slate-200 opacity-70 hover:opacity-100 hover:border-slate-300'
-                  : 'bg-violet-50/50 border-violet-200 hover:bg-violet-50 hover:border-violet-300 shadow-sm')
-              "
-              (click)="markAsRead(notification.id)"
-              role="button"
-              tabindex="0"
-              (keydown.enter)="markAsRead(notification.id)"
-              [attr.aria-label]="notification.readAt ? notification.message : 'Unread: ' + notification.message"
-            >
-              <span
-                [class]="
-                  'mt-1.5 h-2 w-2 flex-none rounded-full ' +
-                  (notification.readAt
-                    ? 'bg-slate-300'
-                    : 'bg-gradient-to-r from-indigo-400 to-violet-400 shadow-md shadow-indigo-500/40')
-                "
-                aria-hidden="true"
-              ></span>
-              <div class="flex-1 min-w-0">
-                <p [class]="'text-sm ' + (notification.readAt ? 'text-slate-600' : 'text-slate-950 font-medium')">
-                  {{ notification.message }}
-                </p>
-                <p class="text-[11px] text-slate-400 mt-1.5">{{ notification.createdAt | slice:0:10 }}</p>
-              </div>
-            </div>
-          } @empty {
-            <div
-              class="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center"
-            >
-              <p class="text-sm text-slate-500">No notifications.</p>
-            </div>
-          }
+      @if (store.items().length === 0) {
+        <div
+          class="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center"
+        >
+          <p class="text-sm text-slate-500">No notifications.</p>
         </div>
-      </div>
+      } @else {
+        <div class="flex-1 min-h-0 pr-1">
+          <jt-virtual-list
+            [items]="store.items()"
+            [itemSize]="100"
+            [trackByKey]="'id'"
+          >
+            <ng-template #row let-notification>
+              <div
+                [class]="
+                  'group flex items-start gap-3 rounded-xl border backdrop-blur-sm p-4 mb-3 cursor-pointer transition-colors ' +
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ' +
+                  'focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ' +
+                  (notification.readAt
+                    ? 'bg-white border-slate-200 opacity-70 hover:opacity-100 hover:border-slate-300'
+                    : 'bg-violet-50/50 border-violet-200 hover:bg-violet-50 hover:border-violet-300 shadow-sm')
+                "
+                (click)="markAsRead(notification.id)"
+                role="button"
+                tabindex="0"
+                (keydown.enter)="markAsRead(notification.id)"
+                [attr.aria-label]="notification.readAt ? notification.message : 'Unread: ' + notification.message"
+              >
+                <span
+                  [class]="
+                    'mt-1.5 h-2 w-2 flex-none rounded-full ' +
+                    (notification.readAt
+                      ? 'bg-slate-300'
+                      : 'bg-gradient-to-r from-indigo-400 to-violet-400 shadow-md shadow-indigo-500/40')
+                  "
+                  aria-hidden="true"
+                ></span>
+                <div class="flex-1 min-w-0">
+                  <p [class]="'text-sm ' + (notification.readAt ? 'text-slate-600' : 'text-slate-950 font-medium')">
+                    {{ notification.message }}
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-1.5">{{ notification.createdAt | slice:0:10 }}</p>
+                </div>
+              </div>
+            </ng-template>
+          </jt-virtual-list>
+        </div>
+      }
     </div>
   `,
 })

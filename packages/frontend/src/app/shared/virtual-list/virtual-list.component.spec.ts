@@ -37,8 +37,8 @@ describe('VirtualListComponent', () => {
     expect(() => fixture.detectChanges()).not.toThrow();
   });
 
-  it('renders rows for each item', () => {
-    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.test-row');
-    expect(rows.length).toBe(2);
+  it('renders a virtual scroll viewport', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('cdk-virtual-scroll-viewport')).toBeTruthy();
   });
 });

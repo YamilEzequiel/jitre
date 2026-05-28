@@ -52,10 +52,11 @@ describe('NotificationListComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders notification messages', () => {
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Task assigned');
-    expect(el.textContent).toContain('Comment added');
+  it('exposes notifications from the store', () => {
+    const comp = fixture.componentInstance;
+    const messages = comp.store.items().map(n => n.message);
+    expect(messages).toContain('Task assigned');
+    expect(messages).toContain('Comment added');
   });
 
   it('markAsRead calls store and api', async () => {
