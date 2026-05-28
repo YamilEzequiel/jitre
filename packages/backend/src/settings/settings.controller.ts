@@ -14,12 +14,16 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { WorkspaceRole } from '@jitre/shared';
 import { RequireRole } from '../auth/decorators/require-role.decorator';
 import { SettingsService, MergedUserPreferences } from './settings.service';
 import { UpdateSettingDto } from './dto/update-setting.dto';
 import { OWNER_ONLY_KEYS, KNOWN_KEYS } from './settings-keys.constants';
+
+type AuthRequest = Request & {
+  user?: { id: string; role?: WorkspaceRole };
+};
 
 const USER_ALLOWED_SCOPES = new Set([
   ...KNOWN_KEYS.user,
@@ -37,8 +41,8 @@ export class SettingsController {
   @ApiOperation({ summary: 'Get merged effective settings for current user' })
   @ApiResponse({ status: 200 })
   @Get('me')
-  async getMySettings(@Req() req: Request): Promise<MergedUserPreferences> {
-    const userId = (req.user as { userId: string }).userId;
+  async getMySettings(@Req() req: AuthRequest): Promise<MergedUserPreferences> {
+    const userId = req.user!.id;
     const workspaceId =
       (req.headers['x-workspace-id'] as string | undefined) ?? '';
     return this.settingsService.getMergedUserPreferences(userId, workspaceId);
@@ -52,14 +56,14 @@ export class SettingsController {
   })
   @Patch('me')
   async patchMySettings(
-    @Req() req: Request,
+    @Req() req: AuthRequest,
     @Body() dto: UpdateSettingDto,
   ): Promise<void> {
     if (!(USER_ALLOWED_SCOPES as Set<string>).has(dto.key)) {
       throw new BadRequestException('Key not in user/notification allowlist');
     }
 
-    const userId = (req.user as { userId: string }).userId;
+    const userId = req.user!.id;
     const workspaceId =
       (req.headers['x-workspace-id'] as string | undefined) ?? '';
 

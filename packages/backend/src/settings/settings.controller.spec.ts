@@ -62,7 +62,7 @@ describe('SettingsController', () => {
   describe('getMySettings()', () => {
     it('returns merged user preferences', async () => {
       const req = {
-        user: { userId: 'U1' },
+        user: { id: 'U1' },
         headers: { 'x-workspace-id': 'W1' },
       };
       const result = await controller.getMySettings(req as never);
@@ -77,7 +77,7 @@ describe('SettingsController', () => {
   describe('patchMySettings()', () => {
     it('rejects workspace key via /settings/me (400)', async () => {
       const req = {
-        user: { userId: 'U1' },
+        user: { id: 'U1' },
         headers: { 'x-workspace-id': 'W1' },
       };
       await expect(
@@ -90,7 +90,7 @@ describe('SettingsController', () => {
 
     it('accepts user key via /settings/me', async () => {
       const req = {
-        user: { userId: 'U1' },
+        user: { id: 'U1' },
         headers: { 'x-workspace-id': 'W1' },
       };
       await controller.patchMySettings(req as never, {
@@ -106,7 +106,7 @@ describe('SettingsController', () => {
 
     it('stores a supported notification preference for the active workspace', async () => {
       const req = {
-        user: { userId: 'U1' },
+        user: { id: 'U1' },
         headers: { 'x-workspace-id': 'W1' },
       };
       await controller.patchMySettings(req as never, {
