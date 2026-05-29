@@ -53,7 +53,7 @@ interface TypeMeta {
 }
 
 const TYPE_META: Record<TaskType, TypeMeta> = {
-  task: { icon: 'pi pi-check-square', color: 'text-slate-500', label: 'Task' },
+  task: { icon: 'pi pi-bookmark', color: 'text-slate-500', label: 'Task' },
   bug: { icon: 'pi pi-bug', color: 'text-rose-400', label: 'Bug' },
   incident: { icon: 'pi pi-exclamation-triangle', color: 'text-amber-400', label: 'Incident' },
   feature: { icon: 'pi pi-star', color: 'text-violet-400', label: 'Feature' },

@@ -11,6 +11,8 @@ import { ProjectStore } from '../../../stores/project.store';
 import { Project } from '../../../stores/project-api.service';
 import { Area } from '../../../stores/area-api.service';
 import { AreaStore } from '../../../stores/area.store';
+import { Customer } from '../../../stores/customer-api.service';
+import { CustomerStore } from '../../../stores/customer.store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { SkeletonComponent } from '../../../shared/skeleton/skeleton.component';
 import { CreateProjectComponent } from '../create/create-project.component';
@@ -119,22 +121,28 @@ type StatusFilter = 'all' | 'active' | 'archived';
               >
                 <div class="flex items-center gap-4 min-w-0">
                   <div
-                    class="flex h-11 w-11 flex-none items-center justify-center rounded-xl
-                           bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md shadow-indigo-500/20"
+                    class="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-lg font-black text-white shadow-md"
+                    [style.background]="project.color || '#6d28d9'"
                   >
-                    <svg
-                      class="h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M20 7h-7l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
-                    </svg>
+                    @if (isPiIcon(project.icon)) {
+                      <i [class]="'pi ' + project.icon" aria-hidden="true"></i>
+                    } @else if (project.icon) {
+                      <span aria-hidden="true">{{ project.icon }}</span>
+                    } @else {
+                      <svg
+                        class="h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M20 7h-7l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
+                      </svg>
+                    }
                   </div>
                   <div class="min-w-0">
                     <p class="text-sm font-bold text-slate-950 truncate group-hover:text-violet-700">
@@ -142,10 +150,6 @@ type StatusFilter = 'all' | 'active' | 'archived';
                     </p>
                     <p class="text-xs text-slate-500 truncate">
                       <span class="font-mono">{{ project.key }}</span>
-                      @if (project.customerName) {
-                        <span class="text-slate-300"> · </span>
-                        <span>{{ project.customerName }}</span>
-                      }
                       @if (project.framework) {
                         <span class="text-slate-300"> · </span>
                         <span>{{ project.framework }}</span>
@@ -154,6 +158,20 @@ type StatusFilter = 'all' | 'active' | 'archived';
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
+                  @if (customerOf(project); as customer) {
+                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          [style.background]="customer.color + '20'"
+                          [style.color]="customer.color">
+                      @if (isPiIcon(customer.icon)) {
+                        <i [class]="'pi ' + customer.icon + ' text-[9px]'" aria-hidden="true"></i>
+                      } @else if (customer.icon) {
+                        <span aria-hidden="true">{{ customer.icon }}</span>
+                      } @else {
+                        <i class="pi pi-id-card text-[9px]" aria-hidden="true"></i>
+                      }
+                      {{ customer.name }}
+                    </span>
+                  }
                   @if (areaOf(project); as area) {
                     <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
                           [style.background]="area.color + '20'"
@@ -223,6 +241,7 @@ export class ProjectListComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly areaStore = inject(AreaStore);
+  private readonly customerStore = inject(CustomerStore);
 
   readonly statusFilter = signal<StatusFilter>('all');
   readonly showCreate = signal(false);
@@ -236,9 +255,12 @@ export class ProjectListComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const workspaceId = this.workspaceId();
     if (workspaceId) {
-      // Best-effort — the area badges just won't render until the cache
-      // is populated, which is fine in dev / fallback scenarios.
-      await this.areaStore.load(workspaceId).catch(() => undefined);
+      // Best-effort — area/customer badges just won't render until the
+      // caches are populated, which is fine in dev / fallback scenarios.
+      await Promise.all([
+        this.areaStore.load(workspaceId).catch(() => undefined),
+        this.customerStore.load(workspaceId).catch(() => undefined),
+      ]);
     }
   }
 
@@ -246,6 +268,12 @@ export class ProjectListComponent implements OnInit {
   areaOf(project: Project): Area | null {
     if (!project.areaId) return null;
     return this.areaStore.byId()[project.areaId] ?? null;
+  }
+
+  /** Resolves a project's `customerId` to the matching cached `Customer`. */
+  customerOf(project: Project): Customer | null {
+    if (!project.customerId) return null;
+    return this.customerStore.byId()[project.customerId] ?? null;
   }
 
   readonly statusOptions: { value: StatusFilter; label: string }[] = [

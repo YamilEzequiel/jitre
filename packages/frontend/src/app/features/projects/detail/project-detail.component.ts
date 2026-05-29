@@ -16,6 +16,11 @@ import { LabelStore } from '../../../stores/label.store';
 import { ProjectMemberStore } from '../../../stores/project-member.store';
 import { AreaStore } from '../../../stores/area.store';
 import { Area } from '../../../stores/area-api.service';
+import { CustomerStore } from '../../../stores/customer.store';
+import { Customer } from '../../../stores/customer-api.service';
+import { Project } from '../../../stores/project-api.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { CreateProjectComponent } from '../create/create-project.component';
 import { Task, TaskApiService } from '../../../stores/task-api.service';
 import {
   CreatePlanningItemBody,
@@ -69,6 +74,7 @@ type TaskView = 'board' | 'list';
     SelectModule,
     WorkflowEditorComponent,
     AutomationsEditorComponent,
+    CreateProjectComponent,
   ],
   template: `
     <div class="flex min-w-0 flex-col max-w-none">
@@ -120,10 +126,19 @@ type TaskView = 'board' | 'list';
                     {{ project()!.database }}
                   </li>
                 }
-                @if (project()!.customerName) {
-                  <li class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-600">
-                    <i class="pi pi-building text-[10px]" aria-hidden="true"></i>
-                    {{ project()!.customerName }}
+                @if (customerOfProject(); as c) {
+                  <li class="inline-flex items-center gap-1 rounded-full border px-2 py-1"
+                      [style.background]="c.color + '15'"
+                      [style.borderColor]="c.color + '40'"
+                      [style.color]="c.color">
+                    @if (isPiIcon(c.icon)) {
+                      <i [class]="'pi ' + c.icon + ' text-[10px]'" aria-hidden="true"></i>
+                    } @else if (c.icon) {
+                      <span class="text-[10px]" aria-hidden="true">{{ c.icon }}</span>
+                    } @else {
+                      <i class="pi pi-id-card text-[10px]" aria-hidden="true"></i>
+                    }
+                    {{ c.name }}
                   </li>
                 }
                 @if (project()!.repositoryUrl) {
@@ -142,6 +157,14 @@ type TaskView = 'board' | 'list';
             }
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              (click)="openEdit()"
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-800"
+            >
+              <i class="pi pi-pencil text-[11px]" aria-hidden="true"></i>
+              Editar
+            </button>
             <button
               type="button"
               (click)="openProjectChat()"
@@ -240,7 +263,7 @@ type TaskView = 'board' | 'list';
                 @if (taskView() === 'board') {
                   <jt-kanban-board [projectId]="projectId" [filters]="filters()" />
                 } @else {
-                  <div class="space-y-2">
+                  <div class="mt-1 space-y-3 pb-4">
                     @for (task of filteredTasks(); track task.id) {
                       <jt-task-card [task]="task" variant="row" (selected)="openTask($event)" />
                     } @empty {
@@ -662,6 +685,26 @@ type TaskView = 'board' | 'list';
         </div>
       </div>
     }
+
+    @if (showEdit() && project() && workspaceId()) {
+      <div
+        class="fixed inset-0 z-50 flex justify-end bg-slate-950/45 backdrop-blur-[2px] md:pl-[19.5rem]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit project"
+        (click)="closeEdit()"
+        (keydown.escape)="closeEdit()"
+      >
+        <div class="h-full w-full max-w-[88rem] bg-white shadow-2xl shadow-slate-950/20" (click)="$event.stopPropagation()">
+          <jt-create-project
+            [workspaceId]="workspaceId()!"
+            [existingProject]="project()!"
+            (created)="onProjectSaved($event)"
+            (cancelled)="closeEdit()"
+          />
+        </div>
+      </div>
+    }
   `,
 })
 export class ProjectDetailComponent implements OnInit {
@@ -673,6 +716,7 @@ export class ProjectDetailComponent implements OnInit {
   private readonly labelStore = inject(LabelStore);
   private readonly memberStore = inject(ProjectMemberStore);
   private readonly areaStore = inject(AreaStore);
+  private readonly customerStore = inject(CustomerStore);
   private readonly analytics = inject(AnalyticsService);
   private readonly statusApi = inject(WorkflowStatusApiService);
   private readonly planningApi = inject(PlanningApiService);
@@ -680,8 +724,11 @@ export class ProjectDetailComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly chatApi = inject(ChatApiService);
   private readonly documentApi = inject(DocumentApiService);
+  private readonly auth = inject(AuthService);
 
   readonly activeTab = signal<ProjectTab>('tasks');
+  readonly showEdit = signal(false);
+  readonly workspaceId = computed(() => this.auth.currentWorkspace()?.id ?? null);
   readonly projectDocs = signal<Document[]>([]);
   readonly projectDocsLoading = signal(false);
   readonly taskView = signal<TaskView>('board');
@@ -988,6 +1035,19 @@ export class ProjectDetailComponent implements OnInit {
     }
   }
 
+  openEdit(): void {
+    this.showEdit.set(true);
+  }
+
+  closeEdit(): void {
+    this.showEdit.set(false);
+  }
+
+  onProjectSaved(project: Project): void {
+    this.projectStore.upsert(project);
+    this.closeEdit();
+  }
+
   // ---- Project docs ----
 
   async loadProjectDocs(): Promise<void> {
@@ -1090,7 +1150,10 @@ export class ProjectDetailComponent implements OnInit {
   private async loadAreas(): Promise<void> {
     const workspaceId = this.projectStore.byId()[this.projectId]?.workspaceId;
     if (!workspaceId) return;
-    await this.areaStore.load(workspaceId).catch(() => undefined);
+    await Promise.all([
+      this.areaStore.load(workspaceId).catch(() => undefined),
+      this.customerStore.load(workspaceId).catch(() => undefined),
+    ]);
   }
 
   /** Exposed to the template; pi-* class names render as primeicons. */
@@ -1111,9 +1174,16 @@ export class ProjectDetailComponent implements OnInit {
       p.category ||
       p.framework ||
       p.database ||
-      p.customerName ||
+      p.customerId ||
       p.repositoryUrl
     );
+  }
+
+  /** Resolves the project's `customerId` to its cached customer record. */
+  customerOfProject(): Customer | null {
+    const p = this.project();
+    if (!p?.customerId) return null;
+    return this.customerStore.byId()[p.customerId] ?? null;
   }
 
   private async loadProjectAnalytics(): Promise<void> {

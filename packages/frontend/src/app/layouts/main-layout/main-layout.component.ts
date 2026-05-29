@@ -504,6 +504,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   readonly primaryNav = computed<NavItem[]>(() => [
     { labelKey: 'nav.dashboard', route: '/', icon: 'pi-th-large', exact: true },
     { labelKey: 'nav.projects', route: '/projects', icon: 'pi-folder' },
+    { labelKey: 'nav.customers', route: '/customers', icon: 'pi-id-card' },
     { labelKey: 'nav.aiInsights', route: '/analytics', icon: 'pi-lightbulb' },
     { labelKey: 'nav.automations', route: '/my-time', icon: 'pi-sliders-h' },
     { labelKey: 'nav.tickets', route: '/tickets', icon: 'pi-exclamation-circle' },

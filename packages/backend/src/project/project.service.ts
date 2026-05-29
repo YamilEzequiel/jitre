@@ -18,38 +18,22 @@ import {
   ProjectDeletedEvent,
 } from './events';
 import { ProjectRole, ProjectStatus } from '@jitre/shared';
+import { CreateProjectDto as CreateProjectBody } from './dto/create-project.dto';
+import { UpdateProjectDto as UpdateProjectBody } from './dto/update-project.dto';
 
-export interface CreateProjectDto {
+/**
+ * Service-layer input: HTTP DTO (validated) + tenancy/auth fields supplied
+ * by the controller. Derived from the DTO so any new field in the DTO flows
+ * through here without touching this file.
+ */
+export type CreateProjectInput = CreateProjectBody & {
   workspaceId: string;
-  name: string;
-  key: string;
-  description?: string | null;
   ownerUserId: string;
-  color?: string | null;
-  icon?: string | null;
-  startDate?: Date | null;
-  targetDate?: Date | null;
-  category?: string | null;
-  framework?: string | null;
-  database?: string | null;
-  customerName?: string | null;
-  repositoryUrl?: string | null;
-}
+};
 
-export interface UpdateProjectDto {
-  name?: string;
-  description?: string | null;
-  color?: string | null;
-  icon?: string | null;
-  startDate?: Date | null;
-  targetDate?: Date | null;
-  category?: string | null;
-  framework?: string | null;
-  database?: string | null;
-  customerName?: string | null;
-  repositoryUrl?: string | null;
+export type UpdateProjectInput = UpdateProjectBody & {
   actorUserId?: string;
-}
+};
 
 export interface ArchiveProjectDto {
   actorUserId?: string;
@@ -76,7 +60,7 @@ export class ProjectService {
    * 3. Seed 4 default statuses
    * Emits ProjectCreatedEvent + ProjectMemberAddedEvent (via membershipService).
    */
-  async create(dto: CreateProjectDto): Promise<ProjectEntity> {
+  async create(dto: CreateProjectInput): Promise<ProjectEntity> {
     let savedProject: ProjectEntity;
 
     await this.dataSource.transaction(async (em: EntityManager) => {
@@ -94,8 +78,9 @@ export class ProjectService {
         category: dto.category ?? null,
         framework: dto.framework ?? null,
         database: dto.database ?? null,
-        customerName: dto.customerName ?? null,
         repositoryUrl: dto.repositoryUrl ?? null,
+        areaId: dto.areaId ?? null,
+        customerId: dto.customerId ?? null,
       });
       savedProject = await em.save(ProjectEntity, project);
     });
@@ -138,7 +123,7 @@ export class ProjectService {
     return savedProject!;
   }
 
-  async update(id: string, workspaceId: string, dto: UpdateProjectDto): Promise<ProjectEntity> {
+  async update(id: string, workspaceId: string, dto: UpdateProjectInput): Promise<ProjectEntity> {
     const project = await this.projectRepo.findOne({ where: { id, workspaceId } });
     if (!project) throw new NotFoundException('PROJECT_NOT_FOUND');
 
@@ -152,8 +137,9 @@ export class ProjectService {
       ...(dto.category !== undefined && { category: dto.category }),
       ...(dto.framework !== undefined && { framework: dto.framework }),
       ...(dto.database !== undefined && { database: dto.database }),
-      ...(dto.customerName !== undefined && { customerName: dto.customerName }),
       ...(dto.repositoryUrl !== undefined && { repositoryUrl: dto.repositoryUrl }),
+      ...(dto.areaId !== undefined && { areaId: dto.areaId }),
+      ...(dto.customerId !== undefined && { customerId: dto.customerId }),
     });
 
     const saved = await this.projectRepo.save(project);

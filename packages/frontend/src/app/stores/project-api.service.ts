@@ -26,8 +26,11 @@ export interface Project {
   framework?: string | null;
   /** Primary database engine (e.g. "PostgreSQL 16"). */
   database?: string | null;
-  /** Customer name when the project is an external delivery. */
-  customerName?: string | null;
+  /**
+   * Optional reference to a workspace `Customer`. Replaces the legacy
+   * free-text `customerName` field.
+   */
+  customerId?: string | null;
   /** URL to the source repository — `https://...` or `git@...`. */
   repositoryUrl?: string | null;
 }
@@ -44,7 +47,7 @@ export interface CreateProjectBody {
   category?: string | null;
   framework?: string | null;
   database?: string | null;
-  customerName?: string | null;
+  customerId?: string | null;
   repositoryUrl?: string | null;
 }
 
@@ -59,7 +62,7 @@ export interface UpdateProjectBody {
   category?: string | null;
   framework?: string | null;
   database?: string | null;
-  customerName?: string | null;
+  customerId?: string | null;
   repositoryUrl?: string | null;
   status?: 'active' | 'archived';
 }

@@ -50,15 +50,9 @@ export class ProjectController {
     @Req() req: AuthRequest,
   ): Promise<unknown> {
     return this.projectService.create({
+      ...dto,
       workspaceId: req.workspace!.id,
       ownerUserId: req.user!.id,
-      name: dto.name,
-      key: dto.key,
-      description: dto.description,
-      color: dto.color,
-      icon: dto.icon,
-      startDate: dto.startDate,
-      targetDate: dto.targetDate,
     });
   }
 

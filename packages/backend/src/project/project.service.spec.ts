@@ -27,7 +27,7 @@ const makeProject = (overrides: Partial<ProjectEntity> = {}): ProjectEntity =>
     category: null,
     framework: null,
     database: null,
-    customerName: null,
+    customerId: null,
     repositoryUrl: null,
     ...overrides,
   }) as unknown as ProjectEntity;
@@ -187,7 +187,7 @@ describe('ProjectService', () => {
         category: 'Internal',
         framework: 'NestJS',
         database: 'PostgreSQL',
-        customerName: 'Acme Corp',
+        customerId: '00000000-0000-0000-0000-0000000000aa',
         repositoryUrl: 'https://github.com/acme/proj',
       });
 
@@ -197,7 +197,7 @@ describe('ProjectService', () => {
           category: 'Internal',
           framework: 'NestJS',
           database: 'PostgreSQL',
-          customerName: 'Acme Corp',
+          customerId: '00000000-0000-0000-0000-0000000000aa',
           repositoryUrl: 'https://github.com/acme/proj',
         }),
       );
@@ -233,7 +233,7 @@ describe('ProjectService', () => {
           category: null,
           framework: null,
           database: null,
-          customerName: null,
+          customerId: null,
           repositoryUrl: null,
         }),
       );
@@ -271,7 +271,7 @@ describe('ProjectService', () => {
         category: 'Client',
         framework: 'Angular',
         database: 'PostgreSQL',
-        customerName: 'Acme Corp',
+        customerId: '00000000-0000-0000-0000-0000000000aa',
         repositoryUrl: 'https://github.com/acme/proj',
         actorUserId: OWNER,
       });
@@ -279,7 +279,7 @@ describe('ProjectService', () => {
       expect(saved.category).toBe('Client');
       expect(saved.framework).toBe('Angular');
       expect(saved.database).toBe('PostgreSQL');
-      expect(saved.customerName).toBe('Acme Corp');
+      expect(saved.customerId).toBe('00000000-0000-0000-0000-0000000000aa');
       expect(saved.repositoryUrl).toBe('https://github.com/acme/proj');
     });
 
@@ -288,7 +288,7 @@ describe('ProjectService', () => {
         category: 'Internal',
         framework: 'NestJS',
         database: 'PostgreSQL',
-        customerName: 'Acme Corp',
+        customerId: '00000000-0000-0000-0000-0000000000aa',
         repositoryUrl: 'https://github.com/acme/proj',
       });
       projectRepo.findOne.mockResolvedValue(project);
@@ -300,7 +300,7 @@ describe('ProjectService', () => {
         category: null,
         framework: null,
         database: null,
-        customerName: null,
+        customerId: null,
         repositoryUrl: null,
         actorUserId: OWNER,
       });
@@ -308,7 +308,7 @@ describe('ProjectService', () => {
       expect(saved.category).toBeNull();
       expect(saved.framework).toBeNull();
       expect(saved.database).toBeNull();
-      expect(saved.customerName).toBeNull();
+      expect(saved.customerId).toBeNull();
       expect(saved.repositoryUrl).toBeNull();
     });
 
@@ -317,7 +317,7 @@ describe('ProjectService', () => {
         category: 'Internal',
         framework: 'NestJS',
         database: 'PostgreSQL',
-        customerName: 'Acme Corp',
+        customerId: '00000000-0000-0000-0000-0000000000aa',
         repositoryUrl: 'https://github.com/acme/proj',
       });
       projectRepo.findOne.mockResolvedValue(project);
@@ -334,7 +334,7 @@ describe('ProjectService', () => {
       expect(saved.category).toBe('Internal');
       expect(saved.framework).toBe('NestJS');
       expect(saved.database).toBe('PostgreSQL');
-      expect(saved.customerName).toBe('Acme Corp');
+      expect(saved.customerId).toBe('00000000-0000-0000-0000-0000000000aa');
       expect(saved.repositoryUrl).toBe('https://github.com/acme/proj');
     });
   });

@@ -64,7 +64,7 @@ describe('CreateProjectComponent', () => {
       category: '',
       framework: '',
       database: '',
-      customerName: '',
+      customerId: null,
       repositoryUrl: '',
     });
     await comp.submit();

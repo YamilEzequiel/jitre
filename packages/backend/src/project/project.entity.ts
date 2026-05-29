@@ -66,10 +66,6 @@ export class ProjectEntity extends TenantEntity {
   database!: string | null;
 
   @ApiPropertyOptional({ nullable: true })
-  @Column({ name: 'customer_name', type: 'varchar', length: 120, nullable: true })
-  customerName!: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
   @Column({ name: 'repository_url', type: 'varchar', length: 500, nullable: true })
   repositoryUrl!: string | null;
 
@@ -80,6 +76,15 @@ export class ProjectEntity extends TenantEntity {
   @ApiPropertyOptional({ format: 'uuid', nullable: true })
   @Column({ type: 'uuid', name: 'area_id', nullable: true })
   areaId!: string | null;
+
+  /**
+   * Optional reference to a {@link CustomerEntity}. FK is set up via migration
+   * `1700000003100-AddCustomers.ts` with `ON DELETE SET NULL`. Replaced the
+   * previous free-text `customerName` column.
+   */
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @Column({ type: 'uuid', name: 'customer_id', nullable: true })
+  customerId!: string | null;
 
   @OneToMany('StatusEntity', 'project')
   statuses?: unknown[];

@@ -3,6 +3,7 @@ import {
   IsString,
   IsOptional,
   IsUrl,
+  IsUUID,
   Length,
   Matches,
   MaxLength,
@@ -71,16 +72,24 @@ export class CreateProjectDto {
   @MaxLength(60)
   database?: string | null;
 
-  @ApiPropertyOptional({ maxLength: 120 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(120)
-  customerName?: string | null;
-
   @ApiPropertyOptional({ maxLength: 500, format: 'uri' })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   @IsUrl({ require_tld: false, require_protocol: true })
   repositoryUrl?: string | null;
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @IsOptional()
+  @IsUUID()
+  areaId?: string | null;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    description: 'Optional reference to an existing workspace customer.',
+  })
+  @IsOptional()
+  @IsUUID()
+  customerId?: string | null;
 }

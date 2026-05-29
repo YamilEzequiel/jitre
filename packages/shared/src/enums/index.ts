@@ -16,6 +16,7 @@ export * from './comment-context.enum';
 export * from './project-role.enum';
 export * from './status-category.enum';
 export * from './label-scope.enum';
+export * from './customer-status.enum';
 // Fase 7 — Realtime + AI
 export * from './ai-provider.enum';
 export * from './ai-operation.enum';

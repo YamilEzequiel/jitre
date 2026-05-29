@@ -35,6 +35,7 @@
   "nav": {
     "dashboard": "Tablero",
     "projects": "Proyectos",
+    "customers": "Clientes",
     "aiInsights": "IA Insights",
     "automations": "Automatizaciones",
     "tickets": "Tickets",

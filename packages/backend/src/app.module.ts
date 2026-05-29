@@ -46,6 +46,7 @@ import { ChatModule } from './chat/chat.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { OrgGraphModule } from './org-graph/org-graph.module';
 import { AreaModule } from './area/area.module';
+import { CustomerModule } from './customer/customer.module';
 
 @Module({
   imports: [
@@ -146,6 +147,7 @@ import { AreaModule } from './area/area.module';
     TimeTrackingModule,
     OrgGraphModule,
     AreaModule,
+    CustomerModule,
   ],
   providers: [
     {
