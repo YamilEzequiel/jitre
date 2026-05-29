@@ -9,49 +9,119 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+### Fixed
 
-- **License migrated from PolyForm Noncommercial 1.0.0 to Elastic License 2.0 (ELv2).** The previous license blocked internal commercial use by companies, which was overly restrictive. ELv2 keeps the same anti-reseller posture (no hosting Jitre as a managed/SaaS service to third parties, no circumventing the licensing, no removing notices) while explicitly allowing companies to deploy and use Jitre internally — including for commercial purposes. Updated: `LICENSE`, README badge + Licencia section, `CONTRIBUTING.md`, `packages/frontend/src/app/core/app-info.ts` (LICENSE_NAME / LICENSE_URL), `packages/frontend/src/app/features/license/license.component.ts` (in-app `/license` page rewritten to reflect ELv2 terms).
-- **Contributor License Agreement (CLA) introduced** to protect the dual-licensing model. New `CLA.md` (v1.0) grants the maintainer perpetual, sublicensable copyright + patent rights on Contributions, allowing future re-licensing and commercial sub-licenses while leaving authorship with the contributor. New `.github/workflows/cla.yml` runs `contributor-assistant/github-action` against every PR — first-time contributors are asked to comment a sign-off phrase on their PR, and signatures are stored in a `cla-signatures` branch in this repo (no external service). Allowlist covers the maintainer and bots (dependabot, renovate). `CONTRIBUTING.md` and the PR template updated with the CLA flow.
+- **Customer screens broke the frontend bundle** because `CustomerListComponent.ngOnInit` and `CustomerDetailComponent.ngOnInit` were calling `projectStore.load(workspaceId).catch(...)`. `ProjectStore.load(projects: Project[]): void` only hydrates the cache with an already-fetched list (it does NOT fetch and does NOT return a Promise), so the calls produced `TS2345` (`string` not assignable to `Project[]`) and `TS2339` (`.catch` on `void`) and `ng serve` refused to emit a bundle. The correct primitive for "fetch + hydrate the project cache for this workspace" is `ProjectStore.onWorkspaceSwitch(workspaceId): Promise<void>` — both call sites now use that. The mistake came from assuming `ProjectStore.load` had the same signature as `CustomerStore.load(workspaceId): Promise<void>`; the two stores deliberately differ because `ProjectStore` is built on top of the entity-store factory and expects the caller to bring its own list.
+
+---
+
+## [0.3.0] — 2026-05-29
+
+The "customers are first-class, observability is production-ready, and the license is finally usable in the office" release. A real `Customer` entity replaces the free-text `Project.customerName` column with a UUID FK; the command palette gets end-to-end search across 4 entity types; Prometheus `/metrics` and virtualized lists ship app-wide; and the license moves from PolyForm Noncommercial to Elastic License 2.0 so companies can deploy Jitre internally.
 
 ### Added
 
-- **End-to-end search** in the command palette. Backend `/search` already indexed 6 entity types but the frontend providers only covered task + project (and were unmarshalling a phantom shape that never matched the real response). Now command palette covers task + project + document + comment, each with a server-side `ts_headline` snippet displayed under the label and a type chip on the right. Comments resolve their parent task/project on the backend (new `parent_type` / `parent_id` columns + backfill migration `AddSearchDocParentContext1700000002900`) so a comment hit navigates to `/tasks/:id#comment-:cid` or `/projects/:id#comment-:cid` without a second round-trip.
+#### Backend — Customer module
+
+- **New `CustomerEntity`** (`packages/backend/src/customer/customer.entity.ts`) under `customers` table. Extends `TenantEntity` so it inherits tenancy (`workspace_id`), audit (`created_at` / `updated_at` / `created_by` / `updated_by`), soft-delete (`deleted_at`) and optimistic-locking (`version`) columns. Fields: `name` (varchar 120, required), `status` (`CustomerStatus.ACTIVE` / `CustomerStatus.ARCHIVED`, default `active`), `color` (hex `#rrggbb`, required, defaults to `#2563eb` blue-600), `icon` (varchar 40, optional — accepts either a `pi-…` PrimeIcons class OR a short emoji; the frontend detects the `pi-` prefix and renders accordingly), `email`, `phone`, `taxId` (CUIT / VAT / EIN, stored verbatim), `address` and `notes` (text, 2000 chars).
+- **`CustomerService`** with full CRUD plus a soft-delete that runs in a transaction: it nullifies every `projects.customer_id` pointing to the deleted customer in the same workspace before stamping `deleted_at`, so projects survive customer removal without dangling references.
+- **`CustomerController`** mounted at `/api/v1/workspaces/:workspaceId/customers` with `ParseUUIDPipe` on every route param and an `assertWorkspaceMatch` guard that compares the URL workspace against the request's `req.workspace` (set by the tenancy interceptor). Endpoints: `GET /` (list, name ASC), `GET /:id`, `POST /` (ADMIN), `PATCH /:id` (ADMIN), `DELETE /:id` (ADMIN, 204). Error shape: `403 WORKSPACE_MISMATCH`, `403 INSUFFICIENT_ROLE`, `404 CUSTOMER_NOT_FOUND`, `409 CUSTOMER_NAME_TAKEN`.
+- **Case-insensitive name uniqueness** within a workspace. Enforced at two levels: (1) DB partial unique index `uq_customers_workspace_name_active` over `(workspace_id, LOWER(TRIM(name)))` WHERE `deleted_at IS NULL` — so a soft-deleted customer does NOT block reuse of its name; (2) service-layer pre-check in `assertNameAvailable` so the API returns `409 CUSTOMER_NAME_TAKEN` cleanly instead of leaking a Postgres constraint violation.
+- **DTO validation** (`CreateCustomerDto` / `UpdateCustomerDto`): `name` required (≤120), `color` hex-matched against `/^#[0-9a-fA-F]{6}$/`, `email` validated by `IsEmail` (≤180), all other fields optional with explicit max-lengths matching the entity. Defaults exported from `DEFAULT_CUSTOMER_COLOR = '#2563eb'`.
+- **OpenAPI / Swagger** annotations on every entity property and DTO field, including `ApiResponse` codes per endpoint, so the auto-generated docs cover the customer surface end-to-end.
+
+#### Backend — Migration `1700000003100-AddCustomers`
+
+- Creates the `customers` table with the full tenancy contract (id, workspace_id, audit/soft-delete/version columns, all the business fields above).
+- Creates `idx_customers_workspace_id` plus the partial unique index described above.
+- Adds `projects.customer_id uuid NULL` with `FK fk_projects_customer` → `customers(id) ON DELETE SET NULL` and an `idx_projects_customer_id` lookup index. The `SET NULL` rule matches the application-layer soft-delete behaviour so DB-level deletes (if anyone ever runs one) cannot orphan a project.
+- **Lossless backfill** of the legacy `projects.customer_name` column: groups existing projects by `(workspace_id, LOWER(TRIM(customer_name)))`, inserts one `customers` row per distinct combination with `status = 'active'` and the default blue color, then updates each project to point at the matching customer via a join on the same normalized key. Empty / whitespace-only names are skipped.
+- Drops `projects.customer_name` once the backfill completes — single source of truth, no more split.
+- **Reversible `down`**: re-creates `projects.customer_name`, copies names back from the FK row, drops the FK + indexes + `customer_id` column, drops both customer indexes, drops the table.
+
+#### Backend — Project module refactor
+
+- `ProjectEntity.customerName: string | null` removed. `ProjectEntity.customerId: string | null` added (UUID, FK to `customers(id)`).
+- `ProjectEntity.areaId` now documented with `ApiPropertyOptional`.
+- `CreateProjectDto` / `UpdateProjectDto`: `customerName` field replaced by `customerId` validated with `IsUUID`. Added explicit `areaId` field with `IsUUID`. Old free-text field gone.
+- `ProjectService.CreateProjectDto` / `UpdateProjectDto` interfaces deleted; replaced by `CreateProjectInput` / `UpdateProjectInput` type aliases derived from the HTTP DTOs (`CreateProjectBody & { workspaceId; ownerUserId }` and `UpdateProjectBody & { actorUserId? }`). Any new DTO field now flows through the service without a parallel edit.
+- `ProjectService.create` / `.update` write `customer_id` and `area_id` from the input; the legacy `customerName` path is removed entirely.
+
+#### Shared
+
+- `CustomerStatus` enum (`'active'` / `'archived'`) lives in `packages/shared/src/enums/customer-status.enum.ts` and is re-exported from the shared barrel so both backend and frontend consume the same string union.
+
+#### Frontend — Customers feature
+
+- **Routes**: `/customers` (list) and `/customers/:id` (detail), both lazy-loaded as standalone components under the main layout's authenticated routes.
+- **Sidebar nav**: new "Clientes" / "Customers" entry (key `nav.customers`, icon `pi pi-id-card`) added to `MainLayoutComponent.primaryNav`, positioned right after "Projects".
+- **`CustomerApiService`** (`packages/frontend/src/app/stores/customer-api.service.ts`): thin promise-returning wrapper over `firstValueFrom(http.get/post/patch/delete<…>(…))` mirroring `AreaApiService`. Exports the full `Customer`, `CreateCustomerBody` and `UpdateCustomerBody` TypeScript shapes.
+- **`CustomerStore`** (`packages/frontend/src/app/stores/customer.store.ts`): signal-based workspace cache mirroring `AreaStore`. `customers = signal<Customer[]>([])`, `byId` (computed map), `active` (computed filter on status), plus `load(workspaceId)`, `upsert`, `remove`, `clear`. `load` is the fetch-and-hydrate primitive (delegates to the API service), keeping the entire screen layer free of HTTP knowledge.
+- **`CustomerListComponent`** with create-customer dialog and a `projectCount(customerId)` computed via the project store.
+- **`CustomerDetailComponent`** with edit-in-place form (name, status, color, icon, contact info, tax id, address, notes) and a projects-attributed-to-this-customer panel.
+- **i18n**: `nav.customers` key added to `es.json` ("Clientes") and `en.json` ("Customers"); both locale files stay in sync.
+
+#### Frontend — Project module
+
+- `Project.customerName` removed from the `Project`, `CreateProjectBody` and `UpdateProjectBody` shapes in `project-api.service.ts`. `Project.customerId: string | null` added in its place, with a doc-comment pointing at the new `Customer` shape.
+- Project create / detail / list screens now read and write `customerId` instead of the legacy free-text field.
+
+#### Search & command palette
+
+- **End-to-end search** — backend `/search` already indexed 6 entity types but the frontend providers only covered task + project (and were unmarshalling a phantom shape that never matched the real response). Now the command palette covers task + project + document + comment, each with a server-side `ts_headline` snippet displayed under the label and a type chip on the right. Comments resolve their parent task/project on the backend (new `parent_type` / `parent_id` columns + backfill migration `AddSearchDocParentContext1700000002900`) so a comment hit navigates to `/tasks/:id#comment-:cid` or `/projects/:id#comment-:cid` without a second round-trip.
+
+#### Observability & production-readiness
+
 - **Prometheus `/metrics` endpoint** at the root path (excluded from the global API prefix, matching Prom scraper conventions). Exposes default Node metrics (event loop lag, GC, heap), a per-route HTTP request counter + duration histogram (route resolved from `PATH_METADATA` so labels stay low-cardinality), BullMQ queue-depth gauges sampled every 30s for all 6 queues × 5 states, and AI usage counters (`ai_requests_total`, `ai_cost_usd_total`, `ai_tokens_total`) labelled by provider/operation/model and incremented from `ai.request_made` events.
-- **Virtual scrolling** across long lists. Shared `<jt-virtual-list>` switched from a broken `@for`-inside-viewport (which renders every row, defeating the point) to `*cdkVirtualFor` with a real trackBy. Applied to notifications, tickets, audit log, and the employees directory. Audit and employees tables were converted from `<table>/<tbody>/<tr>` semantics to ARIA `role=table/row/cell` grids so cdk-virtual-scroll can position rows absolutely (native tables refuse that).
-- **`<jt-autosize-virtual-list>`** (variable-height variant via `@angular/cdk-experimental`) for future use on chat messages and kanban cards. Both row templates now expose `let-i="index"` alongside `$implicit` so drag-target maths can survive recycling.
-- **GitHub Actions CI** — `.github/workflows/ci.yml` runs lint + build on every PR plus backend tests against real Postgres + Redis service containers and frontend Vitest. PR + bug + feature templates under `.github/`. CI badge in README.
-- **Readiness probe checks Redis** — `/api/v1/readyz` now pings Redis (PING under 2s timeout) on top of the existing DB + memory checks. Liveness (`/healthz`) stays minimal so a transient downstream hiccup never causes an orchestrator restart loop.
-- **Sentry bootstrap (opt-in)** — backend `observability/sentry.bootstrap.ts` and frontend `core/observability/sentry.bootstrap.ts` dynamically import `@sentry/nestjs` / `@sentry/angular` if installed and DSN is set. No hard dependency added — install when you want it:
+- **Sentry bootstrap (opt-in)** — backend `observability/sentry.bootstrap.ts` and frontend `core/observability/sentry.bootstrap.ts` dynamically import `@sentry/nestjs` / `@sentry/angular` if installed and a DSN is set. No hard dependency added — install when you want it:
   - Backend: `npm i @sentry/nestjs @sentry/profiling-node -w @jitre/backend` + `SENTRY_DSN` env var
   - Frontend: `npm i @sentry/angular -w @jitre/frontend` + `window.__SENTRY_DSN__` in `index.html`
 - `env.example` has the new `SENTRY_*` variables documented.
+- **Readiness probe checks Redis** — `/api/v1/readyz` now pings Redis (PING under 2s timeout) on top of the existing DB + memory checks. Liveness (`/healthz`) stays minimal so a transient downstream hiccup never causes an orchestrator restart loop.
+- **GitHub Actions CI** — `.github/workflows/ci.yml` runs lint + build on every PR plus backend tests against real Postgres + Redis service containers and frontend Vitest. PR + bug + feature templates under `.github/`. CI badge in README.
+
+#### Lists & UX infrastructure
+
+- **Virtual scrolling** across long lists. Shared `<jt-virtual-list>` switched from a broken `@for`-inside-viewport (which renders every row, defeating the point) to `*cdkVirtualFor` with a real trackBy. Applied to notifications, tickets, audit log, and the employees directory. Audit and employees tables were converted from `<table>/<tbody>/<tr>` semantics to ARIA `role=table/row/cell` grids so cdk-virtual-scroll can position rows absolutely (native tables refuse that).
+- **`<jt-autosize-virtual-list>`** (variable-height variant via `@angular/cdk-experimental`) for future use on chat messages and kanban cards. Both row templates now expose `let-i="index"` alongside `$implicit` so drag-target maths can survive recycling.
+
+#### AI — Explain on Hover
+
+- **`POST /api/v1/ai/tasks/:taskId/explain`** returns a 2-sentence explanation of a task. Frontend exposes a reusable `<jt-ai-explain-popover [taskId]="…">` wrapper that triggers the call after 700ms of hover and shows the result in a tiny violet card with the `pi pi-sparkles` AI badge. AiService memoizes per task id for 5 minutes so flicking the mouse across a list never bills twice.
+
+#### i18n — coverage extended
+
+- **Remaining hardcoded surfaces** translated end-to-end: register, reset-password, main-layout chrome (mobile menu / workspace switcher / AI create button / version label / GitHub link / workspace load error toast), settings tabs (Profile / Notifications / Email / Workspace / AI / AI Prompts), the 5 settings panels themselves (every label, placeholder, help text, toast, error state — including the `{{count}} call(s)` and `{{detail}}` interpolations on the AI panel), and the entire audit log (badge, title, subtitle with `{{count}}` events, column headers, view-diff button, paginator with `{{page}}/{{shown}}/{{total}}`, diff modal labels, copy toast, load-failed toast). Both `es` and `en` files stay in sync.
+- **0.2.0 surfaces** that hadn't been internationalized: navigation (Changelog / License / AI Prompts), dashboard widgets (daily digest + priority suggestions), task detail (back / prev-next / comments / AI describe), settings → AI Prompts panel, and time-tracking duration helper text. Both `es` and `en` cover the same tree.
+- Sidebar Changelog and License entries now translate.
+- Dashboard daily-digest and priority-suggestions widgets fully translated.
+- Task detail back button, breadcrumb, prev/next aria labels, AI Describe success/failed toasts and comment composer toasts now translate.
+
+#### Tests
+
+- **E2E suite for AI prompt templates** — `test/ai-prompt-template.e2e-spec.ts` boots a real AppModule + Postgres, registers a user that lands as workspace OWNER, then exercises the full CRUD: create, list (with operation filter), reject invalid operation, default-swap invariant within an operation, and the "cannot delete the current default" 409.
+- Backend tests for `AiPromptTemplateService` (invariants: only-one-default swap, built-in read-only, operation-scoped, default-delete refusal, `getDefaultFor`, `{{var}}` interpolation) and `AiAutoPrioritizeService` (heuristic coverage + accept/dismiss lifecycle + stale-previous-suggestion behaviour).
+- Provider specs rewritten for the real Anthropic + OpenAI implementations: success path, JSON-mode, error code mapping, embeddings ordering, network errors, `AiProviderError` shape.
+- Rate-card spec extended with current-model entries (`gemini-2.5-flash`, `gemini-2.5-pro`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, `gpt-4o`, `gpt-4o-mini`, `text-embedding-3-small`).
 
 ### Changed
 
+- **License migrated from PolyForm Noncommercial 1.0.0 to Elastic License 2.0 (ELv2).** The previous license blocked internal commercial use by companies, which was overly restrictive. ELv2 keeps the same anti-reseller posture (no hosting Jitre as a managed/SaaS service to third parties, no circumventing the licensing, no removing notices) while explicitly allowing companies to deploy and use Jitre internally — including for commercial purposes. Updated: `LICENSE`, README badge + Licencia section, `CONTRIBUTING.md`, `packages/frontend/src/app/core/app-info.ts` (`LICENSE_NAME` / `LICENSE_URL`), `packages/frontend/src/app/features/license/license.component.ts` (in-app `/license` page rewritten to reflect ELv2 terms).
+- **Contributor License Agreement (CLA) introduced** to protect the dual-licensing model. New `CLA.md` (v1.0) grants the maintainer perpetual, sublicensable copyright + patent rights on Contributions, allowing future re-licensing and commercial sub-licenses while leaving authorship with the contributor. New `.github/workflows/cla.yml` runs `contributor-assistant/github-action` against every PR — first-time contributors are asked to comment a sign-off phrase on their PR, and signatures are stored in a `cla-signatures` branch in this repo (no external service). Allowlist covers the maintainer and bots (dependabot, renovate). `CONTRIBUTING.md` and the PR template updated with the CLA flow.
 - **Search providers wired to the real backend shape** — task/project search providers were calling `/api/v1/search?type=...` and parsing the response as a flat array of `{id, title}` / `{id, name}`. The endpoint actually returns `{items: SearchHit[], total, page, pageSize}` with `entityId` + `snippet`, so the old code silently returned nothing. Now every provider reads `items[]`, strips the `<b>` highlight tags into a label, and feeds `snippet` into a description line below.
-- **Helmet CSP enforced in production** — restrictive Content-Security-Policy, Referrer-Policy `strict-origin-when-cross-origin`, HSTS `max-age=15552000; includeSubDomains`. Dev keeps CSP off so Angular HMR works.
+- **Helmet CSP enforced in production** — restrictive Content-Security-Policy, `Referrer-Policy: strict-origin-when-cross-origin`, `HSTS max-age=15552000; includeSubDomains`. Dev keeps CSP off so Angular HMR works.
 - **Auth login throttle** — explicit `@Throttle({ short: { limit: 10, ttl: 60000 } })` on `POST /api/v1/auth/login` on top of the global throttler, as a layer against credential stuffing.
 - **AI describe throttle** — `@Throttle({ medium: { limit: 10, ttl: 10000 }, long: { limit: 30, ttl: 60000 } })` on `POST /api/v1/ai/tasks/:id/describe` so a runaway client can't burn AI budget faster than the quota guard recalculates.
 - **`env.example` JWT secrets** now carry a loud `WARNING — DO NOT SHIP THESE DEFAULTS TO PRODUCTION` block and a `_REPLACE_BEFORE_DEPLOY` suffix on the placeholder value so it's impossible to miss.
 
-### Added (continued)
+### Fixed
 
-- **E2E suite for AI prompt templates** — `test/ai-prompt-template.e2e-spec.ts` boots a real AppModule + Postgres, registers a user that lands as workspace OWNER, then exercises the full CRUD: create, list (with operation filter), reject invalid operation, default-swap invariant within an operation, and the "cannot delete the current default" 409.
-- **i18n** for the remaining hardcoded surfaces: register, reset-password, main-layout chrome (mobile menu / workspace switcher / AI create button / version label / GitHub link / workspace load error toast), settings tabs (Profile / Notifications / Email / Workspace / AI / AI Prompts), the 5 settings panels themselves (every label, placeholder, help text, toast, error state — including the `{{count}} call(s)` and `{{detail}}` interpolations on the AI panel), and the entire audit log (badge, title, subtitle with `{{count}}` events, column headers, view-diff button, paginator with `{{page}}/{{shown}}/{{total}}`, diff modal labels, copy toast, load-failed toast). Both `es` and `en` files stay in sync.
-- **i18n keys** for the surfaces shipped in 0.2.0: navigation (Changelog / License / AI Prompts), dashboard widgets (daily digest + priority suggestions), task detail (back / prev-next / comments / AI describe), settings → AI Prompts panel, and time-tracking duration helper text. Both `es` and `en` cover the same tree.
-- Sidebar Changelog and License entries now translate.
-- Dashboard daily-digest and priority-suggestions widgets fully translated (badges, titles, metric labels, empty states, toasts).
-- AI Prompts settings panel fully translated (badge, title, description, operation tabs, list, editor, all toasts).
-- Task detail: back button, breadcrumb, prev/next aria labels, AI Describe success/failed toasts and comment composer toasts (success / file / files / failed / attachmentsFailed) now translate.
-- **AI Explain on Hover** — `POST /api/v1/ai/tasks/:taskId/explain` returns a 2-sentence explanation of a task. Frontend exposes a reusable `<jt-ai-explain-popover [taskId]="…">` wrapper that triggers the call after 700ms of hover and shows the result in a tiny violet card with the `pi pi-sparkles` AI badge. AiService memoizes per task id for 5 minutes so flicking the mouse across a list never bills twice.
-- Backend tests for `AiPromptTemplateService` (invariants: only-one-default swap, built-in read-only, operation-scoped, default-delete refusal, getDefaultFor, {{var}} interpolation) and `AiAutoPrioritizeService` (heuristic coverage + accept/dismiss lifecycle + stale-previous-suggestion behaviour).
-- Provider specs rewritten for the real implementations (Anthropic + OpenAI): success path, JSON-mode, error code mapping, embeddings ordering, network errors, AiProviderError shape.
-- Rate-card spec adds current-model entries (gemini-2.5-flash/pro, claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022, gpt-4o, gpt-4o-mini, text-embedding-3-small).
+- **Virtual-list was not actually virtualizing** — the shared component used Angular's `@for` inside `cdk-virtual-scroll-viewport`, which renders every row. Switched to `*cdkVirtualFor` with a real `trackBy`.
 
-### Changed
+### Migrating
 
-- Cut `0.2.0` (this release). The Unreleased section above now accumulates work that lands on top.
+- Run the new migration once: `npm run migration:run -w @jitre/backend`. The backfill is idempotent against an empty `customer_name` column (it does nothing) and lossless against a populated one (one customer row per case-insensitive, trimmed name per workspace).
+- Frontend builds that still ship the legacy `customerName` shape will fail typecheck — pull the new `Project` interface from `@jitre/frontend/stores/project-api.service.ts` and migrate read/write sites to `customerId`. Display names should be resolved by looking the id up in `CustomerStore.byId()`.
 
 ---
 

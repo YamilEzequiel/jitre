@@ -5,7 +5,7 @@
  * The /changelog page reads CHANGELOG.md from the build output; the version
  * line in the footer reads APP_VERSION below.
  */
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.3.0';
 
 export const REPO_URL = 'https://github.com/YamilEzequiel/jitre';
 export const REPO_ISSUES_URL = `${REPO_URL}/issues`;
