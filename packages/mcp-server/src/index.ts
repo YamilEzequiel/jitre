@@ -21,7 +21,7 @@ const cfg = {
 const client = new JitreApiClient(cfg);
 
 const server = new Server(
-  { name: 'jitre-mcp', version: '0.1.0' },
+  { name: 'jitre-mcp', version: '0.1.1' },
   { capabilities: { tools: {} } },
 );
 
@@ -66,7 +66,7 @@ const TOOLS = [
   {
     name: 'jitre_list_tasks',
     description:
-      'List tasks in a project. Optional filters by status, assignee, free-text query.',
+      'List tasks in a project. Optional filters by status, assignee, free-text query. Each task includes `assignees[]` with { userId, displayName, email, avatarUrl } so callers can render the assigned user by NAME — never by raw userId. The legacy `assigneeUserIds[]` is also returned for backward compatibility.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -81,7 +81,8 @@ const TOOLS = [
   },
   {
     name: 'jitre_get_task',
-    description: 'Fetch a task by id.',
+    description:
+      'Fetch a task by id. The response includes `assignees[]` with { userId, displayName, email, avatarUrl } so callers can display the assigned user by NAME instead of UUID. `assigneeUserIds[]` is kept for backward compatibility.',
     inputSchema: {
       type: 'object',
       properties: { taskId: { type: 'string' } },

@@ -19,13 +19,17 @@ import { createUserFixture } from './fixtures/users.fixture';
 describe('Task lifecycle (e2e)', () => {
   let app: INestApplication<App>;
   let ownerToken: string;
+  let ownerUserId: string;
   let workspaceId: string;
   let projectId: string;
   let todoStatusId: string;
   let doneStatusId: string;
   let taskId: string;
 
-  const ownerFixture = createUserFixture({ email: 'task-e2e-owner@test.com' });
+  const ownerFixture = createUserFixture({
+    email: 'task-e2e-owner@test.com',
+    displayName: 'E2E Owner',
+  });
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -61,7 +65,12 @@ describe('Task lifecycle (e2e)', () => {
       .send({ email: ownerFixture.email, password: ownerFixture.plainPassword })
       .expect(201);
 
-    ownerToken = (loginRes.body as { accessToken: string }).accessToken;
+    const loginBody = loginRes.body as {
+      accessToken: string;
+      user: { id: string };
+    };
+    ownerToken = loginBody.accessToken;
+    ownerUserId = loginBody.user.id;
 
     const wsRes = await request(app.getHttpServer())
       .post('/api/v1/workspaces')
@@ -147,6 +156,68 @@ describe('Task lifecycle (e2e)', () => {
     expect(
       (res.body as { completedAt: string | null }).completedAt,
     ).not.toBeNull();
+  });
+
+  it('GET /projects/:id/tasks → returns assignees[] with displayName/email after assigning a user', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post(`/api/v1/projects/${projectId}/tasks`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-workspace-id', workspaceId)
+      .send({ title: 'Task with assignee', statusId: todoStatusId })
+      .expect(201);
+
+    const assignableTaskId = (createRes.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/projects/${projectId}/tasks/${assignableTaskId}/assignees`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-workspace-id', workspaceId)
+      .send({ userId: ownerUserId })
+      .expect(201);
+
+    const listRes = await request(app.getHttpServer())
+      .get(`/api/v1/projects/${projectId}/tasks`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-workspace-id', workspaceId)
+      .expect(200);
+
+    type AssigneeShape = {
+      userId: string;
+      displayName: string;
+      email: string;
+      avatarUrl: string | null;
+    };
+    const listed = (listRes.body as Array<{
+      id: string;
+      assigneeUserIds?: string[];
+      assignees?: AssigneeShape[];
+    }>).find((t) => t.id === assignableTaskId);
+
+    expect(listed).toBeDefined();
+    expect(listed?.assigneeUserIds).toContain(ownerUserId);
+    expect(listed?.assignees).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          userId: ownerUserId,
+          displayName: ownerFixture.displayName,
+          email: ownerFixture.email,
+        }),
+      ]),
+    );
+
+    // Sanity check: GET by id should also include assignees[].
+    const getRes = await request(app.getHttpServer())
+      .get(`/api/v1/tasks/${assignableTaskId}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .set('x-workspace-id', workspaceId)
+      .expect(200);
+
+    const fetched = getRes.body as {
+      assigneeUserIds?: string[];
+      assignees?: AssigneeShape[];
+    };
+    expect(fetched.assigneeUserIds).toContain(ownerUserId);
+    expect(fetched.assignees?.[0]?.displayName).toBe(ownerFixture.displayName);
   });
 
   it('DELETE /projects/:id → 409 when active tasks exist', async () => {

@@ -1,6 +1,6 @@
 {
   "name": "jitre-mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Model Context Protocol server that exposes Jitre projects, tasks and comments as tools so Claude / Cursor / other MCP clients can read and act on a Jitre workspace.",
   "license": "SEE LICENSE IN ../../LICENSE",

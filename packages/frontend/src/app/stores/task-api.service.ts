@@ -32,6 +32,18 @@ export interface Task {
   assigneeUserIds?: string[];
   labelIds?: string[];
   subtasks?: Task[];
+
+  /**
+   * Enriched assignee info from the API. The board/list components still use
+   * `assigneeUserIds` + memberStore to render avatars, so this field is
+   * additive and not required for existing UI flows.
+   */
+  assignees?: Array<{
+    userId: string;
+    displayName: string;
+    email: string;
+    avatarUrl: string | null;
+  }>;
 }
 
 export interface TaskListFilters {

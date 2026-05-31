@@ -349,7 +349,7 @@ export class TaskService {
   async getById(id: string, projectId?: string, workspaceId?: string): Promise<TaskEntity> {
     const task = await this.taskRepo.findOne({
       where: projectId && workspaceId ? { id, projectId, workspaceId } : projectId ? { id, projectId } : workspaceId ? { id, workspaceId } : { id },
-      relations: ['subtasks', 'assignments', 'labels'],
+      relations: ['subtasks', 'assignments', 'assignments.user', 'labels'],
     });
     if (!task) throw new NotFoundException('TASK_NOT_FOUND');
     return this.withRelationIds(task);
@@ -366,6 +366,7 @@ export class TaskService {
     const qb = this.taskRepo
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.assignments', 'assignment')
+      .leftJoinAndSelect('assignment.user', 'assignedUser')
       .leftJoinAndSelect('task.labels', 'taskLabel')
       .where('task.deleted_at IS NULL');
 
@@ -496,7 +497,16 @@ export class TaskService {
   }
 
   private withRelationIds(task: TaskEntity): TaskEntity {
-    task.assigneeUserIds = (task.assignments ?? []).map((assignment) => assignment.userId);
+    const assignments = task.assignments ?? [];
+    task.assigneeUserIds = assignments.map((assignment) => assignment.userId);
+    task.assignees = assignments
+      .filter((assignment) => assignment.user !== undefined && assignment.user !== null)
+      .map((assignment) => ({
+        userId: assignment.userId,
+        displayName: assignment.user!.displayName,
+        email: assignment.user!.email,
+        avatarUrl: assignment.user!.avatarUrl,
+      }));
     task.labelIds = (task.labels ?? []).map((label) => label.labelId);
     return task;
   }

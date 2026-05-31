@@ -10,6 +10,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { TenantEntity } from '../common/entities/tenant.entity';
 import { TaskEntity } from './task.entity';
+import { UserEntity } from '../user/user.entity';
 
 @Entity('task_assignments')
 @Index(['taskId'])
@@ -34,4 +35,8 @@ export class TaskAssignmentEntity extends TenantEntity {
   @ManyToOne(() => TaskEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'task_id' })
   task?: TaskEntity;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user?: UserEntity;
 }

@@ -107,10 +107,19 @@ export class TaskEntity extends TenantEntity {
 
   /**
    * Multi-assignee relation (Fase 6). Loaded explicitly via `relations: ['assignments']`
-   * â€” kept off the eager path so list queries stay cheap.
+   * â€” kept off the eager path so list queries stay cheap. The optional `user`
+   * sub-object is populated only when callers also join `assignments.user`.
    */
   @OneToMany('TaskAssignmentEntity', (a: { task: TaskEntity }) => a.task)
-  assignments?: Array<{ userId: string }>;
+  assignments?: Array<{
+    userId: string;
+    user?: {
+      id: string;
+      displayName: string;
+      email: string;
+      avatarUrl: string | null;
+    };
+  }>;
 
   @OneToMany('TaskLabelEntity', (label: { task: TaskEntity }) => label.task)
   labels?: Array<{ labelId: string }>;
@@ -118,4 +127,18 @@ export class TaskEntity extends TenantEntity {
   /** Flattened relation ids returned to board/list clients. */
   assigneeUserIds?: string[];
   labelIds?: string[];
+
+  /**
+   * Enriched assignee info returned alongside `assigneeUserIds` so external
+   * consumers (MCP, public API) don't need a second lookup just to render a
+   * name. Populated only when the JOIN with users is requested. The Angular
+   * frontend keeps using `assigneeUserIds` + memberStore, so this field is
+   * purely additive.
+   */
+  assignees?: Array<{
+    userId: string;
+    displayName: string;
+    email: string;
+    avatarUrl: string | null;
+  }>;
 }

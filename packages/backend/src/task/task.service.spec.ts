@@ -342,6 +342,10 @@ describe('TaskService â€” CRUD cluster', () => {
         'task.assignments',
         'assignment',
       );
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith(
+        'assignment.user',
+        'assignedUser',
+      );
       expect(qb.leftJoinAndSelect).toHaveBeenCalledWith('task.labels', 'taskLabel');
       expect(qb.andWhere).toHaveBeenCalledWith(
         'assignment.user_id = :assigneeUserId',
@@ -352,6 +356,37 @@ describe('TaskService â€” CRUD cluster', () => {
       });
       expect(result[0]?.assigneeUserIds).toEqual(['u-2']);
       expect(result[0]?.labelIds).toEqual(['l-3']);
+    });
+
+    it('returns enriched assignees[] (name/email/avatar) for each task with a joined user', async () => {
+      const rows = [
+        makeTask({
+          assignments: [
+            {
+              userId: 'u-2',
+              user: {
+                id: 'u-2',
+                displayName: 'Alex Admin',
+                email: 'admin@jitre.test',
+                avatarUrl: 'https://example/avatar.png',
+              },
+            },
+          ],
+        }),
+      ];
+      const qb = makeQb(rows);
+      taskRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.list({ projectId: PROJECT });
+
+      expect(result[0]?.assignees).toEqual([
+        {
+          userId: 'u-2',
+          displayName: 'Alex Admin',
+          email: 'admin@jitre.test',
+          avatarUrl: 'https://example/avatar.png',
+        },
+      ]);
     });
   });
 
@@ -472,8 +507,49 @@ describe('TaskService â€” CRUD cluster', () => {
 
       expect(taskRepo.findOne).toHaveBeenCalledWith({
         where: { id: 'task-1', projectId: PROJECT },
-        relations: ['subtasks', 'assignments', 'labels'],
+        relations: ['subtasks', 'assignments', 'assignments.user', 'labels'],
       });
+    });
+
+    it('populates assignees[] with displayName/email/avatarUrl from the joined user', async () => {
+      const task = makeTask({
+        assignments: [
+          {
+            userId: 'u-7',
+            user: {
+              id: 'u-7',
+              displayName: 'Alex Admin',
+              email: 'admin@jitre.test',
+              avatarUrl: null,
+            },
+          },
+        ],
+      });
+      taskRepo.findOne.mockResolvedValue(task);
+
+      const result = await service.getById('task-1');
+
+      expect(result.assigneeUserIds).toEqual(['u-7']);
+      expect(result.assignees).toEqual([
+        {
+          userId: 'u-7',
+          displayName: 'Alex Admin',
+          email: 'admin@jitre.test',
+          avatarUrl: null,
+        },
+      ]);
+    });
+
+    it('falls back to empty assignees[] when the user relation was not joined', async () => {
+      const task = makeTask({
+        assignments: [{ userId: 'u-9' }],
+      });
+      taskRepo.findOne.mockResolvedValue(task);
+
+      const result = await service.getById('task-1');
+
+      expect(result.assigneeUserIds).toEqual(['u-9']);
+      expect(result.assignees).toEqual([]);
     });
   });
 
