@@ -212,6 +212,93 @@ interface DisplayComment {
           }
         </header>
 
+        <!-- Description -->
+        <section class="mb-6">
+          <div class="mb-2 flex items-center justify-between">
+            <h2 class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              Descripción
+            </h2>
+            @if (!editingDescription()) {
+              <button
+                type="button"
+                (click)="enterEditDescription()"
+                class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                aria-label="Editar descripción"
+              >
+                <svg
+                  class="h-3.5 w-3.5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Editar
+              </button>
+            }
+          </div>
+          @if (editingDescription()) {
+            <textarea
+              [formControl]="descriptionControl"
+              rows="6"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition
+                     focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30"
+              placeholder="Describí la tarea… (soporta markdown)"
+              (keydown.escape)="cancelEditDescription()"
+              aria-label="Editar descripción de la tarea"
+            ></textarea>
+            <div class="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                (click)="cancelEditDescription()"
+                [disabled]="savingDescription()"
+                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700
+                       bg-white border border-slate-200 backdrop-blur-sm
+                       hover:bg-slate-100 hover:border-slate-300 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="saveDescription()"
+                [disabled]="savingDescription()"
+                class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white
+                       bg-gradient-to-r from-indigo-600 to-violet-600
+                       shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/40
+                       transition-shadow disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ savingDescription() ? 'Guardando…' : 'Guardar' }}
+              </button>
+            </div>
+          } @else if (task()!.description; as desc) {
+            <div
+              class="prose prose-sm prose-slate max-w-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 cursor-pointer transition hover:border-slate-300"
+              (click)="enterEditDescription()"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="enterEditDescription()"
+              aria-label="Click para editar descripción"
+              [innerHTML]="desc | markdown"
+            ></div>
+          } @else {
+            <button
+              type="button"
+              (click)="enterEditDescription()"
+              class="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-6 text-sm italic text-slate-400 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-600
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            >
+              Sin descripción — click para agregar
+            </button>
+          }
+        </section>
+
         <!-- AI actions (status changer moves to UI phase with dynamic statuses) -->
         <div class="mb-8 flex flex-wrap items-center gap-3">
           <span
@@ -368,18 +455,15 @@ interface DisplayComment {
           <jt-time-logger [taskId]="task()!.id" />
         </div>
 
-        <!-- Linked issues -->
-        <div class="mb-6">
+        <!-- Linked issues + Attachments — side-by-side on lg+, stacked on mobile -->
+        <div class="mb-6 grid gap-4 lg:grid-cols-2">
           <jt-task-links [taskId]="task()!.id" [projectId]="task()!.projectId" />
+          <section
+            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70"
+          >
+            <jt-attachment-list context="task" [contextId]="task()!.id" />
+          </section>
         </div>
-
-        <!-- Attachments -->
-        <section
-          class="rounded-2xl border border-slate-200 bg-white p-6 mb-6
-                 shadow-lg shadow-slate-200/80"
-        >
-          <jt-attachment-list context="task" [contextId]="task()!.id" />
-        </section>
 
         <!-- Subtasks -->
         <section
@@ -612,6 +696,8 @@ export class TaskDetailComponent implements OnInit {
   private taskId = '';
 
   readonly editing = signal(false);
+  readonly editingDescription = signal(false);
+  readonly savingDescription = signal(false);
   readonly commentsLoading = signal(false);
   readonly comments = signal<DisplayComment[]>([]);
   readonly addingSubtask = signal(false);
@@ -651,6 +737,7 @@ export class TaskDetailComponent implements OnInit {
   });
 
   readonly titleControl = this.fb.control('');
+  readonly descriptionControl = this.fb.control('');
   readonly subtaskTitleControl = this.fb.control('');
   readonly metadataForm = this.fb.group({
     statusId: [''],
@@ -745,6 +832,7 @@ export class TaskDetailComponent implements OnInit {
     }
 
     this.titleControl.setValue(task.title);
+    this.descriptionControl.setValue(task.description ?? '');
     this.syncMetadataForm(task);
     await this.loadComments();
   }
@@ -808,6 +896,40 @@ export class TaskDetailComponent implements OnInit {
       apiCall: () => this.taskApi.update(original.projectId, original.id, { title: newTitle }),
     });
     this.editing.set(false);
+  }
+
+  enterEditDescription(): void {
+    this.descriptionControl.setValue(this.task()?.description ?? '');
+    this.editingDescription.set(true);
+  }
+
+  cancelEditDescription(): void {
+    this.editingDescription.set(false);
+  }
+
+  async saveDescription(): Promise<void> {
+    const original = this.task();
+    if (!original) return;
+    const next = this.descriptionControl.value ?? '';
+    const current = original.description ?? '';
+    if (next === current) {
+      this.editingDescription.set(false);
+      return;
+    }
+    this.savingDescription.set(true);
+    try {
+      await this.optimistic.run({
+        id: original.id,
+        apply: () => {
+          this.taskStore.upsert({ ...original, description: next });
+          return () => this.taskStore.upsert(original);
+        },
+        apiCall: () => this.taskApi.update(original.projectId, original.id, { description: next }),
+      });
+      this.editingDescription.set(false);
+    } finally {
+      this.savingDescription.set(false);
+    }
   }
 
   async changeType(type: TaskType): Promise<void> {
