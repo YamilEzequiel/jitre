@@ -12,7 +12,7 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![License](https://img.shields.io/badge/license-Elastic%20License%202.0-005571.svg)](./LICENSE)
 
-[Demo](#capturas) · [Quick start](#quick-start) · [Arquitectura](#arquitectura) · [Contribuir](#contribuciones) · [Autor](#autor)
+[Demo](#capturas) · [Para devs (extensión + MCP)](#ecosistema-dev-extensión-de-vs-code--mcp-server) · [Quick start](#quick-start) · [Arquitectura](#arquitectura) · [Contribuir](#contribuciones) · [Autor](#autor)
 
 > Si te resulta útil, **dejá tu ⭐ al repo** — me ayuda muchísimo a que más gente lo descubra y a seguir invirtiéndole tiempo.
 
@@ -39,6 +39,148 @@ Abrí <http://localhost:8080> y entrá con:
 | `dev1@jitre.test` | `dev123` | Member |
 
 > Si querés hackear el código (no solo probarlo), saltá al [Dev setup](#quick-start) abajo.
+
+---
+
+## Ecosistema dev: extensión de VS Code + MCP server
+
+Jitre viene con dos piezas pensadas para que los developers **trabajen sin abrir la web**:
+
+| Pieza | Para qué sirve | Quién la usa |
+|---|---|---|
+| **VS Code extension** (`packages/vscode-extension`) | Ver / crear / mover tareas, comentar, timer, integración con git, drag-and-drop, realtime. | Cada dev en su editor. |
+| **MCP server** (`packages/mcp-server`) | Que **Claude / Cursor** lean y actúen sobre Jitre como contexto. | Cada dev que use un LLM con MCP. |
+
+### Caso típico en una empresa
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ADMIN (una vez)                                            │
+│  ▸ Clona el repo y deploya el backend en un server interno  │
+│  ▸ Comparte la URL: https://jitre.miempresa.com             │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  CADA DEV (una vez por máquina, ~2 minutos)                 │
+│  ▸ git clone <repo>                                         │
+│  ▸ npm install                                              │
+│  ▸ npm run vscode:install        ← instala la extensión     │
+│  ▸ npm run mcp:setup             ← registra el MCP server   │
+│  (apuntando a https://jitre.miempresa.com)                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Setup del admin (una vez)
+
+```bash
+git clone https://github.com/YamilEzequiel/jitre.git
+cd jitre
+npm install
+npm run setup        # postgres + redis + migraciones + seed
+npm run build        # build de los 3 packages
+# … deployar el backend (docker / k8s / VM / lo que prefieras) …
+```
+
+El admin termina con un endpoint público interno tipo `https://jitre.miempresa.com` que va a compartir con su equipo.
+
+### Setup del dev (cada uno, una vez)
+
+```bash
+git clone <repo>
+cd jitre
+npm install
+npm run vscode:install              # detecta tu editor e instala el .vsix
+npm run mcp:setup                   # registra el MCP en Claude / Cursor
+```
+
+Te va a preguntar por la URL del backend (`https://jitre.miempresa.com`), email y password. Después abrís VS Code → ícono **J** → **Sign in** y listo.
+
+¿No querés prompts? Pasale flags:
+
+```bash
+npm run vscode:install -- --editor=code
+npm run mcp:setup -- --client=claude-code \
+  --api=https://jitre.miempresa.com \
+  --email=dev@miempresa.com \
+  --password='...'
+```
+
+`npm run vscode:install -- --help` y `npm run mcp:setup -- --help` para ver todos los flags.
+
+> 🤖 **¿Sos un agente IA (Claude Code / Cursor / Aider) corriendo en este repo?** Leé [`AGENTS.md`](./AGENTS.md) — tiene la receta paso a paso para que la IA instale todo sola, sin que el dev tipee comandos.
+
+> **Importante**: ningún dev necesita docker, postgres ni redis locales para esto — solo Node 20+. El backend lo corre el admin en un servidor compartido.
+
+### El MCP en acción
+
+Una vez registrado en Claude Code / Claude Desktop / Cursor, el LLM puede leer y actuar sobre Jitre **sin que el dev abra la web**:
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/screenshots/mcp-claude.png" alt="Claude listando tareas pendientes del proyecto Marketing — pregunta natural, 3 tool calls (jitre_list_projects + list_project_statuses + list_tasks), respuesta en tabla con prioridades" />
+      <br>
+      <sub><i>Pregunta natural → el LLM encadena tool calls y devuelve una tabla.</i></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/screenshots/mcp-claude-create-task.png" alt="Claude creando una tarea en MKT vía jitre_create_task, devuelve la key MKT-8" />
+      <br>
+      <sub><i>"Creá una tarea en MKT" → <code>jitre_create_task</code>, devuelve la key generada.</i></sub>
+    </td>
+  </tr>
+</table>
+
+```
+> Listame mis tareas pendientes en Jitre ordenadas por prioridad.
+
+  Claude llama jitre_whoami → jitre_list_projects → jitre_list_tasks
+  (filtradas a tu userId), te devuelve la lista ordenada.
+```
+
+```
+> Creá una tarea en el proyecto JIT con título "Fix login bug"
+  y como descripción el último error que vimos.
+
+  Claude llama jitre_create_task con projectId=JIT, title, description
+  armada con el contexto de la conversación.
+```
+
+```
+> Para JIT-3, ¿qué se discutió en los comentarios? Resumime.
+
+  Claude llama jitre_get_task('JIT-3') + jitre_list_comments(taskId)
+  y te tira un bullet de las decisiones tomadas.
+```
+
+```
+> Marcá JIT-5 como done y dejá un comentario con el resumen del fix.
+
+  Claude llama jitre_add_comment + jitre_complete_task en una sola tirada.
+```
+
+15 tools expuestas en total: `jitre_whoami`, `list_workspaces`, `list_projects`, `get_project`, `list_project_statuses`, `list_tasks`, `get_task`, `create_task`, `update_task`, `change_task_status`, `complete_task`, `assign_task`, `list_comments`, `add_comment`, `search`.
+
+### Lo que hace la extensión (TL;DR)
+
+<div align="center">
+  <img src="./docs/screenshots/ext-vscode.png" width="320" alt="Sidebar de la extensión de Jitre en VS Code mostrando las 4 vistas: Workspace, Projects (con Backlog e In Progress expandidos), My Tasks y Notifications" />
+  <br>
+  <sub><i>Las 4 vistas de la extensión en la activity bar de VS Code.</i></sub>
+</div>
+
+- **4 vistas** en la activity bar: Workspace, Projects, My Tasks, Notifications.
+- **Drag-and-drop** entre statuses, **filtros** por prioridad / due date.
+- **Webview** de detalle de tarea con cambio de status, prioridad, comentarios.
+- **Git integration**: detecta `feat/JIT-123-foo` y muestra la tarea activa; comando para crear branch desde tarea (`feat/<kind>-<key>-<slug>`); prefijo automático del commit con `[JIT-123]`.
+- **CodeLens**: cualquier `JIT-123` en un archivo → lens "View task".
+- **Timer**: status bar con cronómetro en vivo.
+- **Realtime**: Socket.IO al gateway `/ws`, refresca cuando alguien comenta o cambia status.
+- **AI**: "Suggest subtasks" y "Regenerate description" llaman al `/ai` del backend.
+- **Atajos**: `Ctrl+Alt+J` + `K/O/T/N/C` para search / open / timer / new / commit.
+
+Detalles completos: [`packages/vscode-extension/README.md`](./packages/vscode-extension/README.md).
+Detalles del MCP: [`packages/mcp-server/README.md`](./packages/mcp-server/README.md).
 
 ---
 
@@ -280,6 +422,8 @@ npm run db:migration:show      # ver estado
 
 # Setup
 npm run setup                 # one-shot: .env + docker + migrate + seed
+npm run vscode:install        # buildea + instala la extensión de VS Code
+npm run mcp:setup             # registra el MCP server en Claude / Cursor
 
 # Docker (dev)
 npm run docker:up             # levantar Postgres + Redis

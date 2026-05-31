@@ -1,59 +1,105 @@
-# Frontend
+# `@jitre/frontend`
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.3.
+Angular 21 SPA — la UI principal de Jitre. Standalone components, Signals + OnPush en todo, Tailwind 4, Vitest 4.
 
-## Development server
+> Si solo querés **consumir** Jitre desde tu workflow de dev (ver/crear/comentar tareas sin abrir el navegador), saltá a [Alternativas: extensión + MCP](#alternativas-extensión-de-vs-code--mcp-server) más abajo — quizás no necesitás el front en absoluto.
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## Levantarlo en dev
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Desde la raíz del monorepo (no desde acá adentro):
 
 ```bash
-ng generate component component-name
+npm install
+npm run dev:backend       # en una terminal — :3000
+npm run dev:frontend      # en otra terminal — :4200
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+El dev server proxea automáticamente `/api/v1/*` al backend en `:3000` (ver `proxy.conf.json`). Abrí <http://localhost:4200> y entrá con las credenciales del seed (`admin@jitre.test` / `admin123`).
+
+> Si querés correr Angular CLI directo desde este folder (`ng serve`, `ng test`, etc.), está OK pero tenés que setear el proxy manualmente o el front no encuentra el backend. Conviene ir por el script del monorepo.
+
+---
+
+## Convenciones (no negociables)
+
+| Regla | Por qué |
+|---|---|
+| **Standalone components** — sin NgModules. | Angular 20+ los marca como default; pelearlos genera deuda. |
+| **Signals + `computed()`** para estado local y derivado. RxJS solo en interceptors. | Menos overhead mental + dev-tools mejor + change-detection más predecible. |
+| **`ChangeDetectionStrategy.OnPush`** en todo componente. | Bench measurable: ~40% menos ticks con la app grande. |
+| **`inject()`** — no constructor injection. | Permite composición funcional en helpers/guards/resolvers. |
+| **Reactive Forms** — no template-driven. | Type-safety + validación testeable. |
+| **Control flow nativo** (`@if`, `@for`, `@switch`) — no `*ngIf`. | Es lo que Angular 17+ recomienda; mejor tree-shaking. |
+| **`class` / `style` bindings** — no `ngClass` / `ngStyle`. | Más expresivo y type-safe. |
+| **`NgOptimizedImage`** para imágenes estáticas. | LCP / CWV. |
+
+Accesibilidad: tiene que pasar AXE y WCAG AA — focus management, contraste, ARIA donde corresponda.
+
+---
+
+## Estructura
+
+```
+src/app/
+├── core/         servicios singleton: auth, http interceptors, realtime,
+│                 keyboard, toast, ai, analytics, observability
+├── stores/       factoría createEntityStore<T> + TaskStore /
+│                 ProjectStore / CustomerStore / NotificationStore
+├── shared/       UI primitives: skeleton, toast, virtual-list,
+│                 markdown pipe, command palette
+├── layouts/      MainLayoutComponent (auth shell), AuthLayoutComponent
+├── features/     auth, dashboard, projects, tasks, settings, analytics,
+│                 notifications, customers, areas, automations, chat,
+│                 docs, employees, time-tracking, tickets, workflow
+├── app.routes.ts rutas lazy con authGuard
+└── app.config.ts interceptors, providers, app initializer
+```
+
+Los interceptors core hacen el contrato HTTP con el backend: `jwtInterceptor` agrega `Authorization: Bearer`, `workspaceInterceptor` agrega `x-workspace-id`, `csrfInterceptor` agrega `x-csrf-token` desde la cookie, y los errores se canalizan por un `errorInterceptor` único.
+
+---
+
+## Build & tests
 
 ```bash
-ng generate --help
+npm run build              # producción (AOT, optimizado)
+npm run watch              # build dev en watch
+npm run test               # Vitest 4 + Angular TestBed (jsdom)
+npm run lint               # stub — no hay linter dedicated en este paquete todavía
 ```
 
-## Building
+---
 
-To build the project run:
+## Alternativas: extensión de VS Code + MCP server
 
-```bash
-ng build
-```
+El front no es el único punto de entrada al producto. El monorepo trae dos piezas **pensadas para developers** que evitan abrir el navegador:
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### `packages/vscode-extension` — la app en tu editor
 
-## Running unit tests
+Activity-bar de VS Code con cuatro vistas: Workspace, Projects, My Tasks, Notifications. Webview de detalle de tarea, drag-and-drop entre statuses, timer en status bar, realtime via Socket.IO, integración con git (`feat/JIT-123-foo` detecta la tarea activa), CodeLens en cualquier `KEY-123` que aparezca en el código.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Instalación: desde la raíz del repo, `npm run vscode:install`. Detalle completo en [`packages/vscode-extension/README.md`](../vscode-extension/README.md).
 
-```bash
-ng test
-```
+### `packages/mcp-server` — Jitre como contexto para Claude / Cursor
 
-## Running end-to-end tests
+Servidor MCP que expone 15 tools (`jitre_list_tasks`, `jitre_create_task`, `jitre_add_comment`, …) sobre stdio. Una vez registrado, tu LLM puede leer y mutar Jitre por su cuenta:
 
-For end-to-end (e2e) testing, run:
+> "Listame mis tareas pendientes ordenadas por prioridad."
+> Claude llama `jitre_whoami` → `jitre_list_tasks` (filtrado a tu userId) → te resume.
 
-```bash
-ng e2e
-```
+> "Marcá JIT-5 como done y dejá un comentario con el resumen del fix."
+> Claude llama `jitre_add_comment` + `jitre_complete_task` en una sola tirada.
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Instalación: `npm run mcp:setup` (registra en Claude Code / Desktop / Cursor). Detalle en [`packages/mcp-server/README.md`](../mcp-server/README.md).
 
-## Additional Resources
+### Cuándo usar qué
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+| Si querés… | Usá |
+|---|---|
+| Una UI completa con todas las vistas (board, planning, docs, chat, analytics) | **El frontend Angular** (este paquete). |
+| Ver/crear/comentar tareas rápido sin salir del editor | **La extensión de VS Code**. |
+| Que Claude/Cursor lean y muten Jitre como contexto en sus prompts | **El MCP server**. |
+
+Las tres alternativas hablan con el mismo backend NestJS (`/api/v1`). Pueden coexistir sin problema — el dev tiene la UI cuando la necesita, la extensión para tareas atómicas, y el MCP para flujos LLM-driven.
