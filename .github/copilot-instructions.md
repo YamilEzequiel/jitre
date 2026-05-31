@@ -1,0 +1,11 @@
+# GitHub Copilot — instrucciones del repo
+
+> **Leé primero [`AGENTS.md`](../AGENTS.md).** Es la fuente única de instrucciones para agentes IA en este repo.
+
+## TL;DR (contexto rápido — todo el detalle está en `AGENTS.md`)
+
+- Monorepo (`@jitre/monorepo`) con 5 workspaces: `shared`, `backend` (NestJS 11), `frontend` (Angular 21), `mcp-server` y `vscode-extension`.
+- Hay dos piezas pensadas para devs: un **MCP server** (`packages/mcp-server`) que expone Jitre como tools para LLMs, y una **extensión de VS Code** (`packages/vscode-extension`). Si el usuario te pide *"instalá el MCP y la extensión"*, seguí la receta paso a paso de `AGENTS.md`.
+- **NO corras `npm run setup`** salvo que el usuario sea el admin del backend — toca Docker, Postgres y seed.
+- **NO expongas tokens, passwords ni cookies** del usuario en logs, commits, PRs ni resúmenes.
+- Convenciones del frontend (no negociables): Angular standalone components, Signals + `computed()`, `OnPush` en todo, `inject()`, Reactive Forms, control flow nativo (`@if`, `@for`).
