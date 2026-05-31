@@ -31,11 +31,50 @@ const SECTION_STYLES: Record<SectionType, string> = {
  */
 const RELEASES: Release[] = [
   {
-    version: 'Unreleased',
-    date: null,
-    unreleased: true,
-    summary: 'Post-0.3.0 polish — bug fixes landing on top of the customers release.',
+    version: '0.3.1',
+    date: '2026-05-31',
+    summary:
+      'The "dev tooling release" — Jitre now ships a VS Code extension and an MCP server alongside the product, so developers can browse / mutate / chat with tasks from inside their editor and connect Claude / Cursor to Jitre as conversational context. No breaking changes; the runtime product surface is unchanged except for a <code>/health</code> alias on the liveness probe.',
     sections: [
+      {
+        type: 'Added',
+        items: [
+          '<strong>VS Code extension (<code>packages/vscode-extension</code>, v0.1.0)</strong> — activity-bar app with four tree views (Workspace · Projects · My Tasks · Notifications). Sign-in uses <code>SecretStorage</code> for refresh + CSRF cookies; access token lives in memory only, auto-refreshes on 401.',
+          '<strong>Webview detail panel per task</strong> in the extension with status / priority dropdowns, description, comments and an inline reply box. CSP locked down.',
+          '<strong>Realtime in the extension via Socket.IO</strong> — connects to the existing <code>/ws</code> gateway with the same access token + workspace id. Refreshes trees on every <code>task.*</code> / <code>project.*</code> / <code>comment.*</code> / <code>notification.created</code> event. Status bar shows connection state.',
+          '<strong>Time tracking in the editor</strong> — start / stop / toggle timer commands. Status bar ticks <code>HH:MM:SS</code> every second.',
+          '<strong>Full-text search inside VS Code</strong> — hits <code>/api/v1/search?q=…&type=task</code> and opens the picked result in the webview.',
+          '<strong>Git ↔ task linking</strong> — the extension detects <code>feat/JIT-123-foo</code> style branches via the <code>vscode.git</code> API, surfaces the matching task as "Active task" in the Workspace view, and exposes <em>Create git branch from task</em> (generates <code>&lt;kind&gt;/&lt;key&gt;-&lt;slug&gt;</code>) and <em>Prefix SCM commit with task key</em> (prepends <code>[KEY-123]</code> to the SCM input).',
+          '<strong>Repo ↔ project binding</strong> via <code>.jitre/config.json</code>. Create-task and create-branch default to the bound project without prompting.',
+          '<strong>CodeLens for <code>KEY-123</code> patterns</strong> in any file. Resolves via the search endpoint and renders <code>$(target) KEY-123 — title</code> above the line. Toggle with <code>jitre.codeLens.enabled</code>.',
+          '<strong>Drag-and-drop between statuses</strong> via <code>TreeDragAndDropController</code> in the Projects view. Multi-select supported.',
+          '<strong>AI commands in the editor</strong> — <em>Suggest subtasks with AI</em> (multi-pick → creates with <code>parentTaskId</code>) and <em>Regenerate description with AI</em> (technical / casual tone).',
+          '<strong>Attach files to tasks from the Explorer</strong> — right-click any file → multipart upload to <code>/api/v1/attachments</code>.',
+          '<strong>Create task from editor selection</strong> — uses the selected code + <code>file:line</code> as the description, builds a markdown code block from the language id.',
+          '<strong>Default keybindings</strong> — <code>Ctrl+Alt+J</code> + <code>K</code> (search), <code>O</code> (open by key), <code>T</code> (toggle timer), <code>N</code> (create from selection), <code>C</code> (prefix commit).',
+          '<strong>MCP server (<code>packages/mcp-server</code>, v0.1.0)</strong> — Model Context Protocol server (stdio transport, MCP <code>2024-11-05</code>) exposing 15 tools so Claude / Cursor / any MCP client can read and mutate Jitre conversationally: <code>jitre_whoami</code>, <code>list_workspaces</code>, <code>list_projects</code>, <code>get_project</code>, <code>list_project_statuses</code>, <code>list_tasks</code>, <code>get_task</code>, <code>create_task</code>, <code>update_task</code>, <code>change_task_status</code>, <code>complete_task</code>, <code>assign_task</code>, <code>list_comments</code>, <code>add_comment</code>, <code>search</code>.',
+          '<strong>Standalone HTTP client</strong> in the MCP server mirroring the extension wire protocol (Bearer + <code>x-workspace-id</code> + manual cookie jar + auto-refresh on 401). No code sharing with the extension to keep distribution clean.',
+          '<strong>Default-status fallback</strong> in <code>jitre_create_task</code> — when <code>statusId</code> is omitted, the tool picks the project\'s <code>isDefault</code> status (or the lowest-order one), matching the web UI behavior.',
+          '<strong><code>npm run vscode:install</code></strong> — one-shot installer that detects which editor you have in PATH (VS Code, Insiders, VSCodium, Cursor), runs <code>npm install</code> + build + package if needed, and installs the <code>.vsix</code>. Flags: <code>--editor=&lt;target&gt;</code>, <code>--force-rebuild</code>, <code>--yes</code>.',
+          '<strong><code>npm run mcp:setup</code></strong> — interactive wizard that resolves the absolute path to <code>packages/mcp-server/dist/index.js</code>, builds if missing, and registers the server in your chosen MCP client (Claude Code CLI / Claude Desktop / Cursor / all / print-only). Merges with existing <code>mcpServers</code> config — does not overwrite other servers. Password prompt uses raw-TTY input with <code>*</code> masking.',
+          '<strong><code>GET /api/v1/health</code> alias</strong> on the backend — the existing liveness probe at <code>/healthz</code> now also responds at <code>/health</code>, matching the path convention most load balancers and k8s probes default to. Implementation: <code>@Get([\'healthz\', \'health\'])</code>. Both routes return identical responses.',
+        ],
+      },
+      {
+        type: 'Changed',
+        items: [
+          '<strong>Root <code>README.md</code> gained an "Ecosistema dev" section</strong> documenting the admin-installs-once-/-dev-connects-each path, with concrete MCP prompt examples and the TL;DR of what the extension does. The full quick-start (local stack) section remains unchanged for contributors.',
+          '<strong><code>packages/frontend/README.md</code> updated</strong> to point developers at the extension and MCP server when they want to consume Jitre programmatically instead of through the web UI.',
+        ],
+      },
+      {
+        type: 'Security',
+        items: [
+          '<strong><code>*.vsix</code> added to <code>.gitignore</code></strong> — the packaged extension artifact is now excluded so it does not accidentally get committed alongside source changes.',
+          '<strong><code>setup-mcp.mjs</code> masks the password prompt</strong> with raw-TTY mode and asterisks; the previous interactive prompt echoed characters to the terminal.',
+          '<strong>MCP credentials warning</strong> added to <code>packages/mcp-server/README.md</code> — client configs (<code>~/.claude.json</code>, Claude Desktop config, <code>~/.cursor/mcp.json</code>) store secrets in plaintext per the MCP protocol. The README recommends using <code>--token=</code> with a short-lived <code>JITRE_ACCESS_TOKEN</code> rather than <code>--password=</code> for production setups.',
+        ],
+      },
       {
         type: 'Fixed',
         items: [

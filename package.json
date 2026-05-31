@@ -1,7 +1,7 @@
 {
   "name": "@jitre/monorepo",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Jitre — AI-first project management platform",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/YamilEzequiel/jitre",
@@ -35,6 +35,8 @@
     "db:migration:revert": "npm run migration:revert -w @jitre/backend",
     "db:migration:show": "npm run migration:show -w @jitre/backend",
     "setup": "node scripts/setup.mjs",
+    "mcp:setup": "node scripts/setup-mcp.mjs",
+    "vscode:install": "node scripts/install-vscode-extension.mjs",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

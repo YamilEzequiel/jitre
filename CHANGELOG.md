@@ -9,6 +9,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.3.1] — 2026-05-31
+
+The "dev tooling release" — Jitre now ships a VS Code extension and an MCP server alongside the product, so developers can browse / mutate / chat with tasks from inside their editor and connect Claude / Cursor to Jitre as context. No breaking changes; the runtime product surface is unchanged except for a health-check alias.
+
+### Added
+
+#### `packages/vscode-extension` — new package (v0.1.0)
+
+- **Activity-bar extension** with four tree views (Workspace · Projects · My Tasks · Notifications) wired to the existing `/api/v1` endpoints. Login uses `SecretStorage` for the refresh + CSRF cookies; the access token lives in memory only. Auto-refreshes on `401`.
+- **Webview detail panel** per task with status / priority dropdowns, description, comments and an inline reply box. CSP locked down (only `unsafe-inline` for inline scripts/styles).
+- **Realtime via Socket.IO** — connects to the existing `/ws` gateway with the same access token + workspace id. Refreshes trees on `task.*`, `project.*`, `comment.*`, `notification.created`. Status bar shows connection state.
+- **Time tracking** — start / stop / toggle timer commands. Status bar ticks `HH:MM:SS` every second.
+- **Full-text search** — hits `/api/v1/search?q=…&type=task` and opens the picked result.
+- **Git ↔ task linking** — detects `feat/JIT-123-foo` style branches via the `vscode.git` API, surfaces the matching task as "Active task", exposes `Create git branch from task` and `Prefix SCM commit with task key` commands.
+- **Repo ↔ project binding** via `.jitre/config.json`. Create-task and create-branch commands default to the bound project.
+- **CodeLens** for `KEY-123` patterns in any file (resolves via the search endpoint).
+- **Drag-and-drop between statuses** via `TreeDragAndDropController` (multi-select supported).
+- **AI commands** — `Suggest subtasks with AI` (multi-pick → creates with `parentTaskId`) and `Regenerate description with AI`.
+- **Attachments** — right-click any file in the Explorer → attach to a task (multipart upload).
+- **Create task from selection** — uses selected code + `file:line` as the description.
+- **My Tasks filters** by status / priority / due-within-N-days, persisted globally.
+- **Default keybindings** — `Ctrl+Alt+J` + `K` (search), `O` (open by key), `T` (toggle timer), `N` (create from selection), `C` (prefix commit).
+- **Custom J icon** matching the Jitre brand mark.
+
+#### `packages/mcp-server` — new package (v0.1.0)
+
+- **MCP server** (stdio transport, MCP 2024-11-05) exposing 15 tools — `jitre_whoami`, `list_workspaces`, `list_projects`, `get_project`, `list_project_statuses`, `list_tasks`, `get_task`, `create_task`, `update_task`, `change_task_status`, `complete_task`, `assign_task`, `list_comments`, `add_comment`, `search`.
+- **Standalone HTTP client** mirroring the extension's wire protocol (Bearer + `x-workspace-id` + cookie jar + auto-refresh on 401). No shared code with the extension to keep distribution clean.
+- **Auth via env vars** — `JITRE_EMAIL` + `JITRE_PASSWORD` for first-time login, with `JITRE_ACCESS_TOKEN` / `JITRE_REFRESH_COOKIE` + `JITRE_CSRF_COOKIE` bypass paths.
+- **Default-status fallback** in `jitre_create_task` — when `statusId` is omitted, picks the project's `isDefault` status (or the lowest-order one), matching the web UI behavior.
+
+#### Tooling — installers in `scripts/`
+
+- **`npm run vscode:install`** — detects which editor you have in PATH (VS Code, Insiders, VSCodium, Cursor), runs `npm install` + build + package if needed, and installs the `.vsix`. Supports `--editor=<target>`, `--force-rebuild`, `--yes` for CI.
+- **`npm run mcp:setup`** — interactive (or flag-driven) wizard that resolves the absolute path to `packages/mcp-server/dist/index.js`, builds if missing, and registers the server in your chosen MCP client (Claude Code CLI / Claude Desktop / Cursor / all / print-only). Merges with existing `mcpServers` config — does not overwrite other servers you have. Password prompt uses raw-TTY input with `*` masking.
+
+#### Backend
+
+- **`GET /api/v1/health`** alias — the existing liveness probe at `/healthz` now also responds to `/health`, matching the path convention most load balancers and k8s probes default to. Implementation: `@Get(['healthz', 'health'])`. No behavior change; both routes return identical responses.
+
+### Changed
+
+- **Root `README.md`** gained an "Ecosistema dev" section documenting the admin-installs-once-/-dev-connects-each path, with concrete MCP prompt examples and the TL;DR of what the extension does. The full quick-start (local stack) section remains unchanged for contributors.
+- **`packages/frontend/README.md`** updated to point developers at the extension and MCP server when they want to consume Jitre programmatically instead of through the web UI.
+
+### Security
+
+- **`*.vsix` added to `.gitignore`** — the packaged extension artifact is now excluded so it does not accidentally get committed alongside source changes.
+- **`setup-mcp.mjs` masks the password prompt** with raw-TTY mode and asterisks; the previous interactive prompt echoed characters to the terminal.
+- **MCP credentials warning** added to `packages/mcp-server/README.md`: client configs (`~/.claude.json`, Claude Desktop config, `~/.cursor/mcp.json`) store secrets in plaintext per the MCP protocol — the README recommends using `--token=` with a short-lived `JITRE_ACCESS_TOKEN` rather than `--password=` for production setups.
+
 ### Fixed
 
 - **Customer screens broke the frontend bundle** because `CustomerListComponent.ngOnInit` and `CustomerDetailComponent.ngOnInit` were calling `projectStore.load(workspaceId).catch(...)`. `ProjectStore.load(projects: Project[]): void` only hydrates the cache with an already-fetched list (it does NOT fetch and does NOT return a Promise), so the calls produced `TS2345` (`string` not assignable to `Project[]`) and `TS2339` (`.catch` on `void`) and `ng serve` refused to emit a bundle. The correct primitive for "fetch + hydrate the project cache for this workspace" is `ProjectStore.onWorkspaceSwitch(workspaceId): Promise<void>` — both call sites now use that. The mistake came from assuming `ProjectStore.load` had the same signature as `CustomerStore.load(workspaceId): Promise<void>`; the two stores deliberately differ because `ProjectStore` is built on top of the entity-store factory and expects the caller to bring its own list.
