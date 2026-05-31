@@ -18,7 +18,7 @@ export class HealthController {
     private readonly redis: RedisHealthIndicator,
   ) {}
 
-  @Get('healthz')
+  @Get(['healthz', 'health'])
   @HealthCheck()
   @ApiOperation({ summary: 'Liveness probe — process is running' })
   @ApiOkResponse({ description: 'Service is alive.' })
