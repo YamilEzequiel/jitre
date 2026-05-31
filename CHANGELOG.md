@@ -11,6 +11,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] — 2026-05-31
+
+The "comments know where they came from + the search actually finds things" release. Comments now track their origin (web / VS Code extension / MCP server / API) and the task detail shows a badge so reviewers can tell at a glance who spoke from where. Task search was silently broken on two fronts — the indexer omitted `issueKey` / `issueNumber`, and the project / board / tickets inputs filtered client-side over `title` only — both fixed. Plus inline description editing on the task detail, a side-by-side layout for Linked Issues + Attachments, and the usual round of extension bugfixes.
+
+### Added
+
+- **Comment source tracking** end-to-end. New `CommentSource` enum in `@jitre/shared` with values `web | extension | mcp | api`. Backend migration `1700000003200-AddCommentSource` adds a `source varchar NOT NULL DEFAULT 'web'` column to `comments`; the create endpoint reads an `X-Jitre-Source` header (whitelist-validated against the enum) so the body shape stays unchanged. The frontend task detail renders a violet pill (`via VS Code`, `via MCP`, `via API`) next to the author name when the source is not `web`. The VS Code extension sends `x-jitre-source: extension` on every `POST /comments` and renders the same badge inside the webview thread; the MCP server sends `x-jitre-source: mcp` from `jitre_add_comment`.
+- **Inline description editing on the task detail** — new "Descripción" section between the title and the AI actions. Reuses the same inline-edit pattern as the title (signal + form control + `optimistic.run` with rollback). Three states: render with the `MarkdownPipe` when there is content (click to edit), placeholder button "Sin descripción — click para agregar" when empty, and a textarea with Save / Cancel while editing. Persists via `PATCH /tasks/:id { description }`.
+- **Per-tool agent instruction pointers**. `AGENTS.md` remains the single source of truth for AI assistants entering the repo, and three new thin pointer files — `CLAUDE.md`, `.github/copilot-instructions.md`, `.cursor/rules/project.mdc` — redirect Claude Code, GitHub Copilot and Cursor to it with a 4-bullet TL;DR (monorepo shape, dev pieces, safety guards). The pointer files are flat (no symlinks) so they work on Windows out of the box.
+
+### Changed
+
+- **Task detail layout** — `Linked issues` and `Attachments` moved from two stacked full-width cards into a 2-column grid (`lg:grid-cols-2`) on desktop. On mobile they still stack. The Attachments card was visually re-balanced (`p-5 shadow-sm` instead of `p-6 shadow-lg`) so it matches the lighter `jt-task-links` styling next to it.
+
+### Fixed
+
+- **Task search did not match by `issueKey`** — searching "JIT-16" returned nothing. The Postgres full-text indexer in `IndexEntityProcessor.buildContent` only included `title + description + labelNames` for tasks, omitting `issueKey` and `issueNumber` — meanwhile the `project` case _did_ include the project key, so the asymmetry made the bug easy to confirm. Fix: include both fields in the indexed content. Backfilled the existing `search_documents` table via a single idempotent `INSERT ... ON CONFLICT` that left-joins `task_labels` + `labels` so label names land in the tsvector too. The same SQL also re-indexed 24 tasks that had never been in the index (probably never fired `task.created` through the BullMQ pipeline — likely seed-time inserts).
+- **Local task filters ignored `issueKey`** — even after the backend was fixed, the project / board / tickets search inputs still missed "jit-16" because they filtered client-side over `t.title` only. Three components patched (`features/projects/detail/project-detail.component.ts`, `features/projects/board/kanban-board.component.ts`, `features/tickets/tickets-list.component.ts`) to build a haystack of `title + issueKey + issueNumber` joined and lowercased before `.includes(q)`. Searching by issue key, by number alone, or by any partial of the title now all hit.
+- **VS Code extension: comments never appeared**. The extension declared `Paginated<T>` with `items: T[]` but the backend `/comments` endpoint returns `{ data, total, page, limit }`. The mismatch silently produced an empty array, so the thread always read "No comments yet". Fixed in `packages/vscode-extension/src/api/types.ts` and the `task-panel.ts` reload code.
+- **VS Code extension: "Open in browser" went to the wrong URL**. The webview built `{web}/projects/{pid}/tasks/{tid}` but the real Angular route is `/tasks/:id?projectId=:pid`; on top of that, when `jitre.webBaseUrl` setting was unset, `webBaseUrl()` fell back to the API base URL (port 3000) instead of the frontend (typically 4200 / 8080). URL construction fixed; the user still has to configure `jitre.webBaseUrl` in VS Code settings to point at their frontend.
+- **Description section failed strict TS narrowing** — the task detail template used `[innerHTML]="task()!.description | markdown"` inside an `@else if (task()!.description)`, but Angular's template compiler didn't infer the narrow across the call boundary and bailed with `TS2345`. Switched to `@else if (task()!.description; as desc)` so the alias is typed as `string` inside the block.
+- **Backend: assignees response was missing `displayName`** — the user object returned alongside a task's assignees only carried the FK fields, so frontend lists fell back to showing UUIDs. The serializer now hydrates `displayName` on assignees. (Commit `02ca49f`.)
+
+---
+
 ## [0.3.1] — 2026-05-31
 
 The "dev tooling release" — Jitre now ships a VS Code extension and an MCP server alongside the product, so developers can browse / mutate / chat with tasks from inside their editor and connect Claude / Cursor to Jitre as context. No breaking changes; the runtime product surface is unchanged except for a health-check alias.

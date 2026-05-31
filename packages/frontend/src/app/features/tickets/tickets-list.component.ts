@@ -296,7 +296,16 @@ export class TicketsListComponent implements OnInit {
       if (projectId && t.projectId !== projectId) return false;
       if (priority && t.priority !== priority) return false;
       if (assignee && !(t.assigneeUserIds ?? []).includes(assignee)) return false;
-      if (q.length > 0 && !t.title.toLowerCase().includes(q)) return false;
+      if (q.length > 0) {
+        const haystack = [
+          t.title,
+          t.issueKey ?? '',
+          t.issueNumber != null ? String(t.issueNumber) : '',
+        ]
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
   });

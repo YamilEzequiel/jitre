@@ -31,6 +31,39 @@ const SECTION_STYLES: Record<SectionType, string> = {
  */
 const RELEASES: Release[] = [
   {
+    version: '0.4.0',
+    date: '2026-05-31',
+    summary:
+      'The "comments know where they came from + the search actually finds things" release. Comments now track their origin (web / VS Code extension / MCP server / API) and the task detail shows a badge so reviewers can tell at a glance who spoke from where. Task search was silently broken on two fronts — the indexer omitted <code>issueKey</code> / <code>issueNumber</code>, and the project / board / tickets inputs filtered client-side over <code>title</code> only — both fixed. Plus inline description editing on the task detail, a side-by-side layout for Linked Issues + Attachments, and the usual round of extension bugfixes.',
+    sections: [
+      {
+        type: 'Added',
+        items: [
+          '<strong>Comment source tracking</strong> end-to-end. New <code>CommentSource</code> enum in <code>@jitre/shared</code> with values <code>web | extension | mcp | api</code>. Backend migration <code>1700000003200-AddCommentSource</code> adds a <code>source varchar NOT NULL DEFAULT \'web\'</code> column to <code>comments</code>; the create endpoint reads an <code>X-Jitre-Source</code> header (whitelist-validated against the enum) so the body shape stays unchanged. The frontend task detail renders a violet pill (<em>"via VS Code"</em>, <em>"via MCP"</em>, <em>"via API"</em>) next to the author name when the source is not <code>web</code>. The VS Code extension sends <code>x-jitre-source: extension</code> on every <code>POST /comments</code> and renders the same badge inside the webview thread; the MCP server sends <code>x-jitre-source: mcp</code> from <code>jitre_add_comment</code>.',
+          '<strong>Inline description editing on the task detail</strong> — new <em>Descripción</em> section between the title and the AI actions. Reuses the same inline-edit pattern as the title (signal + form control + <code>optimistic.run</code> with rollback). Three states: render with the <code>MarkdownPipe</code> when there is content (click to edit), placeholder button <em>"Sin descripción — click para agregar"</em> when empty, and a textarea with Save / Cancel while editing. Persists via <code>PATCH /tasks/:id { description }</code>.',
+          '<strong>Per-tool agent instruction pointers</strong>. <code>AGENTS.md</code> remains the single source of truth for AI assistants entering the repo, and three new thin pointer files — <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>, <code>.cursor/rules/project.mdc</code> — redirect Claude Code, GitHub Copilot and Cursor to it with a 4-bullet TL;DR (monorepo shape, dev pieces, safety guards). The pointer files are flat (no symlinks) so they work on Windows out of the box.',
+        ],
+      },
+      {
+        type: 'Changed',
+        items: [
+          '<strong>Task detail layout</strong> — <code>Linked issues</code> and <code>Attachments</code> moved from two stacked full-width cards into a 2-column grid (<code>lg:grid-cols-2</code>) on desktop. On mobile they still stack. The Attachments card was visually re-balanced (<code>p-5 shadow-sm</code> instead of <code>p-6 shadow-lg</code>) so it matches the lighter <code>jt-task-links</code> styling next to it.',
+        ],
+      },
+      {
+        type: 'Fixed',
+        items: [
+          '<strong>Task search did not match by <code>issueKey</code></strong> — searching <em>"JIT-16"</em> returned nothing. The Postgres full-text indexer in <code>IndexEntityProcessor.buildContent</code> only included <code>title + description + labelNames</code> for tasks, omitting <code>issueKey</code> and <code>issueNumber</code> — meanwhile the <code>project</code> case <em>did</em> include the project key, so the asymmetry made the bug easy to confirm. Fix: include both fields in the indexed content. Backfilled the existing <code>search_documents</code> table via a single idempotent <code>INSERT ... ON CONFLICT</code> that left-joins <code>task_labels</code> + <code>labels</code> so label names land in the tsvector too. The same SQL also re-indexed 24 tasks that had never been in the index (probably never fired <code>task.created</code> through the BullMQ pipeline — likely seed-time inserts).',
+          '<strong>Local task filters ignored <code>issueKey</code></strong> — even after the backend was fixed, the project / board / tickets search inputs still missed <em>"jit-16"</em> because they filtered client-side over <code>t.title</code> only. Three components patched (<code>features/projects/detail/project-detail.component.ts</code>, <code>features/projects/board/kanban-board.component.ts</code>, <code>features/tickets/tickets-list.component.ts</code>) to build a haystack of <code>title + issueKey + issueNumber</code> joined and lowercased before <code>.includes(q)</code>. Searching by issue key, by number alone, or by any partial of the title now all hit.',
+          '<strong>VS Code extension: comments never appeared</strong>. The extension declared <code>Paginated&lt;T&gt;</code> with <code>items: T[]</code> but the backend <code>/comments</code> endpoint returns <code>{ data, total, page, limit }</code>. The mismatch silently produced an empty array, so the thread always read <em>"No comments yet"</em>. Fixed in <code>packages/vscode-extension/src/api/types.ts</code> and the <code>task-panel.ts</code> reload code.',
+          '<strong>VS Code extension: "Open in browser" went to the wrong URL</strong>. The webview built <code>{web}/projects/{pid}/tasks/{tid}</code> but the real Angular route is <code>/tasks/:id?projectId=:pid</code>; on top of that, when <code>jitre.webBaseUrl</code> setting was unset, <code>webBaseUrl()</code> fell back to the API base URL (port 3000) instead of the frontend (typically 4200 / 8080). URL construction fixed; the user still has to configure <code>jitre.webBaseUrl</code> in VS Code settings to point at their frontend.',
+          '<strong>Description section failed strict TS narrowing</strong> — the task detail template used <code>[innerHTML]="task()!.description | markdown"</code> inside an <code>@else if (task()!.description)</code>, but Angular\'s template compiler didn\'t infer the narrow across the call boundary and bailed with <code>TS2345</code>. Switched to <code>@else if (task()!.description; as desc)</code> so the alias is typed as <code>string</code> inside the block.',
+          '<strong>Backend: assignees response was missing <code>displayName</code></strong> — the user object returned alongside a task\'s assignees only carried the FK fields, so frontend lists fell back to showing UUIDs. The serializer now hydrates <code>displayName</code> on assignees. (Commit <code>02ca49f</code>.)',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.3.1',
     date: '2026-05-31',
     summary:

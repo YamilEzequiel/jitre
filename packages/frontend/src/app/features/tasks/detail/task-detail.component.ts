@@ -42,6 +42,7 @@ interface DisplayComment {
   authorId: string;
   authorName: string;
   createdAt: string;
+  source: 'web' | 'extension' | 'mcp' | 'api';
 }
 
 @Component({
@@ -557,6 +558,15 @@ interface DisplayComment {
                         [style.color]="avatarFg(comment.authorId)"
                       >{{ initialsOf(comment.authorName) }}</span>
                       <span class="text-xs font-semibold text-slate-700">{{ comment.authorName }}</span>
+                      @if (sourceBadgeLabel(comment.source); as label) {
+                        <span
+                          class="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-indigo-700"
+                          [attr.title]="'Comentado ' + label"
+                        >
+                          <i class="pi pi-bolt text-[9px]" aria-hidden="true"></i>
+                          {{ label }}
+                        </span>
+                      }
                     </div>
                     <span class="text-[11px] text-slate-400">{{ formatDate(comment.createdAt) }}</span>
                   </div>
@@ -1101,7 +1111,21 @@ export class TaskDetailComponent implements OnInit {
         workspace?.email ??
         'User',
       createdAt: c.createdAt,
+      source: c.source ?? 'web',
     };
+  }
+
+  sourceBadgeLabel(source: DisplayComment['source']): string | null {
+    switch (source) {
+      case 'extension':
+        return 'via VS Code';
+      case 'mcp':
+        return 'via MCP';
+      case 'api':
+        return 'via API';
+      default:
+        return null;
+    }
   }
 
   /** Convert `@[name](uuid)` tokens to inline styled mention spans. */

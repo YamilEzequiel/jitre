@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 export type CommentContext = 'task' | 'project';
+export type CommentSource = 'web' | 'extension' | 'mcp' | 'api';
 
 /** Raw comment as returned by the backend. */
 export interface CommentDto {
@@ -13,6 +14,7 @@ export interface CommentDto {
   authorUserId: string;
   body: string;
   parentId: string | null;
+  source: CommentSource;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

@@ -157,7 +157,13 @@ export class IndexEntityProcessor extends WorkerHost {
         ].join(' ');
       case 'task': {
         const labelNames = (entity.labelNames as string[] | undefined) ?? [];
-        return [entity.title, entity.description ?? '', ...labelNames]
+        return [
+          entity.issueKey ?? '',
+          entity.issueNumber != null ? String(entity.issueNumber) : '',
+          entity.title,
+          entity.description ?? '',
+          ...labelNames,
+        ]
           .join(' ')
           .trim();
       }

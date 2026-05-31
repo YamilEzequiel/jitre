@@ -12,6 +12,7 @@ export * from './automation.enum';
 export * from './ai-feature.enum';
 export * from './activity-type.enum';
 export * from './comment-context.enum';
+export * from './comment-source.enum';
 // Fase 6 — Projects + Tasks
 export * from './project-role.enum';
 export * from './status-category.enum';

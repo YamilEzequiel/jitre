@@ -378,7 +378,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         payload = await client.request('/comments', {
           method: 'POST',
           body: JSON.stringify({ contextType: 'task', contextId: taskId, body }),
-          headers: { 'content-type': 'application/json' },
+          headers: {
+            'content-type': 'application/json',
+            'x-jitre-source': 'mcp',
+          },
         });
         break;
       }

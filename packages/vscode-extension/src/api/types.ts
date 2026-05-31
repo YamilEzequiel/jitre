@@ -81,6 +81,8 @@ export interface TaskSummary {
   updatedAt?: string;
 }
 
+export type CommentSource = 'web' | 'extension' | 'mcp' | 'api';
+
 export interface Comment {
   id: string;
   contextType: 'task' | 'document' | 'project';
@@ -89,13 +91,14 @@ export interface Comment {
   author?: AuthUser;
   body: string;
   parentId?: string | null;
+  source?: CommentSource;
   createdAt: string;
   updatedAt?: string;
   deletedAt?: string | null;
 }
 
 export interface Paginated<T> {
-  items: T[];
+  data: T[];
   total: number;
   page: number;
   limit?: number;

@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CommentContext, WorkspaceRole, hasAtLeastRole } from '@jitre/shared';
+import {
+  CommentContext,
+  CommentSource,
+  WorkspaceRole,
+  hasAtLeastRole,
+} from '@jitre/shared';
 import { Comment } from './comment.entity';
 import { EventBusService } from '../events/event-bus.service';
 import { MentionParser } from '../mention/mention-parser.service';
@@ -26,6 +31,7 @@ export interface CreateCommentInput {
   authorUserId: string;
   body: string;
   parentId?: string;
+  source?: CommentSource;
 }
 
 export interface ListCommentsInput {
@@ -77,6 +83,7 @@ export class CommentService {
       authorUserId,
       body,
       parentId,
+      source,
     } = input;
 
     if (parentId) {
@@ -106,6 +113,7 @@ export class CommentService {
       authorUserId,
       body,
       parentId: parentId ?? null,
+      source: source ?? CommentSource.WEB,
     });
 
     const saved = await this.commentRepo.save(entity);

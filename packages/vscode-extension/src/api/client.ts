@@ -524,7 +524,10 @@ export class JitreClient {
     return this.request('/comments', {
       method: 'POST',
       body: JSON.stringify({ contextType: 'task', contextId: taskId, body }),
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'x-jitre-source': 'extension',
+      },
     });
   }
 

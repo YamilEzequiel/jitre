@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -18,11 +19,21 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { WorkspaceRole } from '@jitre/shared';
+import { CommentSource, WorkspaceRole } from '@jitre/shared';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { ListCommentsDto } from './dto/list-comments.dto';
+
+const COMMENT_SOURCE_VALUES = new Set<string>(Object.values(CommentSource));
+
+function parseCommentSource(raw: string | undefined): CommentSource {
+  const value = raw?.trim().toLowerCase();
+  if (value && COMMENT_SOURCE_VALUES.has(value)) {
+    return value as CommentSource;
+  }
+  return CommentSource.WEB;
+}
 
 type AuthRequest = Request & {
   user?: { id: string };
@@ -46,6 +57,7 @@ export class CommentController {
   async create(
     @Body() dto: CreateCommentDto,
     @Req() req: AuthRequest,
+    @Headers('x-jitre-source') sourceHeader?: string,
   ): Promise<unknown> {
     return this.commentService.create({
       workspaceId: req.workspace!.id,
@@ -54,6 +66,7 @@ export class CommentController {
       authorUserId: req.user!.id,
       body: dto.body,
       parentId: dto.parentId,
+      source: parseCommentSource(sourceHeader),
     });
   }
 

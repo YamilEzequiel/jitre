@@ -805,7 +805,14 @@ export class ProjectDetailComponent implements OnInit {
       if (f.labelId && !(t.labelIds ?? []).includes(f.labelId)) return false;
       if (f.q && f.q.trim().length > 0) {
         const q = f.q.toLowerCase();
-        if (!t.title.toLowerCase().includes(q)) return false;
+        const haystack = [
+          t.title,
+          t.issueKey ?? '',
+          t.issueNumber != null ? String(t.issueNumber) : '',
+        ]
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
       return true;
     });

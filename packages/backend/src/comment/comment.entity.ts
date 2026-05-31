@@ -1,7 +1,7 @@
 import { Column, Entity, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { TenantEntity } from '../common/entities/tenant.entity';
-import { CommentContext } from '@jitre/shared';
+import { CommentContext, CommentSource } from '@jitre/shared';
 
 @Entity('comments')
 @Index(['workspaceId', 'contextType', 'contextId', 'createdAt'])
@@ -26,6 +26,10 @@ export class Comment extends TenantEntity {
   @ApiProperty({ format: 'uuid', nullable: true })
   @Column({ type: 'uuid', nullable: true })
   parentId!: string | null;
+
+  @ApiProperty({ enum: CommentSource })
+  @Column({ type: 'varchar', default: CommentSource.WEB })
+  source!: CommentSource;
 
   /**
    * Self-referential ManyToOne. Only one level of nesting is allowed at the

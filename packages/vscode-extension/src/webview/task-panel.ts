@@ -71,7 +71,7 @@ export class TaskPanel {
       const payload: OpenMessage = {
         task: this.task,
         statuses,
-        comments: commentsPage.items ?? [],
+        comments: commentsPage.data ?? [],
       };
       this.panel.webview.postMessage({ type: 'data', payload });
     } catch (err) {
@@ -123,7 +123,7 @@ export class TaskPanel {
         case 'open-browser': {
           const web = this.client.webBaseUrl();
           void vscode.env.openExternal(
-            vscode.Uri.parse(`${web}/projects/${this.project.id}/tasks/${this.task.id}`),
+            vscode.Uri.parse(`${web}/tasks/${this.task.id}?projectId=${this.project.id}`),
           );
           return;
         }
@@ -193,6 +193,18 @@ export class TaskPanel {
     padding: 10px 0;
   }
   .comment-meta { font-size: 0.85em; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
+  .source-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-left: 4px;
+    border-radius: 4px;
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
   textarea { width: 100%; min-height: 80px; box-sizing: border-box; }
   .status-pill {
     display: inline-block; padding: 2px 8px; border-radius: 999px;
@@ -281,10 +293,23 @@ export class TaskPanel {
         .filter(c => !c.deletedAt)
         .map(c => {
           const author = c.author?.displayName || c.author?.email || c.authorUserId || 'unknown';
+          const sourceLabel = sourceBadge(c.source);
+          const badgeHtml = sourceLabel
+            ? ' <span class="source-badge">via ' + escapeHtml(sourceLabel) + '</span>'
+            : '';
           return '<div class="comment"><div class="comment-meta">' +
-            escapeHtml(author) + ' · ' + fmtDate(c.createdAt) +
+            escapeHtml(author) + badgeHtml + ' · ' + fmtDate(c.createdAt) +
             '</div><div>' + escapeHtml(c.body).replace(/\\n/g,'<br>') + '</div></div>';
         }).join('');
+    }
+  }
+
+  function sourceBadge(source) {
+    switch (source) {
+      case 'extension': return 'VS Code';
+      case 'mcp': return 'MCP';
+      case 'api': return 'API';
+      default: return null;
     }
   }
 
