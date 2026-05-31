@@ -58,6 +58,9 @@ typeorm.config.js
 .stylelintcache
 *.pem
 
+# VS Code extension packaged artifacts
+*.vsix
+
 # Engram
 .engram/cache/
 
