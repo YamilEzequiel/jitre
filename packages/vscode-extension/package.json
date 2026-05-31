@@ -1,0 +1,447 @@
+{
+  "name": "jitre-vscode",
+  "displayName": "Jitre",
+  "description": "Browse Jitre projects, tasks and comments from VS Code.",
+  "version": "0.1.0",
+  "publisher": "jitre",
+  "private": true,
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YamilEzequiel/jitre.git"
+  },
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "keywords": [
+    "jitre",
+    "tasks",
+    "project management",
+    "kanban"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Jitre",
+      "properties": {
+        "jitre.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "Base URL of the Jitre backend (no trailing slash). The extension talks to /api/v1 on this host."
+        },
+        "jitre.apiVersion": {
+          "type": "string",
+          "default": "1",
+          "description": "API version prefix used in the URL (e.g. 1 -> /api/v1)."
+        },
+        "jitre.openTasksInBrowser": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, opening a task launches the web app instead of the in-editor webview."
+        },
+        "jitre.webBaseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional web app URL used by 'Open in browser' (defaults to apiUrl)."
+        },
+        "jitre.codeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline 'View task' lens above source lines that contain a Jitre task key (e.g. JIT-123)."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "jitre",
+          "title": "Jitre",
+          "icon": "resources/jitre.svg"
+        }
+      ]
+    },
+    "views": {
+      "jitre": [
+        {
+          "id": "jitre.workspaces",
+          "name": "Workspace",
+          "icon": "resources/jitre.svg",
+          "when": "jitre.signedIn"
+        },
+        {
+          "id": "jitre.projects",
+          "name": "Projects",
+          "icon": "resources/jitre.svg",
+          "when": "jitre.signedIn"
+        },
+        {
+          "id": "jitre.myTasks",
+          "name": "My Tasks",
+          "icon": "resources/jitre.svg",
+          "when": "jitre.signedIn"
+        },
+        {
+          "id": "jitre.notifications",
+          "name": "Notifications",
+          "icon": "resources/jitre.svg",
+          "when": "jitre.signedIn"
+        },
+        {
+          "id": "jitre.welcome",
+          "name": "Jitre",
+          "icon": "resources/jitre.svg",
+          "when": "!jitre.signedIn"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "jitre.welcome",
+        "contents": "Sign in to your Jitre workspace to browse projects and tasks from VS Code.\n[Sign in](command:jitre.login)\n[Configure server URL](command:jitre.configure)\n\nUse `Ctrl+Shift+P` and search 'Jitre' to see every command."
+      }
+    ],
+    "commands": [
+      {
+        "command": "jitre.login",
+        "title": "Jitre: Sign in",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "jitre.logout",
+        "title": "Jitre: Sign out",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "jitre.configure",
+        "title": "Jitre: Configure server URL",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "jitre.refresh",
+        "title": "Jitre: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "jitre.switchWorkspace",
+        "title": "Jitre: Switch workspace",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "jitre.openTask",
+        "title": "Jitre: Open task"
+      },
+      {
+        "command": "jitre.openTaskInBrowser",
+        "title": "Jitre: Open task in browser",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "jitre.createTask",
+        "title": "Jitre: Create task",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "jitre.changeTaskStatus",
+        "title": "Jitre: Change task status",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "jitre.changeTaskPriority",
+        "title": "Jitre: Change task priority",
+        "icon": "$(symbol-event)"
+      },
+      {
+        "command": "jitre.assignTask",
+        "title": "Jitre: Assign task",
+        "icon": "$(person-add)"
+      },
+      {
+        "command": "jitre.completeTask",
+        "title": "Jitre: Mark task as done",
+        "icon": "$(check)"
+      },
+      {
+        "command": "jitre.addComment",
+        "title": "Jitre: Add comment",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "jitre.markAllNotificationsRead",
+        "title": "Jitre: Mark all notifications as read",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "jitre.startTimer",
+        "title": "Jitre: Start timer on task",
+        "icon": "$(play)"
+      },
+      {
+        "command": "jitre.stopTimer",
+        "title": "Jitre: Stop active timer",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "jitre.toggleTimer",
+        "title": "Jitre: Toggle timer"
+      },
+      {
+        "command": "jitre.searchTasks",
+        "title": "Jitre: Search tasks",
+        "icon": "$(search)"
+      },
+      {
+        "command": "jitre.bindFolderToProject",
+        "title": "Jitre: Bind this folder to a project",
+        "icon": "$(link)"
+      },
+      {
+        "command": "jitre.unbindFolder",
+        "title": "Jitre: Unbind folder from project"
+      },
+      {
+        "command": "jitre.createBranchFromTask",
+        "title": "Jitre: Create git branch from task",
+        "icon": "$(git-branch-create)"
+      },
+      {
+        "command": "jitre.commitWithTaskRef",
+        "title": "Jitre: Prefix SCM commit with task key",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "jitre.createTaskFromSelection",
+        "title": "Jitre: Create task from selection",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "jitre.configureFilter",
+        "title": "Jitre: Filter My Tasks",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "jitre.clearFilter",
+        "title": "Jitre: Clear filters",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "jitre.copyTaskKey",
+        "title": "Jitre: Copy task key"
+      },
+      {
+        "command": "jitre.copyTaskUrl",
+        "title": "Jitre: Copy task URL"
+      },
+      {
+        "command": "jitre.openTaskByKey",
+        "title": "Jitre: Open task by key or ID",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "jitre.openNotifications",
+        "title": "Jitre: Open notifications"
+      },
+      {
+        "command": "jitre.filterProjects",
+        "title": "Jitre: Filter projects view",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "jitre.clearProjectsFilter",
+        "title": "Jitre: Clear projects filter",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "jitre.suggestSubtasks",
+        "title": "Jitre: Suggest subtasks with AI",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "jitre.generateDescription",
+        "title": "Jitre: Regenerate description with AI",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "jitre.attachFileToTask",
+        "title": "Jitre: Attach file to task",
+        "icon": "$(file-binary)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "jitre.searchTasks",
+        "key": "ctrl+alt+j k",
+        "mac": "cmd+alt+j k"
+      },
+      {
+        "command": "jitre.openTaskByKey",
+        "key": "ctrl+alt+j o",
+        "mac": "cmd+alt+j o"
+      },
+      {
+        "command": "jitre.toggleTimer",
+        "key": "ctrl+alt+j t",
+        "mac": "cmd+alt+j t"
+      },
+      {
+        "command": "jitre.createTaskFromSelection",
+        "key": "ctrl+alt+j n",
+        "mac": "cmd+alt+j n",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "jitre.commitWithTaskRef",
+        "key": "ctrl+alt+j c",
+        "mac": "cmd+alt+j c"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "jitre.refresh",
+          "when": "view == jitre.projects || view == jitre.myTasks || view == jitre.notifications || view == jitre.workspaces",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.switchWorkspace",
+          "when": "view == jitre.workspaces",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.markAllNotificationsRead",
+          "when": "view == jitre.notifications",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.createTask",
+          "when": "view == jitre.projects",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.filterProjects",
+          "when": "view == jitre.projects",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.clearProjectsFilter",
+          "when": "view == jitre.projects",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.configureFilter",
+          "when": "view == jitre.myTasks",
+          "group": "navigation"
+        },
+        {
+          "command": "jitre.clearFilter",
+          "when": "view == jitre.myTasks",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "jitre.createTask",
+          "when": "view == jitre.projects && viewItem == jitre.project",
+          "group": "inline"
+        },
+        {
+          "command": "jitre.openTaskInBrowser",
+          "when": "view == jitre.projects && viewItem == jitre.task || view == jitre.myTasks && viewItem == jitre.task",
+          "group": "inline"
+        },
+        {
+          "command": "jitre.completeTask",
+          "when": "viewItem == jitre.task",
+          "group": "1_modify"
+        },
+        {
+          "command": "jitre.changeTaskStatus",
+          "when": "viewItem == jitre.task",
+          "group": "1_modify"
+        },
+        {
+          "command": "jitre.changeTaskPriority",
+          "when": "viewItem == jitre.task",
+          "group": "1_modify"
+        },
+        {
+          "command": "jitre.addComment",
+          "when": "viewItem == jitre.task",
+          "group": "2_collaborate"
+        },
+        {
+          "command": "jitre.startTimer",
+          "when": "viewItem == jitre.task",
+          "group": "3_timer"
+        },
+        {
+          "command": "jitre.createBranchFromTask",
+          "when": "viewItem == jitre.task",
+          "group": "4_git"
+        },
+        {
+          "command": "jitre.copyTaskKey",
+          "when": "viewItem == jitre.task",
+          "group": "5_clipboard"
+        },
+        {
+          "command": "jitre.copyTaskUrl",
+          "when": "viewItem == jitre.task",
+          "group": "5_clipboard"
+        },
+        {
+          "command": "jitre.suggestSubtasks",
+          "when": "viewItem == jitre.task",
+          "group": "6_ai"
+        },
+        {
+          "command": "jitre.generateDescription",
+          "when": "viewItem == jitre.task",
+          "group": "6_ai"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "jitre.attachFileToTask",
+          "when": "jitre.signedIn && !explorerResourceIsFolder",
+          "group": "7_jitre"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "jitre.createTaskFromSelection",
+          "when": "jitre.signedIn && editorHasSelection",
+          "group": "1_modification@10"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "jitre.commitWithTaskRef",
+          "when": "scmProvider == git",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "tsc --noEmit -p ./",
+    "package": "npx --yes @vscode/vsce package --allow-missing-repository --skip-license"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.84.0",
+    "typescript": "~5.9.2"
+  }
+}
