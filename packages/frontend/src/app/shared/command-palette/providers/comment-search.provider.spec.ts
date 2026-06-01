@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController, TestRequest } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { CommentSearchProvider } from './comment-search.provider';
 
-function flush(req: { flush: (b: unknown) => void }, hit: {
+function flush(req: TestRequest, hit: {
   entityId: string;
   parentType: 'task' | 'project' | null;
   parentId: string | null;

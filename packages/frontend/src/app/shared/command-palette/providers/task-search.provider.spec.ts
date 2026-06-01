@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController, TestRequest } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { TaskSearchProvider } from './task-search.provider';
 
-function flushHit(req: { flush: (body: unknown) => void }, hit: Partial<{ entityId: string; snippet: string }>): void {
+function flushHit(req: TestRequest, hit: Partial<{ entityId: string; snippet: string }>): void {
   req.flush({
     items: [
       {

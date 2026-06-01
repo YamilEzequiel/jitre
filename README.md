@@ -268,6 +268,7 @@ Las herramientas existentes están **infladas**: 30 menús para hacer 5 cosas. J
 - Labels, prioridades y assignees
 - Planning view, board view, list view
 - Filtros avanzados y búsqueda full-text
+- **Checklist de QA por tarea** — criterios de aceptación como entidad de primera clase (pending / passed / failed / blocked) con trazabilidad real: quién aprobó cada criterio y cuándo
 
 ### Colaboración
 - Comentarios con menciones (@user) y notificaciones en tiempo real

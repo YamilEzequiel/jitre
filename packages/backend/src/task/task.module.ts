@@ -5,6 +5,7 @@ import { TaskEntity } from './task.entity';
 import { TaskAssignmentEntity } from './task-assignment.entity';
 import { TaskLabelEntity } from './task-label.entity';
 import { TaskLinkEntity } from './task-link.entity';
+import { TaskChecklistItemEntity } from './task-checklist-item.entity';
 import { StatusEntity } from '../project/status/status.entity';
 import { ProjectMembershipEntity } from '../project/project-membership/project-membership.entity';
 import { ProjectEntity } from '../project/project.entity';
@@ -15,9 +16,11 @@ import { TaskService } from './task.service';
 import { TaskAssignmentService } from './task-assignment.service';
 import { TaskLabelService } from './task-label.service';
 import { TaskLinkService } from './task-link.service';
+import { TaskChecklistService } from './task-checklist.service';
 import { LexorankService } from './lexorank.service';
 import { TaskController, WorkspaceTaskController } from './task.controller';
 import { TaskLinkController } from './task-link.controller';
+import { TaskChecklistController } from './task-checklist.controller';
 import { DueSoonScheduler } from './schedulers/due-soon.scheduler';
 import { ProjectModule } from '../project/project.module';
 import { WorkflowModule } from '../project/workflow/workflow.module';
@@ -31,6 +34,7 @@ import { SettingsModule } from '../settings/settings.module';
       TaskAssignmentEntity,
       TaskLabelEntity,
       TaskLinkEntity,
+      TaskChecklistItemEntity,
       StatusEntity,
       ProjectMembershipEntity,
       ProjectEntity,
@@ -49,15 +53,22 @@ import { SettingsModule } from '../settings/settings.module';
     TaskAssignmentService,
     TaskLabelService,
     TaskLinkService,
+    TaskChecklistService,
     TaskService,
     DueSoonScheduler,
   ],
-  controllers: [TaskController, WorkspaceTaskController, TaskLinkController],
+  controllers: [
+    TaskController,
+    WorkspaceTaskController,
+    TaskLinkController,
+    TaskChecklistController,
+  ],
   exports: [
     TaskService,
     TaskAssignmentService,
     TaskLabelService,
     TaskLinkService,
+    TaskChecklistService,
     LexorankService,
   ],
 })

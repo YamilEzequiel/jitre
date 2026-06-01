@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **QA checklist per task** — acceptance criteria / QA cases as a first-class entity attached to a task, replacing the free-form markdown that used to live inside `task.description`. New `TaskChecklistItemStatus` enum in `@jitre/shared` with values `pending | passed | failed | blocked`, a `TASK_CHECKLIST_ITEM_STATUSES` tuple and an `isTerminalChecklistItemStatus` helper. Backend: new `TaskChecklistItemEntity` (extends `TenantEntity`, FK CASCADE to `tasks`, indexed by `(taskId, order)`) and migration `1700000003300-AddTaskChecklistItems` that creates `task_checklist_items` with `content`, `status`, `order`, plus `completed_by_user_id` and `completed_at` as separate audit columns — so "who edited the criterion" (BaseEntity's `updated_by`) and "who validated it" (the QA decision) never collide. REST surface under `/api/v1/tasks/:taskId/checklist` with create / list / update / set-status (`PATCH :id/status`) / reorder (`POST /reorder`) / remove; the service transparently fills `completedByUserId` + `completedAt` on any transition out of `pending` and clears them when items return to `pending`. Frontend: standalone `<jt-task-checklist>` component (signals + OnPush) mounted in the task detail above time-tracking — click on the badge cycles the status, dblclick edits the text inline, and "completado por X" is resolved via `WorkspaceMemberStore.byId()` (no extra fetch).
+
+### Changed
+
+- **Stop tracking compiled `.js` / `.js.map` next to TypeScript sources**. `packages/*/src/**/*.js` and `*.js.map` are now in `.gitignore`. About 70 stray artifacts that had been committed inside `packages/shared/src/` since the initial import are removed in this release; the canonical build output stays where `tsconfig.outDir` puts it (`dist/`).
+
 ---
 
 ## [0.4.0] — 2026-05-31
