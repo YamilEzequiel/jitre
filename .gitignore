@@ -11,6 +11,12 @@ out/
 .angular/
 *.tsbuildinfo
 
+# Stray TypeScript build artifacts that should never live in src/
+# (shared/ had ~70 of these accidentally committed in INIT PROJECT; the
+# tsconfig outDir is dist/ — JS belongs there, not next to the .ts source).
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+
 # Coverage
 coverage/
 *.lcov
