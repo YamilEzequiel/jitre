@@ -4,6 +4,7 @@ export * from './task-status.enum';
 export * from './task-priority.enum';
 export * from './task-type.enum';
 export * from './task-checklist-item-status.enum';
+export * from './task-test-case-status.enum';
 export * from './notification-type.enum';
 export * from './audit-action.enum';
 export * from './storage-driver.enum';
