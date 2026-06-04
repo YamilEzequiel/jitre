@@ -9,6 +9,7 @@ export class AiService {
   readonly loading = {
     describe: signal(false),
     suggestSubtasks: signal(false),
+    suggestTestCases: signal(false),
     summary: signal(false),
     explain: signal(false),
   };
@@ -63,6 +64,42 @@ export class AiService {
       );
     } finally {
       this.loading.suggestSubtasks.set(false);
+    }
+  }
+
+  async suggestTestCases(
+    taskId: string,
+    options: { maxSuggestions?: number; apply?: boolean } = {},
+  ): Promise<{
+    testCases: Array<{
+      title: string;
+      precondition?: string;
+      steps?: string;
+      expected?: string;
+    }>;
+    applied: boolean;
+    created?: unknown[];
+  }> {
+    this.loading.suggestTestCases.set(true);
+    try {
+      const body: Record<string, unknown> = {};
+      if (options.maxSuggestions !== undefined)
+        body['maxSuggestions'] = options.maxSuggestions;
+      if (options.apply !== undefined) body['apply'] = options.apply;
+      return await firstValueFrom(
+        this.http.post<{
+          testCases: Array<{
+            title: string;
+            precondition?: string;
+            steps?: string;
+            expected?: string;
+          }>;
+          applied: boolean;
+          created?: unknown[];
+        }>(`/api/v1/ai/tasks/${taskId}/suggest-test-cases`, body),
+      );
+    } finally {
+      this.loading.suggestTestCases.set(false);
     }
   }
 

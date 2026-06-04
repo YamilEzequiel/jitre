@@ -30,6 +30,7 @@ import { MarkdownPipe } from '../../../shared/markdown/markdown.pipe';
 import { TimeLoggerComponent } from '../../time-tracking/time-logger.component';
 import { TaskLinksComponent } from '../links/task-links.component';
 import { TaskChecklistComponent } from '../checklist/task-checklist.component';
+import { TaskTestCasesComponent } from '../test-cases/task-test-cases.component';
 import { AttachmentListComponent } from '../attachments/attachment-list.component';
 import {
   MentionCandidate,
@@ -59,6 +60,7 @@ interface DisplayComment {
     TimeLoggerComponent,
     TaskLinksComponent,
     TaskChecklistComponent,
+    TaskTestCasesComponent,
     AttachmentListComponent,
     MentionInputComponent,
     CheckboxComponent,
@@ -456,6 +458,11 @@ interface DisplayComment {
         <!-- QA checklist — acceptance criteria with trazabilidad -->
         <div class="mb-6">
           <jt-task-checklist [taskId]="task()!.id" />
+        </div>
+
+        <!-- Test cases — structured Given/When/Then with AI suggest -->
+        <div class="mb-6">
+          <jt-task-test-cases [taskId]="task()!.id" />
         </div>
 
         <!-- Time tracking -->
