@@ -342,6 +342,31 @@ El frontend proxea automáticamente `/api/v1/*` al backend en `:3000`.
 
 Si preferís el camino sin instalación local de Node, mirá la sección [Probar en 60 segundos](#probar-en-60-segundos) que usa `docker compose` para todo.
 
+### Modo dev en detalle
+
+Los scripts del root son aliases finos sobre los scripts de cada workspace. Si te conviene correrlos directo desde la carpeta del paquete (o si tu IDE necesita los comandos "crudos" tipo `ng serve` / `nest start`), acá están los equivalentes:
+
+| Lo que querés | Desde la raíz (npm workspaces) | Equivalente directo (dentro del workspace) |
+|---|---|---|
+| **Backend** en watch (NestJS) | `npm run dev:backend` | `cd packages/backend && npm run start:dev` *(que es `nest start --watch`)* |
+| Backend con debugger en `:9229` | — | `cd packages/backend && npm run start:debug` |
+| **Frontend** en watch (Angular) | `npm run dev:frontend` | `cd packages/frontend && npm run start` *(que es `ng serve`)* |
+| **Shared** en watch (tsc) | `npm run dev:shared` | `cd packages/shared && npm run dev` *(que es `tsc -p tsconfig.json --watch`)* |
+
+**¿Cuándo necesitás el watch de `shared`?**
+Solo si estás tocando enums, DTOs o interfaces de `packages/shared`. Si solo trabajás en backend o frontend, alcanza con dos terminales (backend + frontend). Si tocás `shared`, abrí una tercera terminal con `npm run dev:shared` para que TS recompile los tipos en vivo y backend/frontend los recojan automáticamente.
+
+**Puertos por defecto** (sin tocar nada):
+
+| Servicio | URL |
+|---|---|
+| Frontend (Angular) | <http://localhost:4200> |
+| Backend (NestJS) | <http://localhost:3000> |
+| Swagger / OpenAPI | <http://localhost:3000/api/v1/docs> |
+| WebSocket (Socket.IO) | `ws://localhost:3000/ws` |
+| Postgres (Docker) | `localhost:5432` |
+| Redis (Docker) | `localhost:6379` |
+
 ### Credenciales del seed
 
 | Email | Password | Rol |
