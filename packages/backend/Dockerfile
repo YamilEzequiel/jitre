@@ -15,7 +15,7 @@ WORKDIR /workspace
 
 # Copy root manifests + workspace manifests so npm can resolve
 # the workspaces dependency graph in a single install.
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/backend/package.json packages/backend/
 COPY packages/frontend/package.json packages/frontend/

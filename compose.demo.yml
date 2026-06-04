@@ -93,8 +93,10 @@ services:
       POSTGRES_DB: jitre
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_ACCESS_SECRET: demo_access_secret_change_me_change_me
-      JWT_REFRESH_SECRET: demo_refresh_secret_change_me_change_me
+      # Demo-only secrets (32-byte hex). Regenerate with
+      # `openssl rand -hex 32` if you re-publish this stack on a public host.
+      JWT_ACCESS_SECRET: 150fb92ab9c731405abc99a69b2f5143d86924a307252e951e2b2b2ec5420c9c
+      JWT_REFRESH_SECRET: 431527309dcf9d867e0be84fe9452605df54b583fd5b0ac2aba51aaa57b8358c
       STORAGE_DRIVER: local
       STORAGE_LOCAL_ROOT: /app/uploads
       STORAGE_PUBLIC_BASE_URL: http://localhost:8080/api/v1/files
