@@ -11,6 +11,7 @@ import { TenantEntity } from '../../common/entities/tenant.entity';
 export type AiPromptOperation =
   | 'describe'
   | 'suggest_subtasks'
+  | 'suggest_test_cases'
   | 'summary'
   | 'generate_draft';
 
@@ -25,7 +26,13 @@ export type AiPromptOperation =
 })
 export class AiPromptTemplateEntity extends TenantEntity {
   @ApiProperty({
-    enum: ['describe', 'suggest_subtasks', 'summary', 'generate_draft'],
+    enum: [
+      'describe',
+      'suggest_subtasks',
+      'suggest_test_cases',
+      'summary',
+      'generate_draft',
+    ],
   })
   @Column({ type: 'text' })
   operation!: AiPromptOperation;

@@ -1,9 +1,11 @@
 import type { AiPromptTemplateEntity } from '../prompt-template/ai-prompt-template.entity';
+import { languageDirective } from './locale.util';
 
 export interface ExplainTaskContext {
   taskTitle: string;
   taskDescription?: string | null;
   projectName?: string;
+  locale?: string;
 }
 
 export const EXPLAIN_TEMPLATE_VARIABLES = [
@@ -43,7 +45,8 @@ export function buildExplainTaskPrompt(
   }
 
   const systemPrompt =
-    'You are a project assistant explaining what a task is about in one short paragraph (max 2 sentences). Be plain, concrete, and avoid filler — pretend you are whispering it to a teammate who has 5 seconds. No headings, no bullet lists, no markdown.';
+    'You are a project assistant explaining what a task is about in one short paragraph (max 2 sentences). Be plain, concrete, and avoid filler — pretend you are whispering it to a teammate who has 5 seconds. No headings, no bullet lists, no markdown.' +
+    languageDirective(ctx.locale ?? 'en');
 
   const lines = [`Task: ${ctx.taskTitle}`];
   if (ctx.projectName) lines.push(`Project: ${ctx.projectName}`);

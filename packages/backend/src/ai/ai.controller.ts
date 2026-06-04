@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Inject,
+  Logger,
   Param,
   Post,
   UseGuards,
@@ -20,6 +21,7 @@ import { SettingsService } from '../settings/settings.service';
 import { RequestContextService } from '../request-context/request-context.service';
 import { DescribeTaskDto } from './dto/describe-task.dto';
 import { SuggestSubtasksDto } from './dto/suggest-subtasks.dto';
+import { SuggestTestCasesDto } from './dto/suggest-test-cases.dto';
 import { SummarizeCommentsDto } from './dto/summarize-comments.dto';
 import { AiFeatureDisabledException } from './exceptions/ai-feature-disabled.exception';
 import { AiResponseInvalidException } from './exceptions/ai-response-invalid.exception';
@@ -28,9 +30,15 @@ import {
   buildSuggestSubtasksPrompt,
   parseSubtasksResponse,
 } from './prompts/suggest-subtasks.prompt';
+import {
+  buildSuggestTestCasesPrompt,
+  parseTestCasesResponse,
+} from './prompts/suggest-test-cases.prompt';
 import { buildSummaryPrompt } from './prompts/summary.prompt';
 import { buildExplainTaskPrompt } from './prompts/explain-task.prompt';
+import { resolveAiLocale } from './prompts/locale.util';
 import { AiPromptTemplateService } from './prompt-template/ai-prompt-template.service';
+import { TaskTestCaseService } from '../task/task-test-case.service';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('ai')
@@ -38,6 +46,8 @@ import { Throttle } from '@nestjs/throttler';
 @UseGuards(AiQuotaGuard)
 @Controller('ai')
 export class AiController {
+  private readonly logger = new Logger(AiController.name);
+
   constructor(
     private readonly aiService: AiService,
     private readonly settings: SettingsService,
@@ -68,6 +78,7 @@ export class AiController {
         { id: string; body: string; userId: string; createdAt: Date }[]
       >;
     },
+    private readonly testCaseService: TaskTestCaseService,
   ) {}
 
   @ApiOperation({ summary: 'Generate AI description for a task' })
@@ -116,12 +127,15 @@ export class AiController {
       ? await this.templates.getById(workspaceId, dto.templateId)
       : await this.templates.getDefaultFor(workspaceId, 'describe');
 
+    const locale = await resolveAiLocale(this.settings, userId, workspaceId);
+
     // Build prompt (template if available, hard-coded fallback otherwise)
     const { systemPrompt, userPrompt } = buildDescribeTaskPrompt(
       {
         taskTitle: task.title,
         currentDescription: task.description,
         tone: dto.tone ?? 'technical',
+        locale,
       },
       template,
     );
@@ -193,12 +207,15 @@ export class AiController {
       ? await this.templates.getById(workspaceId, dto.templateId)
       : await this.templates.getDefaultFor(workspaceId, 'suggest_subtasks');
 
+    const locale = await resolveAiLocale(this.settings, userId, workspaceId);
+
     // Build prompt (JSON mode)
     const { systemPrompt, userPrompt } = buildSuggestSubtasksPrompt(
       {
         taskTitle: task.title,
         taskDescription: task.description,
         maxSuggestions,
+        locale,
       },
       template,
     );
@@ -269,9 +286,12 @@ export class AiController {
 
     const task = await this.taskService.getById(taskId, undefined, workspaceId);
 
+    const locale = await resolveAiLocale(this.settings, userId, workspaceId);
+
     const { systemPrompt, userPrompt } = buildExplainTaskPrompt({
       taskTitle: task.title,
       taskDescription: task.description,
+      locale,
     });
 
     const response = await this.aiService.generateCompletion({
@@ -335,6 +355,8 @@ export class AiController {
       });
     }
 
+    const locale = await resolveAiLocale(this.settings, userId, workspaceId);
+
     // Build prompt
     const { systemPrompt, userPrompt } = buildSummaryPrompt(
       comments.map((c) => ({
@@ -342,6 +364,7 @@ export class AiController {
         body: c.body,
         createdAt: c.createdAt,
       })),
+      locale,
     );
 
     // Call AI
@@ -355,6 +378,121 @@ export class AiController {
     return {
       summary: response.text,
       commentCount: comments.length,
+      usage: {
+        promptTokens: response.promptTokens,
+        completionTokens: response.completionTokens,
+        totalTokens: response.totalTokens,
+        costUsd: response.costUsd,
+        model: response.model,
+      },
+    };
+  }
+
+  @ApiOperation({ summary: 'Suggest structured test cases for a task using AI' })
+  @ApiResponse({ status: 200, description: 'Test cases suggested.' })
+  @ApiResponse({ status: 403, description: 'Feature disabled.' })
+  @ApiResponse({ status: 429, description: 'Quota exceeded.' })
+  @ApiResponse({ status: 502, description: 'AI response could not be parsed.' })
+  @Post('tasks/:taskId/suggest-test-cases')
+  async suggestTestCases(
+    @Param('taskId') taskId: string,
+    @Body() dto: Partial<SuggestTestCasesDto>,
+  ): Promise<{
+    testCases: {
+      title: string;
+      precondition?: string;
+      steps?: string;
+      expected?: string;
+    }[];
+    applied: boolean;
+    created?: unknown[];
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      costUsd: string;
+      model: string;
+    };
+  }> {
+    const workspaceId = this.requestContext.getWorkspaceId()!;
+    const userId = this.requestContext.getUserId()!;
+    const maxSuggestions = dto.maxSuggestions ?? 5;
+
+    const featureEnabled = await this.settings.getAiSetting<boolean>(
+      workspaceId,
+      'ai.test_case_suggest_enabled',
+      true,
+    );
+    if (!featureEnabled) {
+      throw new AiFeatureDisabledException('ai.test_case_suggest_enabled');
+    }
+
+    const task = await this.taskService.getById(taskId, undefined, workspaceId);
+
+    const template = dto.templateId
+      ? await this.templates.getById(workspaceId, dto.templateId)
+      : await this.templates.getDefaultFor(workspaceId, 'suggest_test_cases');
+
+    const locale = await resolveAiLocale(this.settings, userId, workspaceId);
+
+    const { systemPrompt, userPrompt } = buildSuggestTestCasesPrompt(
+      {
+        taskTitle: task.title,
+        taskDescription: task.description,
+        maxSuggestions,
+        locale,
+      },
+      template,
+    );
+
+    const response = await this.aiService.generateCompletion({
+      workspaceId,
+      userId,
+      operation: AiOperation.SUGGEST_SUBTASKS,
+      request: {
+        systemPrompt,
+        userPrompt,
+        responseFormat: 'json',
+        maxTokens: 4096,
+      },
+    });
+
+    const testCases = parseTestCasesResponse(response.text, maxSuggestions);
+    if (testCases.length === 0) {
+      const snippet = response.text.slice(0, 500);
+      const finishReason =
+        (response as { finishReason?: string }).finishReason ?? 'unknown';
+      this.logger.warn(
+        `suggest-test-cases: failed to parse response from ${response.model} ` +
+          `(finishReason=${finishReason}, length=${response.text.length}). ` +
+          `Raw text (first 500 chars): ${snippet}`,
+      );
+      throw new AiResponseInvalidException(
+        finishReason === 'MAX_TOKENS'
+          ? 'AI response was cut off before any test case could be completed. Try fewer suggestions or shorter detail.'
+          : 'AI response did not contain a parseable list of test cases. Check backend logs for the raw model output.',
+      );
+    }
+
+    const apply = dto.apply === true;
+    let created: unknown[] | undefined;
+    if (apply) {
+      created = await this.testCaseService.bulkCreate(
+        workspaceId,
+        taskId,
+        testCases.map((t) => ({
+          title: t.title,
+          precondition: t.precondition ?? null,
+          steps: t.steps ?? null,
+          expected: t.expected ?? null,
+        })),
+      );
+    }
+
+    return {
+      testCases,
+      applied: apply,
+      created,
       usage: {
         promptTokens: response.promptTokens,
         completionTokens: response.completionTokens,

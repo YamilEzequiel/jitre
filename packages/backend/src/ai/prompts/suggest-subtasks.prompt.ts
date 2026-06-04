@@ -1,9 +1,11 @@
 import type { AiPromptTemplateEntity } from '../prompt-template/ai-prompt-template.entity';
+import { languageDirective } from './locale.util';
 
 export interface SuggestSubtasksContext {
   taskTitle: string;
   taskDescription?: string | null;
   maxSuggestions: number;
+  locale?: string;
 }
 
 export const SUGGEST_SUBTASKS_TEMPLATE_VARIABLES = [
@@ -35,7 +37,7 @@ export function buildSuggestSubtasksPrompt(
     };
   }
 
-  const systemPrompt = `You are a project management assistant that breaks tasks into subtasks. Return ONLY a valid JSON object with this exact structure: {"subtasks": [{"title": "string", "description": "optional string"}]}. Generate at most ${ctx.maxSuggestions} subtasks.`;
+  const systemPrompt = `You are a project management assistant that breaks tasks into subtasks. Return ONLY a valid JSON object with this exact structure: {"subtasks": [{"title": "string", "description": "optional string"}]}. Generate at most ${ctx.maxSuggestions} subtasks.${languageDirective(ctx.locale ?? 'en')}`;
 
   const lines = [`Main task: ${ctx.taskTitle}`];
   if (ctx.taskDescription) lines.push(`Description: ${ctx.taskDescription}`);

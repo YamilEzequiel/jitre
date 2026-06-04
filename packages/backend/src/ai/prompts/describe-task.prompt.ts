@@ -1,10 +1,12 @@
 import type { AiPromptTemplateEntity } from '../prompt-template/ai-prompt-template.entity';
+import { languageDirective } from './locale.util';
 
 export interface DescribeTaskContext {
   taskTitle: string;
   currentDescription?: string | null;
   projectName?: string;
   tone?: 'formal' | 'casual' | 'technical';
+  locale?: string;
 }
 
 /**
@@ -56,7 +58,7 @@ export function buildDescribeTaskPrompt(
     technical: 'Use technical, precise language suitable for developers.',
   }[ctx.tone ?? 'technical'];
 
-  const systemPrompt = `You are a project management assistant. Your task is to write clear, concise task descriptions. ${toneInstruction} Keep descriptions under 300 words. Return plain text only.`;
+  const systemPrompt = `You are a project management assistant. Your task is to write clear, concise task descriptions. ${toneInstruction} Keep descriptions under 300 words. Return plain text only.${languageDirective(ctx.locale ?? 'en')}`;
 
   const lines: string[] = [`Task: ${ctx.taskTitle}`];
   if (ctx.projectName) lines.push(`Project: ${ctx.projectName}`);

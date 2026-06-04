@@ -1,3 +1,5 @@
+import { languageDirective } from './locale.util';
+
 export interface CommentForSummary {
   authorId: string;
   body: string;
@@ -7,12 +9,16 @@ export interface CommentForSummary {
 /** Max approximate tokens to send (~6000 tokens ≈ ~24000 chars) */
 const MAX_PROMPT_CHARS = 24_000;
 
-export function buildSummaryPrompt(comments: CommentForSummary[]): {
+export function buildSummaryPrompt(
+  comments: CommentForSummary[],
+  locale?: string,
+): {
   systemPrompt: string;
   userPrompt: string;
 } {
   const systemPrompt =
-    'You are a project management assistant. Summarize the following comments concisely in 2-4 sentences, focusing on decisions made, blockers identified, and action items. Return plain text only.';
+    'You are a project management assistant. Summarize the following comments concisely in 2-4 sentences, focusing on decisions made, blockers identified, and action items. Return plain text only.' +
+    languageDirective(locale ?? 'en');
 
   const commentLines = comments.map(
     (c, i) =>
