@@ -60,11 +60,12 @@ services:
       POSTGRES_USER: jitre
       POSTGRES_PASSWORD: jitre_demo
       POSTGRES_DB: jitre
-    # `node` runs the compiled migration CLI then the seed script.
-    # `|| true` on seed makes the init idempotent when re-running.
+    # First applies pending migrations (must succeed — backend won't start
+    # otherwise), then runs the seed. `|| true` on seed only, because re-runs
+    # may hit unique constraints; the seed itself is idempotent by design.
     command: >
-      sh -c "node packages/backend/dist/database/data-source.js && echo 'migrations applied' &&
-             node packages/backend/dist/database/seed.js || true"
+      sh -c "node packages/backend/dist/database/migrate.js &&
+             (node packages/backend/dist/database/seed.js || true)"
     restart: "no"
 
   backend:
