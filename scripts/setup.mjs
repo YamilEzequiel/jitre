@@ -89,7 +89,7 @@ async function main() {
   console.log(`${colors.magenta}${colors.bold}\nJitre setup${colors.reset}\n`);
 
   // 1. .env
-  step(1, 5, 'Environment file');
+  step(1, 6, 'Environment file');
   if (existsSync(ENV_FILE)) {
     ok('.env already present — leaving it untouched');
   } else {
@@ -98,13 +98,23 @@ async function main() {
     info('Edit .env if you need to change ports, secrets or AI keys');
   }
 
-  // 2. Docker compose up (postgres + redis)
-  step(2, 5, 'Starting Postgres + Redis');
+  // 2. Build @jitre/shared so backend can resolve "@jitre/shared" via dist/.
+  // Migrations and seed run TypeScript via ts-node, which needs shared built first.
+  step(2, 6, 'Building @jitre/shared');
+  if (existsSync(resolve(ROOT, 'packages/shared/dist/index.js'))) {
+    ok('Already built — leaving it untouched');
+  } else {
+    run('npm', ['run', 'build:shared']);
+    ok('Shared types ready');
+  }
+
+  // 3. Docker compose up (postgres + redis)
+  step(3, 6, 'Starting Postgres + Redis');
   run('docker', ['compose', 'up', '-d', 'postgres', 'redis']);
   ok('Containers up');
 
-  // 3. Wait for Postgres
-  step(3, 5, 'Waiting for Postgres');
+  // 4. Wait for Postgres
+  step(4, 6, 'Waiting for Postgres');
   process.stdout.write('  ');
   const ready = await waitForPostgres();
   process.stdout.write('\n');
@@ -114,13 +124,13 @@ async function main() {
   }
   ok('Postgres is accepting connections');
 
-  // 4. Migrations
-  step(4, 5, 'Running migrations');
+  // 5. Migrations
+  step(5, 6, 'Running migrations');
   run('npm', ['run', 'db:migration:run']);
   ok('Schema is up to date');
 
-  // 5. Seed
-  step(5, 5, 'Seeding demo data');
+  // 6. Seed
+  step(6, 6, 'Seeding demo data');
   // The backend workspace exposes `npm run seed` for this.
   try {
     run('npm', ['run', 'seed', '-w', '@jitre/backend']);

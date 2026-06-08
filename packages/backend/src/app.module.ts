@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { throttlerFactoryAsync } from './config/throttler.config';
@@ -48,11 +50,23 @@ import { OrgGraphModule } from './org-graph/org-graph.module';
 import { AreaModule } from './area/area.module';
 import { CustomerModule } from './customer/customer.module';
 
+// Resolve the monorepo root `.env` regardless of cwd. `npm run dev:backend`
+// sets cwd to packages/backend, so the default dotenv lookup (cwd-relative)
+// silently misses the `.env` that `scripts/setup.mjs` writes at the repo root.
+function resolveEnvFiles(): string[] {
+  const candidates = [
+    resolve(__dirname, '../../../.env'),
+    resolve(process.cwd(), '.env'),
+  ];
+  return candidates.filter((p) => existsSync(p));
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      envFilePath: resolveEnvFiles(),
       load: allConfigs,
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: false },

@@ -86,6 +86,7 @@ Pasale todos los flags juntos para skipear los prompts. Si solo te falta uno, el
 2. **`jitre_create_task` devuelve HTTP 400**: el backend requiere `statusId`. El MCP server ya lo resuelve automáticamente al status default del proyecto (`isDefault: true`), pero el `dist/` podría estar viejo. Corré `npm --workspace jitre-mcp-server run build` y reiniciá el cliente MCP.
 3. **`vscode:install` no encuentra el CLI**: sugerí abrir el editor → Command Palette → *"Shell Command: Install 'code' command in PATH"*.
 4. **`mcp:setup` falla con `claude mcp add`**: el usuario no tiene Claude Code instalado o no está en PATH. Caelé a `--client=desktop` o `--client=cursor`.
+5. **`Cannot find module '@jitre/shared'` corriendo migrations, seed o dev:backend**: falta buildear `packages/shared/dist/`. `npm install` lo hace automáticamente via `postinstall`, pero si alguien lo skipeó o el dist quedó stale, corré `npm run build:shared` desde el root.
 
 ## NO hagas esto
 

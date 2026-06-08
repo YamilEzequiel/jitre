@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { readdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readdirSync } from 'fs';
+import { join, resolve } from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuditSubscriber } from './subscribers/audit.subscriber';
@@ -16,8 +16,15 @@ import { AuditSubscriber } from './subscribers/audit.subscriber';
 function loadEnv(): void {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const dotenv = require('dotenv') as { config?: () => void };
-    dotenv.config?.();
+    const dotenv = require('dotenv') as { config?: (opts?: { path?: string }) => void };
+    // Prefer the monorepo root `.env` (where `scripts/setup.mjs` writes it),
+    // falling back to cwd-relative for backwards compatibility.
+    const rootEnv = resolve(__dirname, '../../../../.env');
+    if (existsSync(rootEnv)) {
+      dotenv.config?.({ path: rootEnv });
+    } else {
+      dotenv.config?.();
+    }
   } catch {
     // dotenv not installed — that's fine, env vars are expected to be set.
   }
