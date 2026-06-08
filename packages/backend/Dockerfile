@@ -20,7 +20,11 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/backend/package.json packages/backend/
 COPY packages/frontend/package.json packages/frontend/
 
-RUN npm ci --workspaces --include-workspace-root
+# --ignore-scripts skips the root postinstall (which builds @jitre/shared).
+# We can't run it here because shared/src/ hasn't been copied yet; the next
+# COPY brings it in and the explicit `npm run build -w @jitre/shared` below
+# builds it once the sources are present.
+RUN npm ci --workspaces --include-workspace-root --ignore-scripts
 
 # Copy sources for the workspaces the backend actually needs.
 COPY packages/shared packages/shared
@@ -40,10 +44,14 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Install production-only deps to keep the image small.
+# --ignore-scripts skips the root postinstall (builds @jitre/shared). We
+# don't need it here: the compiled dist is copied below from the builder
+# stage. Also, devDependencies (incl. typescript) aren't installed in
+# --omit=dev, so the build script would crash anyway.
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/backend/package.json packages/backend/
-RUN npm ci --omit=dev --workspaces --include-workspace-root
+RUN npm ci --omit=dev --workspaces --include-workspace-root --ignore-scripts
 
 # Bring over the built JS for both workspaces.
 COPY --from=builder /workspace/packages/shared/dist packages/shared/dist

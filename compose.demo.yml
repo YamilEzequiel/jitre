@@ -60,6 +60,8 @@ services:
       POSTGRES_USER: jitre
       POSTGRES_PASSWORD: jitre_demo
       POSTGRES_DB: jitre
+      # The bundled postgres-alpine has no SSL configured.
+      DATABASE_SSL: "false"
     # First applies pending migrations (must succeed — backend won't start
     # otherwise), then runs the seed. `|| true` on seed only, because re-runs
     # may hit unique constraints; the seed itself is idempotent by design.
@@ -92,6 +94,7 @@ services:
       POSTGRES_USER: jitre
       POSTGRES_PASSWORD: jitre_demo
       POSTGRES_DB: jitre
+      DATABASE_SSL: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
       # Demo-only secrets (32-byte hex). Regenerate with

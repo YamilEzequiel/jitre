@@ -34,6 +34,13 @@ loadEnv();
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// SSL precedence: explicit DATABASE_SSL wins; otherwise default to on in
+// production (managed Postgres typically requires it) and off elsewhere.
+// Containerized stacks running a sidecar Postgres MUST set DATABASE_SSL=false.
+const sslEnabled =
+  process.env.DATABASE_SSL === 'true' ||
+  (process.env.DATABASE_SSL !== 'false' && isProd);
+
 const migrationsDir = join(__dirname, 'migrations');
 const migrationFiles = readdirSync(migrationsDir)
   .filter((f) => /\.(ts|js)$/.test(f) && !f.endsWith('.spec.ts') && !f.endsWith('.spec.js'))
@@ -54,7 +61,7 @@ export const dataSourceOptions: DataSourceOptions = {
   logging: process.env.DATABASE_LOGGING === 'true',
   migrationsRun: false,
   migrationsTableName: 'jitre_migrations',
-  ssl: isProd ? { rejectUnauthorized: false } : false,
+  ssl: sslEnabled ? { rejectUnauthorized: false } : false,
 };
 
 export const AppDataSource = new DataSource(dataSourceOptions);

@@ -17,7 +17,10 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/backend/package.json packages/backend/
 COPY packages/frontend/package.json packages/frontend/
 
-RUN npm ci --workspaces --include-workspace-root
+# --ignore-scripts skips the root postinstall (which builds @jitre/shared).
+# Shared's sources aren't copied yet, so the script would fail; we run the
+# build explicitly below once the sources are in place.
+RUN npm ci --workspaces --include-workspace-root --ignore-scripts
 
 COPY packages/shared packages/shared
 COPY packages/frontend packages/frontend
